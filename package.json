@@ -1,0 +1,16 @@
+{
+  "name": "goguma-evangelism",
+  "version": "1.0.0",
+  "description": "고구마 전도 - DB 및 세션 기반",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "session-file-store": "^1.2.0"
+  }
+  
+}

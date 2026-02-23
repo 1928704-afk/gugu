@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고구마 전도</title>
+  <style>
+    @font-face {
+      font-family: 'NeoDunggeunmo';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');
+      font-weight: normal;
+      font-display: swap;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* 픽셀 배경 */
+    .pixel-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+    .pixel-sky {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 55%;
+      background: #87CEEB;
+      image-rendering: pixelated;
+    }
+    .pixel-fence {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 48%;
+      height: 80px;
+      background: repeating-linear-gradient(
+        90deg,
+        #8B4513 0px,
+        #8B4513 4px,
+        #A0522D 4px,
+        #A0522D 8px
+      );
+      border-top: 4px solid #654321;
+      border-bottom: 4px solid #654321;
+      image-rendering: pixelated;
+    }
+    .pixel-fence::before {
+      content: '';
+      position: absolute;
+      top: -8px;
+      left: 0;
+      right: 0;
+      height: 12px;
+      background: #8B4513;
+      border: 2px solid #654321;
+    }
+    .pixel-grass {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 38%;
+      background: #228B22;
+      image-rendering: pixelated;
+    }
+    .pixel-dirt {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 12%;
+      width: 280px;
+      height: 100px;
+      background: #DEB887;
+      border: 3px solid #8B7355;
+      border-radius: 4px;
+      image-rendering: pixelated;
+    }
+
+    .screen {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ========== 시작 화면 ========== */
+    #home .subtitle {
+      color: #1a237e;
+      font-size: 14px;
+      margin-top: 50px;
+      margin-bottom: 8px;
+      text-shadow: 2px 2px 0 #000;
+      letter-spacing: 1px;
+    }
+    #home .main-title {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 4px;
+      margin-bottom: 24px;
+    }
+    #home .main-title .word1 {
+      color: #FFD700;
+      font-size: 36px;
+      text-shadow: 3px 0 0 #000, 0 3px 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+    }
+    #home .main-title .word2 {
+      color: #fff;
+      font-size: 36px;
+      text-shadow: 3px 0 0 #000, 0 3px 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+    }
+    #home .btn-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    .pixel-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: #FFD700;
+      color: #000;
+      border: 3px solid #000;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      image-rendering: pixelated;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .pixel-btn:hover {
+      background: #FFC107;
+    }
+    .pixel-btn:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+
+    /* 말풍선 (사용설명) */
+    .speech-bubble {
+      position: relative;
+      background: #fff;
+      border: 3px solid #000;
+      padding: 20px 24px;
+      max-width: 420px;
+      text-align: left;
+      margin-bottom: 20px;
+      box-shadow: 4px 4px 0 #000;
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 60px;
+      border: 12px solid transparent;
+      border-top-color: #000;
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 64px;
+      border: 10px solid transparent;
+      border-top-color: #fff;
+      z-index: 1;
+    }
+    .speech-bubble ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #000;
+    }
+
+    /* 시작 화면 고구마 캐릭터 */
+    .char-potato-home {
+      position: absolute;
+      right: 10%;
+      bottom: 25%;
+      width: 100px;
+      height: 120px;
+    }
+    .char-potato-home .body {
+      width: 80px;
+      height: 100px;
+      border-radius: 40px 40px 45px 45px;
+      background: linear-gradient(180deg, #FFD700 0%, #FFD700 45%, #6A0DAD 45%, #6A0DAD 100%);
+      border: 3px solid #000;
+      position: relative;
+      margin: 0 auto;
+    }
+    .char-potato-home .face {
+      position: absolute;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+    }
+    .char-potato-home .eye {
+      width: 8px;
+      height: 8px;
+      background: #000;
+      border-radius: 2px;
+      display: inline-block;
+      margin: 0 6px;
+    }
+    .char-potato-home .mouth {
+      width: 16px;
+      height: 4px;
+      border-bottom: 3px solid #000;
+      border-radius: 0 0 8px 8px;
+      margin: 6px auto 0;
+      display: block;
+    }
+
+    /* ========== 게임 화면 ========== */
+    #game .game-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    #game input {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      padding: 8px 12px;
+      border: 3px solid #000;
+      font-size: 12px;
+      width: 140px;
+    }
+    #game .add-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: #FFD700;
+      color: #000;
+      border: 3px solid #000;
+      padding: 8px 16px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #000;
+    }
+
+    /* 리스트 (고구마 선택) */
+    .goguma-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .goguma-chip {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: #fff;
+      border: 3px solid #000;
+      padding: 8px 14px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .goguma-chip:hover, .goguma-chip.selected {
+      background: #FFD700;
+    }
+
+    /* 상단 상태바 (픽셀 스타일) */
+    .status-bar {
+      display: inline-flex;
+      align-items: center;
+      background: #333;
+      border: 3px solid #000;
+      padding: 8px 16px 8px 12px;
+      margin-bottom: 16px;
+      box-shadow: 4px 4px 0 #000;
+      color: #fff;
+      font-size: 12px;
+    }
+    .status-bar .name {
+      margin-right: 12px;
+    }
+    .status-bar .hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-bar .hp-box {
+      width: 120px;
+      height: 16px;
+      background: #222;
+      border: 2px solid #000;
+      overflow: hidden;
+    }
+    .status-bar .hp-fill {
+      height: 100%;
+      background: #ff9800;
+      transition: width 0.2s;
+    }
+    .status-bar .arrow {
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 10px solid #333;
+      margin-left: 4px;
+    }
+
+    /* 냄비 + 고구마 + 불 */
+    .pot-scene {
+      position: relative;
+      width: 260px;
+      height: 220px;
+      margin: 0 auto 20px;
+      transition: transform 0.3s ease;
+    }
+    .pot-scene .fire {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 30px;
+      background: linear-gradient(180deg, #ff6b00 0%, #ffd000 50%, #ff6b00 100%);
+      border: 2px solid #000;
+      border-radius: 0 0 50% 50%;
+      animation: flicker 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes flicker {
+      from { opacity: 1; transform: translateX(-50%) scaleY(1); }
+      to { opacity: 0.9; transform: translateX(-50%) scaleY(1.1); }
+    }
+    .pot-scene .pot {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 100px;
+      background: #2d2d2d;
+      border: 4px solid #000;
+      border-radius: 0 0 20px 20px;
+      border-top: 8px solid #1a1a1a;
+    }
+    .pot-scene .steam {
+      position: absolute;
+      top: 42px;
+      left: 58px;
+      width: 20px;
+      height: 20px;
+      border-left: 2px solid #999;
+      border-bottom: 2px solid #999;
+      transform: rotate(-20deg);
+      animation: steam 1.5s ease-in-out infinite;
+    }
+    .pot-scene .steam2 {
+      left: 72px;
+      top: 48px;
+      transform: rotate(-15deg);
+      animation-delay: 0.3s;
+    }
+    @keyframes steam {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.8; }
+    }
+    .pot-scene .potato-in-pot {
+      position: absolute;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 75px;
+    }
+    .pot-scene .potato-in-pot .body {
+      width: 70px;
+      height: 75px;
+      border-radius: 35px 35px 38px 38px;
+      background: linear-gradient(165deg, #FFD700 0%, #e6c200 60%, #8B4513 60%, #6B3410 100%);
+      border: 3px solid #000;
+      position: relative;
+    }
+    .pot-scene .potato-in-pot .arm {
+      position: absolute;
+      top: 15px;
+      left: -8px;
+      width: 24px;
+      height: 10px;
+      background: #FFD700;
+      border: 2px solid #000;
+      border-radius: 12px;
+      transform: rotate(-30deg);
+    }
+    .pot-scene .potato-in-pot .face {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .pot-scene .potato-in-pot .eye {
+      width: 6px;
+      height: 8px;
+      background: #000;
+      display: inline-block;
+      margin: 0 4px;
+    }
+    .pot-scene .potato-in-pot .mouth {
+      width: 12px;
+      height: 2px;
+      background: #000;
+      margin: 4px auto 0;
+      display: block;
+    }
+    .pot-scene .potato-in-pot .blush {
+      position: absolute;
+      top: 18px;
+      width: 8px;
+      height: 4px;
+      background: #ff9999;
+      border-radius: 50%;
+    }
+    .pot-scene .potato-in-pot .blush.left { left: 8px; }
+    .pot-scene .potato-in-pot .blush.right { right: 8px; }
+
+    /* 게임 화면 액션 버튼 3개 */
+    .action-buttons {
+      position: relative;
+      width: 280px;
+      height: 100px;
+      margin: 0 auto;
+    }
+    .action-buttons .btn-mal {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    .action-buttons .btn-man {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+    }
+    .action-buttons .btn-yeon {
+      position: absolute;
+      top: 0;
+      right: 0;
+    }
+    .action-buttons .pixel-btn {
+      padding: 10px 16px;
+      font-size: 12px;
+    }
+
+    .back-btn {
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    /* 하트 발사 */
+    #heartContainer {
+      position: absolute;
+      left: 50%;
+      bottom: 85px;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .heart-burst {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      font-size: 22px;
+      opacity: 1;
+      animation: heartFly 0.9s ease-out forwards;
+    }
+    @keyframes heartFly {
+      0% {
+        transform: translate(-50%, 50%) scale(0.4);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -100px) scale(1.2);
+        opacity: 0;
+      }
+    }
+    .heart-burst:nth-child(1) { animation-duration: 0.8s; animation-delay: 0ms; }
+    .heart-burst:nth-child(2) { animation-duration: 0.85s; animation-delay: 50ms; left: -12px; }
+    .heart-burst:nth-child(3) { animation-duration: 0.9s; animation-delay: 100ms; left: 12px; }
+    .heart-burst:nth-child(4) { animation-duration: 0.75s; animation-delay: 30ms; left: -20px; }
+    .heart-burst:nth-child(5) { animation-duration: 0.95s; animation-delay: 70ms; left: 20px; }
+
+    /* 레벨별 크기 (pot-scene scale) */
+    .pot-scene.scale-sm { transform: scale(0.75); transform-origin: center bottom; }
+    .pot-scene.scale-md { transform: scale(0.9); transform-origin: center bottom; }
+    .pot-scene.scale-lg { transform: scale(1.05); transform-origin: center bottom; }
+    .pot-scene.scale-xl { transform: scale(1.2); transform-origin: center bottom; }
+
+    /* 레벨별 고구마 모습 (단계) */
+    .pot-scene.stage1 .potato-in-pot .body {
+      background: linear-gradient(165deg, #e6d48b 0%, #d4b85c 60%, #8B4513 60%, #6B3410 100%);
+      box-shadow: inset 0 0 15px rgba(255,255,255,0.3);
+    }
+    .pot-scene.stage1 .potato-in-pot .mouth { transform: scaleX(0.8); }
+    .pot-scene.stage2 .potato-in-pot .body {
+      background: linear-gradient(165deg, #c8e6c9 0%, #FFD700 50%, #8B4513 60%, #6B3410 100%);
+    }
+    .pot-scene.stage3 .potato-in-pot .body {
+      background: linear-gradient(165deg, #FFD700 0%, #e6c200 60%, #8B4513 60%, #6B3410 100%);
+    }
+    .pot-scene.stage4 .potato-in-pot .body {
+      background: linear-gradient(165deg, #FFE082 0%, #FFD700 60%, #A0522D 60%, #8B4513 100%);
+      box-shadow: 0 0 10px rgba(255,193,7,0.4);
+    }
+    .pot-scene.stage5 .potato-in-pot .body {
+      background: linear-gradient(165deg, #FFF59D 0%, #FFD700 55%, #D2691E 55%, #8B4513 100%);
+      box-shadow: 0 0 15px rgba(255,235,59,0.6);
+    }
+    .pot-scene.stage5 .potato-in-pot .mouth {
+      border-radius: 0 0 12px 12px;
+      height: 3px;
+    }
+
+    /* 자신의 이름 입력 단계 (모달) */
+    .name-input-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .name-input-overlay.hidden {
+      display: none !important;
+    }
+    .name-input-wrap {
+      position: relative;
+      z-index: 101;
+      background: #fff;
+      border: 3px solid #000;
+      padding: 30px 40px;
+      box-shadow: 6px 6px 0 #000;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .name-input-wrap h3 {
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      color: #1a237e;
+    }
+    .name-input-wrap input {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      padding: 12px 16px;
+      border: 3px solid #000;
+      font-size: 14px;
+      width: 200px;
+      margin-bottom: 16px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .name-input-wrap .pixel-btn {
+      margin-top: 8px;
+    }
+    .firework {
+      position: absolute;
+      width: 6px;
+      height: 6px;
+      background: red;
+      border-radius: 50%;
+      animation: explode 1s ease-out forwards;
+    }
+
+    @keyframes explode {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(15); opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="pixel-bg">
+    <div class="pixel-sky"></div>
+    <div class="pixel-fence"></div>
+    <div class="pixel-grass"></div>
+    <div class="pixel-dirt"></div>
+  </div>
+
+  <!-- 시작 화면 -->
+  <div id="home" class="screen">
+    <p class="subtitle">복음을 전하며 고구마를 키우는</p>
+    <div class="main-title">
+      <span class="word1">고구마</span>
+      <span class="word2"> 전도</span>
+    </div>
+    <div class="btn-row">
+      <button class="pixel-btn" onclick="showNameInput()">시작하기</button>
+      <button class="pixel-btn" onclick="toggleHelp()">사용설명</button>
+    </div>
+    <div id="helpBubble" class="speech-bubble">
+      <ul>
+        <li>고구마 키우기 게임</li>
+        <li>1 자신의 고구마의 이름을 작성해서 추가한다.</li>
+        <li>2 말씀읽기, 만나서 권유하기, 카톡으로 연락하기</li>
+        <li>3 버튼을 눌러 고구마를 키운다!</li>
+      </ul>
+    </div>
+    <div class="char-potato-home">
+      <div class="body">
+        <div class="face">
+          <span class="eye"></span>
+          <span class="eye"></span>
+          <span class="mouth"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 이름 입력 모달 (시작하기 클릭 시 화면 가운데 표시) -->
+  <div id="nameInputStep" class="name-input-overlay hidden">
+    <div class="name-input-wrap">
+      <h3>자신의 이름을 입력하세요</h3>
+      <input type="text" id="userNameInput" placeholder="이름" maxlength="20" onkeypress="if(event.key==='Enter')submitUserName()">
+      <button class="pixel-btn" onclick="submitUserName()">확인</button>
+    </div>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="game" class="screen hidden">
+    <div class="game-header" style="align-items:center;gap:8px">
+      <span id="currentUserName" style="font-size:12px;color:#333"></span>
+      <input id="nameInput" placeholder="고구마 이름">
+      <button class="add-btn" onclick="add()">추가</button>
+      <button class="pixel-btn" onclick="openRanking()">랭킹표 보기</button>
+    </div>
+    <div id="rankingModal" class="speech-bubble hidden">
+        <h3>🏆 고구마 랭킹</h3>
+        <ol id="rankingList"></ol>
+        <button onclick="closeRanking()">닫기</button>
+    </div>
+    <div class="goguma-list" id="gogumaList"></div>
+
+    <div id="detailView" class="hidden">
+      <div class="status-bar">
+        <span class="name" id="statusName"></span>
+        <div class="hp-wrap">
+          <span>HP:</span>
+          <div class="hp-box">
+            <div class="hp-fill" id="statusHpFill" style="width:0%"></div>
+          </div>
+        </div>
+        <div class="arrow"></div>
+      </div>
+      <div class="pot-scene" id="potScene">
+        <div id="heartContainer"></div>
+        <div class="fire"></div>
+        <div class="pot"></div>
+        <div class="steam"></div>
+        <div class="steam steam2"></div>
+        <div class="potato-in-pot">
+          <div class="arm"></div>
+          <div class="body">
+            <div class="face">
+              <span class="eye"></span>
+              <span class="eye"></span>
+              <span class="mouth"></span>
+            </div>
+            <span class="blush left"></span>
+            <span class="blush right"></span>
+          </div>
+        </div>
+      </div>
+      <div class="action-buttons">
+        <button class="pixel-btn btn-mal" onclick="grow(5)">말씀읽기</button>
+        <button class="pixel-btn btn-man" onclick="grow(10)">만나기</button>
+        <button class="pixel-btn btn-yeon" onclick="grow(5)">연락하기</button>
+      </div>
+    </div>
+
+    <p id="noSelectHint" class="subtitle" style="margin-top:40px;color:#1a237e">고구마를 추가한 뒤 목록에서 선택하세요.</p>
+    <div id="detailActions" style="margin-top:20px">
+      <button class="pixel-btn back-btn" onclick="backHome()">처음으로</button>
+      <button class="pixel-btn back-btn hidden" id="btnDelete" onclick="removeSelected()" style="margin-left:10px">삭제</button>
+    </div>
+  </div>
+
+  <script>
+    var MAX = 10;
+    var API = '';
+    var data = [];
+    var selectedIndex = -1;
+    var currentUser = null;
+
+    function fetchJson(url, opts) {
+      return fetch(url, opts)
+        .then(function(r) {
+          return r.text().then(function(text) {
+            try { return { ok: r.ok, data: JSON.parse(text) }; }
+            catch (e) { return { ok: false, data: { error: '서버 응답 오류' } }; }
+          });
+        })
+        .catch(function() { return { ok: false, data: { error: '서버에 연결할 수 없습니다. 터미널에서 npm start 후 http://localhost:3001 으로 접속하세요.'} }; });
+    }
+
+    window.toggleHelp = function() {
+      var el = document.getElementById("helpBubble");
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.showNameInput = function() {
+      var step = document.getElementById("nameInputStep");
+      var input = document.getElementById("userNameInput");
+      if (step) step.classList.remove("hidden");
+      if (input) { input.value = ""; input.focus(); }
+    };
+
+    window.submitUserName = function() {
+      var userName = document.getElementById("userNameInput").value.trim();
+      if (!userName) { alert("이름을 입력해 주세요."); return; }
+      fetchJson(API + '/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: userName }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        currentUser = result.user;
+        data = (result.gogumas || []).map(function(g) { return { id: g.id, name: g.name, hp: g.hp }; });
+        selectedIndex = data.length > 0 ? 0 : -1;
+        document.getElementById("nameInputStep").classList.add("hidden");
+        document.getElementById("home").classList.add("hidden");
+        document.getElementById("game").classList.remove("hidden");
+        document.getElementById("currentUserName").textContent = currentUser.name + "님";
+        render();
+      });
+    };
+
+    function start() {
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("game").classList.remove("hidden");
+      render();
+    }
+
+    function backHome() {
+      document.getElementById("game").classList.add("hidden");
+      document.getElementById("home").classList.remove("hidden");
+      document.getElementById("nameInputStep").classList.add("hidden");
+      document.getElementById("helpBubble").style.display = 'block';
+    };
+    window.backHome = backHome;
+
+    function add() {
+      var name = document.getElementById("nameInput").value.trim();
+      if (!name) { alert("고구마 이름을 입력해 주세요."); return; }
+      if (data.length >= MAX) { alert("최대 10명까지 가능합니다."); return; }
+      fetchJson(API + '/api/goguma/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        var g = result.goguma;
+        if (g) {
+          data.push({ id: g.id, name: g.name, hp: g.hp });
+          document.getElementById("nameInput").value = "";
+          selectedIndex = data.length - 1;
+          render();
+        }
+      const stage = getStage(g.hp);
+      updateBackgroundByStage(stage);
+      render();
+      });
+    }
+    window.add = add;
+
+    function selectGoguma(i) {
+      selectedIndex = i;
+      const stage = getStage(data[i].hp);
+      updateBackgroundByStage(stage);
+      render();
+    }
+    window.selectGoguma = selectGoguma;
+
+    function grow(val) {
+      if (selectedIndex < 0) return;
+      var g = data[selectedIndex];
+      fetchJson(API + '/api/goguma/grow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id, val: val }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        if (result.hp != null) g.hp = result.hp;
+        shootHearts();
+        const stage = getStage(g.hp);
+        updateBackgroundByStage(stage);
+        if (g.hp >= 99) {
+          triggerMaxLevelEffect();
+        }
+        render();
+      });
+    }
+    window.grow = grow;
+
+    function shootHearts() {
+      var container = document.getElementById("heartContainer");
+      if (!container) return;
+      container.innerHTML = "";
+      var hearts = ["❤️", "💕", "💗", "❤️", "💕"];
+      for (var i = 0; i < hearts.length; i++) {
+        var span = document.createElement("span");
+        span.className = "heart-burst";
+        span.textContent = hearts[i];
+        span.style.animationDelay = (i * 60) + "ms";
+        container.appendChild(span);
+      }
+      setTimeout(function() {
+        container.innerHTML = "";
+      }, 1000);
+    }
+
+    function getStage(hp) {
+      if (hp <= 20) return 1;
+      if (hp <= 40) return 2;
+      if (hp <= 60) return 3;
+      if (hp <= 80) return 4;
+      return 5;
+    }
+
+    function getScaleClass(hp) {
+      if (hp <= 20) return "scale-sm";
+      if (hp <= 40) return "scale-md";
+      if (hp <= 60) return "scale-md";
+      if (hp <= 80) return "scale-lg";
+      return "scale-xl";
+    }
+
+    function removeItem(i) {
+      if (!confirm("삭제하시겠습니까?")) return;
+      var g = data[i];
+      fetchJson(API + '/api/goguma/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        data.splice(i, 1);
+        if (selectedIndex >= data.length) selectedIndex = data.length - 1;
+        render();
+      });
+    }
+    window.removeItem = removeItem;
+
+    function removeSelected() {
+      if (selectedIndex < 0) return;
+      if (!confirm("이 고구마를 삭제하시겠습니까?")) return;
+      var g = data[selectedIndex];
+      fetchJson(API + '/api/goguma/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        data.splice(selectedIndex, 1);
+        selectedIndex = data.length > 0 ? 0 : -1;
+        render();
+      });
+    }
+    window.removeSelected = removeSelected;
+    function getStage(hp) {
+      if (hp < 20) return 1;
+      if (hp < 40) return 2;
+      if (hp < 60) return 3;
+      if (hp < 80) return 4;
+      return 5;
+    }
+
+    function updateBackgroundByStage(stage) {
+      const sky = document.querySelector('.pixel-sky');
+
+      const colors = {
+        1: '#6a89cc',   // 새벽
+        2: '#87CEEB',   // 아침
+        3: '#4FC3F7',   // 낮
+        4: '#FFB74D',   // 노을
+        5: '#FFD700'    // 황금빛
+      };
+
+     sky.style.background = colors[stage];
+     render();
+    }
+
+
+    function render() {
+      var listEl = document.getElementById("gogumaList");
+      var detailEl = document.getElementById("detailView");
+      var noHint = document.getElementById("noSelectHint");
+
+      var listHtml = '';
+      data.forEach(function(g, i) {
+        listHtml += '<button type="button" class="goguma-chip ' + (i === selectedIndex ? 'selected' : '') + '" onclick="selectGoguma(' + i + ')">' + g.name + '</button>';
+      });
+      listEl.innerHTML = listHtml;
+
+      if (selectedIndex >= 0 && data[selectedIndex]) {
+        var g = data[selectedIndex];
+        var lv = Math.min(99, Math.floor(g.hp));
+        detailEl.classList.remove("hidden");
+        noHint.style.display = 'none';
+        var btnDel = document.getElementById("btnDelete");
+        if (btnDel) btnDel.classList.remove("hidden");
+        document.getElementById("statusName").textContent = g.name + ':L' + lv;
+        document.getElementById("statusHpFill").style.width = g.hp + '%';
+        var potScene = document.getElementById("potScene");
+        if (potScene) {
+          potScene.classList.remove("stage1", "stage2", "stage3", "stage4", "stage5");
+          potScene.classList.remove("scale-sm", "scale-md", "scale-lg", "scale-xl");
+          potScene.classList.add("stage" + getStage(g.hp));
+          potScene.classList.add(getScaleClass(g.hp));
+        }
+      } else {
+        detailEl.classList.add("hidden");
+        noHint.style.display = 'block';
+        var btnDel = document.getElementById("btnDelete");
+        if (btnDel) btnDel.classList.add("hidden");
+      }
+    }
+    function triggerMaxLevelEffect() {
+      const container = document.querySelector('.pot-scene');
+
+      for (let i = 0; i < 20; i++) {
+        const fw = document.createElement('div');
+        fw.className = 'firework';
+        fw.style.left = Math.random() * 200 + 'px';
+        fw.style.top = Math.random() * 150 + 'px';
+        fw.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
+        container.appendChild(fw);
+
+        setTimeout(() => fw.remove(), 1000);
+      }
+
+    }
+
+    let rankingInterval = null;
+
+    async function fetchRanking() {
+      const res = await fetch('/api/ranking', {
+        cache: 'no-store'
+      });
+
+      const data = await res.json();
+      updateRankingDOM(data);
+    }
+
+  function updateRankingDOM(data) {
+      const list = document.getElementById('rankingList');
+
+      const existingItems = list.querySelectorAll('li');
+
+      data.forEach((r, i) => {
+        const text = `${r.userName} - ${r.gogumaName} (Lv.${r.hp})`;
+
+        if (existingItems[i]) {
+          if (existingItems[i].textContent !== text) {
+            existingItems[i].textContent = text;
+          }
+        } else {
+          const li = document.createElement('li');
+          li.textContent = text;
+          list.appendChild(li);
+        }
+      });
+
+      // 남는 항목 제거
+      while (list.children.length > data.length) {
+        list.removeChild(list.lastChild);
+      }
+    }
+
+    function openRanking() {
+      document.getElementById('rankingModal').classList.remove('hidden');
+      fetchRanking();
+      rankingInterval = setInterval(fetchRanking, 1000);
+    }
+
+    function closeRanking() {
+      document.getElementById('rankingModal').classList.add('hidden');
+      clearInterval(rankingInterval);
+    }
+
+    // 페이지 로드 시 세션 확인 → 재접속 시 자동 로그인
+    (function init() {
+      if (location.protocol === 'file:') {
+        var notice = document.createElement('p');
+        notice.className = 'subtitle';
+        notice.style.cssText = 'margin-top:20px;color:#c62828;font-size:12px;';
+        notice.textContent = '이 앱은 서버에서 실행해야 합니다. 터미널에서 npm start 후 http://localhost:3001 으로 접속하세요.';
+        document.getElementById("home").querySelector('.btn-row').after(notice);
+        return;
+      }
+      fetchJson(API + '/api/me', { credentials: 'include' }).then(function(res) {
+        var result = res.data;
+        if (res.ok && result && result.user && Array.isArray(result.gogumas)) {
+          currentUser = result.user;
+          data = result.gogumas.map(function(g) { return { id: g.id, name: g.name, hp: g.hp }; });
+          selectedIndex = data.length > 0 ? 0 : -1;
+          document.getElementById("home").classList.add("hidden");
+          document.getElementById("game").classList.remove("hidden");
+          document.getElementById("currentUserName").textContent = currentUser.name + "님";
+          render();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
