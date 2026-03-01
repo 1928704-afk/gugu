@@ -51,9 +51,11 @@ db.exec(`
 `);
 
 const ACTION_VALUES = {
-  bible: 5,    // 말씀읽기
-  meeting: 10, // 만나기
-  contact: 5   // 연락하기
+  bible: 1,   // 말씀읽기
+  prayer: 1,  // 기도(부탁)하기
+  contact: 3, // 연락하기
+  meeting: 5, // 만나기
+  invite: 8   // 권유하기
 };
 
 function getTodayDate() {

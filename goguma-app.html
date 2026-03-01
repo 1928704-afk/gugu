@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>고구마 전도</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
     @font-face {
       font-family: 'NeoDunggeunmo';
@@ -536,31 +537,22 @@
     .pot-scene .potato-in-pot .blush.left { left: 8px; }
     .pot-scene .potato-in-pot .blush.right { right: 8px; }
 
-    /* 게임 화면 액션 버튼 3개 */
+    /* 게임 화면 액션 버튼 5개 */
     .action-buttons {
-      position: relative;
-      width: 280px;
-      height: 100px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 320px;
+      max-width: calc(100vw - 40px);
       margin: 0 auto;
-    }
-    .action-buttons .btn-mal {
-      position: absolute;
-      top: 0;
-      left: 0;
-    }
-    .action-buttons .btn-man {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-    }
-    .action-buttons .btn-yeon {
-      position: absolute;
-      top: 0;
-      right: 0;
     }
     .action-buttons .pixel-btn {
       padding: 10px 16px;
       font-size: 12px;
+      width: 100%;
+    }
+    .action-buttons .btn-invite {
+      grid-column: 1 / -1;
     }
 
     .back-btn {
@@ -750,7 +742,7 @@
       <ul>
         <li>고구마 키우기 게임</li>
         <li>1 자신의 고구마의 이름을 작성해서 추가한다.</li>
-        <li>2 말씀읽기, 만나서 권유하기, 카톡으로 연락하기</li>
+        <li>2 말씀읽기, 기도(부탁)하기, 연락하기, 만나기, 권유하기</li>
         <li>3 버튼을 눌러 고구마를 키운다!</li>
       </ul>
     </div>
@@ -854,9 +846,11 @@
         </div>
       </div>
       <div class="action-buttons">
-        <button class="pixel-btn btn-mal" onclick="grow('bible')">말씀읽기</button>
-        <button class="pixel-btn btn-man" onclick="grow('meeting')">만나기</button>
-        <button class="pixel-btn btn-yeon" onclick="grow('contact')">연락하기</button>
+        <button class="pixel-btn btn-mal" onclick="grow('bible')">말씀읽기 (1점)</button>
+        <button class="pixel-btn btn-gi" onclick="grow('prayer')">기도(부탁)하기 (1점)</button>
+        <button class="pixel-btn btn-yeon" onclick="grow('contact')">연락하기 (3점)</button>
+        <button class="pixel-btn btn-man" onclick="grow('meeting')">만나기 (5점)</button>
+        <button class="pixel-btn btn-invite" onclick="grow('invite')">권유하기 (8점)</button>
       </div>
     </div>
 
@@ -864,6 +858,7 @@
     <div id="detailActions" style="margin-top:20px">
       <button class="pixel-btn back-btn" onclick="backHome()">처음으로</button>
       <button class="pixel-btn back-btn hidden" id="btnDelete" onclick="removeSelected()" style="margin-left:10px">삭제</button>
+      <button class="pixel-btn back-btn hidden" id="btnScreenshot" onclick="captureSelectedGoguma()" style="margin-left:10px;font-size:11px;padding:8px 10px">캡쳐</button>
     </div>
   </div>
 
@@ -911,7 +906,9 @@
         var result = res.data;
         if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
         currentUser = result.user;
-        data = (result.gogumas || []).map(function(g) { return { id: g.id, name: g.name, hp: g.hp }; });
+        data = (result.gogumas || []).map(function(g) {
+          return { id: g.id, name: g.name, hp: g.hp };
+        });
         selectedIndex = data.length > 0 ? 0 : -1;
         document.getElementById("nameInputStep").classList.add("hidden");
         document.getElementById("home").classList.add("hidden");
@@ -952,11 +949,10 @@
           data.push({ id: g.id, name: g.name, hp: g.hp });
           document.getElementById("nameInput").value = "";
           selectedIndex = data.length - 1;
+          const stage = getStage(g.hp);
+          updateBackgroundByStage(stage);
           render();
         }
-      const stage = getStage(g.hp);
-      updateBackgroundByStage(stage);
-      render();
       });
     }
     window.add = add;
@@ -1054,6 +1050,48 @@
     }
     window.removeSelected = removeSelected;
 
+    function safeFileName(s) {
+      return String(s || '')
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/\s+/g, '_')
+        .slice(0, 80) || 'goguma';
+    }
+
+    function captureSelectedGoguma() {
+      if (selectedIndex < 0 || !data[selectedIndex]) {
+        alert('캡쳐할 고구마를 먼저 선택해 주세요.');
+        return;
+      }
+      if (typeof html2canvas !== 'function') {
+        alert('캡쳐 기능을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+        return;
+      }
+
+      var g = data[selectedIndex];
+      var target = document.getElementById('detailView');
+      if (!target) {
+        alert('캡쳐할 화면을 찾을 수 없습니다.');
+        return;
+      }
+
+      html2canvas(target, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true
+      }).then(function (canvas) {
+        var a = document.createElement('a');
+        var userPart = currentUser && currentUser.name ? currentUser.name : 'user';
+        a.download = safeFileName(userPart + '-' + g.name + '-goguma') + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      }).catch(function () {
+        alert('캡쳐 중 오류가 발생했습니다.');
+      });
+    }
+
+    window.captureSelectedGoguma = captureSelectedGoguma;
+
     function getStage(hp) {
       if (hp < 20) return 1;
       if (hp < 40) return 2;
@@ -1095,6 +1133,8 @@
         noHint.style.display = 'none';
         var btnDel = document.getElementById("btnDelete");
         if (btnDel) btnDel.classList.remove("hidden");
+        var btnShot = document.getElementById("btnScreenshot");
+        if (btnShot) btnShot.classList.remove("hidden");
         document.getElementById("statusName").textContent = g.name + ':L' + lv;
         document.getElementById("statusHpFill").style.width = g.hp + '%';
         var potScene = document.getElementById("potScene");
@@ -1109,6 +1149,8 @@
         noHint.style.display = 'block';
         var btnDel = document.getElementById("btnDelete");
         if (btnDel) btnDel.classList.add("hidden");
+        var btnShot = document.getElementById("btnScreenshot");
+        if (btnShot) btnShot.classList.add("hidden");
       }
     }
     function triggerMaxLevelEffect() {
