@@ -50,6 +50,23 @@ db.exec(`
   );
 `);
 
+function ensureColumn(tableName, columnName, definition) {
+  const columns = db.prepare(`PRAGMA table_info(${tableName})`).all();
+  const exists = columns.some((column) => column.name === columnName);
+  if (!exists) {
+    db.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`);
+  }
+}
+
+ensureColumn('user_activity', 'total_visit_days', 'INTEGER NOT NULL DEFAULT 1');
+ensureColumn('user_activity', 'rewarded_cycle', 'INTEGER NOT NULL DEFAULT 0');
+
+db.exec(`
+  UPDATE user_activity
+  SET total_visit_days = COALESCE(total_visit_days, 1),
+      rewarded_cycle = COALESCE(rewarded_cycle, 0)
+`);
+
 const ACTION_VALUES = {
   bible: 1,   // 말씀읽기
   prayer: 1,  // 기도(부탁)하기
@@ -76,11 +93,13 @@ function diffDays(from, to) {
 function applyInactivityPenalty(userId) {
   const today = getTodayDate();
   const activityRow = db
-    .prepare('SELECT last_visit_date FROM user_activity WHERE user_id = ?')
+    .prepare('SELECT last_visit_date, total_visit_days, rewarded_cycle FROM user_activity WHERE user_id = ?')
     .get(userId);
 
   if (!activityRow) {
-    db.prepare('INSERT INTO user_activity (user_id, last_visit_date) VALUES (?, ?)').run(
+    db.prepare(
+      'INSERT INTO user_activity (user_id, last_visit_date, total_visit_days, rewarded_cycle) VALUES (?, ?, 1, 0)'
+    ).run(
       userId,
       today
     );
@@ -89,7 +108,7 @@ function applyInactivityPenalty(userId) {
 
   const last = activityRow.last_visit_date;
   if (!last) {
-    db.prepare('UPDATE user_activity SET last_visit_date = ? WHERE user_id = ?').run(
+    db.prepare('UPDATE user_activity SET last_visit_date = ?, total_visit_days = MAX(COALESCE(total_visit_days, 0), 1) WHERE user_id = ?').run(
       today,
       userId
     );
@@ -109,7 +128,39 @@ function applyInactivityPenalty(userId) {
 
   const penalty = 5 * days;
   db.prepare('UPDATE gogumas SET hp = MAX(0, hp - ?) WHERE user_id = ?').run(penalty, userId);
-  db.prepare('UPDATE user_activity SET last_visit_date = ? WHERE user_id = ?').run(today, userId);
+  db.prepare(
+    'UPDATE user_activity SET last_visit_date = ?, total_visit_days = COALESCE(total_visit_days, 1) + 1 WHERE user_id = ?'
+  ).run(today, userId);
+}
+
+function getRewardState(userId) {
+  const activity = db
+    .prepare('SELECT total_visit_days, rewarded_cycle FROM user_activity WHERE user_id = ?')
+    .get(userId);
+
+  const totalVisitDays = activity && activity.total_visit_days ? Number(activity.total_visit_days) : 1;
+  const rewardedCycle = activity && activity.rewarded_cycle ? Number(activity.rewarded_cycle) : 0;
+  const currentCycle = Math.floor(totalVisitDays / 7);
+  const tester = isTester(userId);
+
+  return {
+    totalVisitDays,
+    rewardedCycle,
+    currentCycle,
+    canSpinRoulette: tester ? true : currentCycle > rewardedCycle,
+    nextRouletteAt: Math.ceil(totalVisitDays / 7) * 7 || 7
+  };
+}
+
+function toUserPayload(user) {
+  const rewardState = getRewardState(user.id);
+  return {
+    id: user.id,
+    name: user.name,
+    loginDays: rewardState.totalVisitDays,
+    canSpinRoulette: rewardState.canSpinRoulette,
+    nextRouletteAt: rewardState.nextRouletteAt
+  };
 }
 
 // 세션 (파일 저장 → 재접속·서버 재시작 후에도 유지)
@@ -145,7 +196,7 @@ app.get('/api/me', (req, res) => {
   const gogumas = db
     .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
     .all(user.id);
-  res.json({ user: { id: user.id, name: user.name }, gogumas });
+  res.json({ user: toUserPayload(user), gogumas });
 });
 
 // 시작(로그인): 이름 입력 → 유저 생성/조회, 세션 설정
@@ -167,7 +218,7 @@ app.post('/api/start', (req, res) => {
   const gogumas = db
     .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
     .all(user.id);
-  res.json({ user: { id: user.id, name: user.name }, gogumas });
+  res.json({ user: toUserPayload(user), gogumas });
 });
 
 // 고구마 추가
@@ -259,6 +310,62 @@ app.post('/api/logout', (req, res) => {
   req.session.userId = null;
   req.session.destroy(() => {});
   res.json({ ok: true });
+});
+
+app.post('/api/reward/spin', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const user = db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.session.userId);
+  if (!user) {
+    req.session.userId = null;
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  applyInactivityPenalty(user.id);
+
+  const rewardState = getRewardState(user.id);
+  if (!rewardState.canSpinRoulette) {
+    const remain = Math.max(0, rewardState.nextRouletteAt - rewardState.totalVisitDays);
+    return res.status(400).json({
+      error: remain > 0
+        ? `누적 접속 ${rewardState.nextRouletteAt}일에 룰렛을 돌릴 수 있습니다. (${remain}일 남음)`
+        : '아직 룰렛을 돌릴 수 없습니다.'
+    });
+  }
+
+  const segments = [
+    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 0 },
+    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 1 },
+    { key: 'chupachups', label: '춥파춥스', hpBonus: 3, segmentIndex: 2 },
+    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 3 },
+    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 4 },
+    { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 5 },
+    { key: 'chupachups', label: '춥파춥스', hpBonus: 3, segmentIndex: 6 },
+    { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 7 }
+  ];
+
+  const reward = segments[Math.floor(Math.random() * segments.length)];
+
+  if (reward.hpBonus > 0) {
+    db.prepare('UPDATE gogumas SET hp = MIN(100, hp + ?) WHERE user_id = ?').run(reward.hpBonus, user.id);
+  }
+
+  db.prepare('UPDATE user_activity SET rewarded_cycle = ? WHERE user_id = ?').run(
+    rewardState.currentCycle,
+    user.id
+  );
+
+  const gogumas = db
+    .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
+    .all(user.id);
+
+  res.json({
+    reward,
+    user: toUserPayload(user),
+    gogumas
+  });
 });
 
 // 랭킹 조회

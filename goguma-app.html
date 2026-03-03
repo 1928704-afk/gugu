@@ -13,12 +13,21 @@
       font-display: swap;
     }
 
+    :root {
+      --sky-glow: rgba(135, 206, 235, 0.62);
+      --panel-bg: rgba(255, 248, 233, 0.9);
+      --panel-border: #2b1808;
+      --shadow: 6px 6px 0 rgba(43, 24, 8, 0.95);
+    }
+
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'NeoDunggeunmo', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
+      background: #000;
+      color: #1d1208;
     }
 
     /* 픽셀 배경 */
@@ -26,6 +35,7 @@
       position: fixed;
       inset: 0;
       z-index: 0;
+      background: #000 url('game_images/1.png') center top / contain no-repeat;
     }
     .pixel-sky {
       position: absolute;
@@ -33,7 +43,7 @@
       left: 0;
       right: 0;
       height: 55%;
-      background: #87CEEB;
+      background: transparent;
       image-rendering: pixelated;
       overflow: hidden;
     }
@@ -148,106 +158,74 @@
       to { transform: translateY(12px); }
     }
     .pixel-fence {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 48%;
-      height: 80px;
-      background: repeating-linear-gradient(
-        90deg,
-        #8B4513 0px,
-        #8B4513 4px,
-        #A0522D 4px,
-        #A0522D 8px
-      );
-      border-top: 4px solid #654321;
-      border-bottom: 4px solid #654321;
-      image-rendering: pixelated;
-    }
-    .pixel-fence::before {
-      content: '';
-      position: absolute;
-      top: -8px;
-      left: 0;
-      right: 0;
-      height: 12px;
-      background: #8B4513;
-      border: 2px solid #654321;
+      display: none;
     }
     .pixel-grass {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 38%;
-      background: #228B22;
-      image-rendering: pixelated;
+      display: none;
     }
     .pixel-dirt {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      bottom: 12%;
-      width: 280px;
-      height: 100px;
-      background: #DEB887;
-      border: 3px solid #8B7355;
-      border-radius: 4px;
-      image-rendering: pixelated;
+      display: none;
     }
 
     .screen {
       position: relative;
       z-index: 1;
       min-height: 100vh;
-      padding: 20px;
+      width: min(100%, 480px);
+      margin: 0 auto;
+      padding: 24px 20px 28px;
       display: flex;
       flex-direction: column;
       align-items: center;
+    }
+    .bgm-toggle {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 120;
+      min-width: 44px;
+      padding: 8px 10px;
+      font-size: 11px;
+      line-height: 1;
+      border-radius: 12px;
     }
 
     .hidden { display: none !important; }
 
     /* ========== 시작 화면 ========== */
     #home .subtitle {
-      color: #1a237e;
+      color: #2b1808;
       font-size: 14px;
       margin-top: 50px;
       margin-bottom: 8px;
       letter-spacing: 1px;
+      text-align: center;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.4);
     }
     #home .main-title {
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
-      gap: 4px;
-      margin-bottom: 24px;
-    }
-    #home .main-title .word1 {
-      color: #FFD700;
-      font-size: 36px;
-      text-shadow: 3px 0 0 #000, 0 3px 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
-    }
-    #home .main-title .word2 {
-      color: #fff;
-      font-size: 36px;
-      text-shadow: 3px 0 0 #000, 0 3px 0 #000, -1px 0 0 #000, 0 -1px 0 #000;
+      margin-bottom: 20px;
     }
     #home .btn-row {
       display: flex;
       gap: 16px;
       margin-bottom: 20px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
     }
     .pixel-btn {
       font-family: 'NeoDunggeunmo', sans-serif;
-      background: #FFD700;
-      color: #000;
+      background: #ffd56a;
+      color: #1d1208;
       border: 3px solid #000;
       padding: 12px 24px;
       font-size: 14px;
       cursor: pointer;
       image-rendering: pixelated;
       box-shadow: 4px 4px 0 #000;
+      border-radius: 14px;
     }
     .pixel-btn:hover {
       background: #FFC107;
@@ -260,13 +238,16 @@
     /* 말풍선 (사용설명) */
     .speech-bubble {
       position: relative;
-      background: #fff;
-      border: 3px solid #000;
+      background: var(--panel-bg);
+      border: 4px solid var(--panel-border);
       padding: 20px 24px;
+      width: 100%;
       max-width: 420px;
       text-align: left;
       margin-bottom: 20px;
-      box-shadow: 4px 4px 0 #000;
+      box-shadow: var(--shadow);
+      border-radius: 20px;
+      backdrop-filter: blur(2px);
     }
     .speech-bubble::after {
       content: '';
@@ -274,7 +255,7 @@
       bottom: -20px;
       left: 60px;
       border: 12px solid transparent;
-      border-top-color: #000;
+      border-top-color: var(--panel-border);
     }
     .speech-bubble::before {
       content: '';
@@ -282,7 +263,7 @@
       bottom: -14px;
       left: 64px;
       border: 10px solid transparent;
-      border-top-color: #fff;
+      border-top-color: var(--panel-bg);
       z-index: 1;
     }
     .speech-bubble ul {
@@ -296,42 +277,51 @@
     /* 시작 화면 고구마 캐릭터 */
     .char-potato-home {
       position: absolute;
-      right: 10%;
-      bottom: 25%;
-      width: 100px;
-      height: 120px;
+      right: -6px;
+      bottom: 108px;
+      width: min(34vw, 156px);
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 0 rgba(60, 28, 8, 0.35));
     }
-    .char-potato-home .body {
-      width: 80px;
-      height: 100px;
-      border-radius: 40px 40px 45px 45px;
-      background: linear-gradient(180deg, #FFD700 0%, #FFD700 45%, #6A0DAD 45%, #6A0DAD 100%);
-      border: 3px solid #000;
-      position: relative;
-      margin: 0 auto;
+    .home-logo {
+      width: min(100%, 360px);
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 0 rgba(43, 24, 8, 0.18));
     }
-    .char-potato-home .face {
+    .home-stage-strip {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      margin-top: auto;
+      padding-right: min(28vw, 132px);
+    }
+    .home-stage-strip img {
+      width: 48px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.25));
+    }
+    .floating-deco {
       position: absolute;
-      top: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 50px;
+      width: 58px;
+      opacity: 0.95;
+      image-rendering: pixelated;
+      pointer-events: none;
+      animation: bob 2.8s ease-in-out infinite;
     }
-    .char-potato-home .eye {
-      width: 8px;
-      height: 8px;
-      background: #000;
-      border-radius: 2px;
-      display: inline-block;
-      margin: 0 6px;
+    .floating-deco.left {
+      top: 108px;
+      left: 6px;
     }
-    .char-potato-home .mouth {
-      width: 16px;
-      height: 4px;
-      border-bottom: 3px solid #000;
-      border-radius: 0 0 8px 8px;
-      margin: 6px auto 0;
-      display: block;
+    .floating-deco.right {
+      top: 172px;
+      right: 12px;
+      animation-delay: 0.6s;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
     }
 
     /* ========== 게임 화면 ========== */
@@ -575,7 +565,10 @@
       position: absolute;
       left: 0;
       bottom: 0;
-      font-size: 22px;
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      image-rendering: pixelated;
       opacity: 1;
       animation: heartFly 0.9s ease-out forwards;
     }
@@ -585,7 +578,7 @@
         opacity: 1;
       }
       100% {
-        transform: translate(-50%, -100px) scale(1.2);
+        transform: translate(-50%, -132px) scale(1.45);
         opacity: 0;
       }
     }
@@ -596,10 +589,10 @@
     .heart-burst:nth-child(5) { animation-duration: 0.95s; animation-delay: 70ms; left: 20px; }
 
     /* 레벨별 크기 (pot-scene scale) */
-    .pot-scene.scale-sm { transform: scale(0.75); transform-origin: center bottom; }
-    .pot-scene.scale-md { transform: scale(0.9); transform-origin: center bottom; }
-    .pot-scene.scale-lg { transform: scale(1.05); transform-origin: center bottom; }
-    .pot-scene.scale-xl { transform: scale(1.2); transform-origin: center bottom; }
+    .pot-scene.scale-sm .goguma-stage-image { transform: scale(0.76); }
+    .pot-scene.scale-md .goguma-stage-image { transform: scale(0.9); }
+    .pot-scene.scale-lg .goguma-stage-image { transform: scale(1.02); }
+    .pot-scene.scale-xl .goguma-stage-image { transform: scale(1.14); }
 
     /* 레벨별 고구마 모습 (단계) - 색 + 모양 변화 */
     .pot-scene.stage1 .potato-in-pot .body {
@@ -659,6 +652,751 @@
       width: 18px;
     }
 
+    .modal-heading {
+      margin: 0 0 12px;
+      text-align: center;
+    }
+    .modal-heading img {
+      width: min(100%, 320px);
+      image-rendering: pixelated;
+    }
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 420px;
+      flex-wrap: wrap;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 2px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .player-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      font-size: 12px;
+      color: #3a2514;
+      background: rgba(255,255,255,0.52);
+      border: 3px solid rgba(43, 24, 8, 0.15);
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+    }
+    .player-tag img {
+      width: 18px;
+      height: 18px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .player-tag span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .visit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #5b3a16;
+      background: rgba(255,255,255,0.52);
+      border: 3px solid rgba(43, 24, 8, 0.15);
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+    }
+    .visit-badge img {
+      width: 18px;
+      height: 18px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .modal-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(28, 15, 4, 0.48);
+      backdrop-filter: blur(4px);
+    }
+    .modal-card {
+      max-width: 440px;
+      max-height: min(82vh, 720px);
+      padding: 18px 18px 16px;
+      margin: 0;
+      overflow: auto;
+    }
+    .modal-card::after,
+    .modal-card::before {
+      display: none;
+    }
+    .modal-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .modal-head-row .modal-heading {
+      margin: 0;
+      flex: 1;
+    }
+    .modal-close {
+      flex-shrink: 0;
+      min-width: 64px;
+    }
+    .list-panel {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ranking-item {
+      display: grid;
+      grid-template-columns: 26px 1fr auto 34px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.18);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.58);
+      min-height: 56px;
+    }
+    .ranking-item.is-top {
+      background: linear-gradient(90deg, rgba(255, 213, 106, 0.72) 0%, rgba(255,255,255,0.58) 100%);
+    }
+    .ranking-rank {
+      font-size: 14px;
+      text-align: center;
+      color: #2b1808;
+    }
+    .ranking-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .ranking-user {
+      font-size: 12px;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranking-meta {
+      font-size: 10px;
+      color: #6c4a21;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranking-hp {
+      font-size: 12px;
+      color: #2b1808;
+    }
+    .ranking-stage {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .board-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      border-top: 2px solid rgba(43, 24, 8, 0.3);
+      padding-top: 8px;
+    }
+    .board-item {
+      list-style: none;
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.52);
+      margin-bottom: 8px;
+    }
+    .board-item:last-child {
+      margin-bottom: 0;
+    }
+    .board-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .board-title {
+      min-width: 0;
+      font-size: 12px;
+      font-weight: bold;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .board-content {
+      font-size: 11px;
+      color: #5b3a16;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .roulette-screen {
+      justify-content: flex-start;
+      gap: 18px;
+      padding-top: 40px;
+    }
+    .roulette-topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .roulette-header {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      padding: 4px 0 2px;
+    }
+    .roulette-header h2 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      color: #2b1808;
+      text-shadow: 3px 3px 0 rgba(255,255,255,0.35);
+    }
+    .roulette-header p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #6c4a21;
+    }
+    .roulette-panel {
+      width: 100%;
+      max-width: 420px;
+      padding: 18px;
+      border: 4px solid var(--panel-border);
+      border-radius: 24px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .roulette-status {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: #5b3a16;
+      line-height: 1.6;
+    }
+    .roulette-wheel-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .roulette-pointer {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 20px solid #c33a1f;
+      filter: drop-shadow(0 3px 0 rgba(43, 24, 8, 0.28));
+    }
+    .roulette-wheel {
+      width: min(84vw, 340px);
+      aspect-ratio: 891 / 800;
+      object-fit: contain;
+      image-rendering: pixelated;
+      transform-origin: center center;
+      transition: transform 3.2s cubic-bezier(0.12, 0.9, 0.08, 1);
+      filter: drop-shadow(0 8px 0 rgba(43, 24, 8, 0.18));
+    }
+    .roulette-result {
+      min-height: 62px;
+      padding: 12px 14px;
+      border: 3px solid rgba(43, 24, 8, 0.16);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.55);
+      font-size: 12px;
+      color: #2b1808;
+      line-height: 1.6;
+    }
+    .roulette-result strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    .field-screen {
+      justify-content: flex-start;
+      gap: 16px;
+      padding-top: 34px;
+    }
+    .field-topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .field-panel {
+      width: 100%;
+      max-width: 420px;
+      padding: 16px;
+      border: 4px solid var(--panel-border);
+      border-radius: 24px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: var(--shadow);
+    }
+    .field-panel h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      text-align: center;
+      color: #2b1808;
+    }
+    .field-panel p {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #6c4a21;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .field-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .field-card {
+      position: relative;
+      min-height: 188px;
+      padding: 12px 10px 12px;
+      border: 4px solid rgba(43, 24, 8, 0.14);
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.12) 52%, rgba(119, 74, 30, 0.06) 100%),
+        url('game_images/24.png') center bottom / cover no-repeat;
+      overflow: hidden;
+    }
+    .field-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 42%;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(81, 46, 15, 0.08) 30%, rgba(81, 46, 15, 0.2) 100%),
+        url('game_images/24.png') center bottom / cover no-repeat;
+      opacity: 0.92;
+    }
+    .field-stage-wrap {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 108px;
+      margin-bottom: 10px;
+    }
+    .field-stage-wrap img {
+      width: 84px;
+      max-height: 98px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 6px 0 rgba(43, 24, 8, 0.16));
+    }
+    .field-card-name,
+    .field-card-meta {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+    .field-card-name {
+      font-size: 13px;
+      color: #2b1808;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .field-card-meta {
+      font-size: 11px;
+      color: #6c4a21;
+      line-height: 1.5;
+    }
+    .inline-notice {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 3px solid rgba(43, 24, 8, 0.2);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.58);
+      color: #5b3a16;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .inline-notice.error {
+      background: rgba(255, 235, 233, 0.88);
+      color: #8a1f11;
+    }
+    .inline-notice.success {
+      background: rgba(236, 255, 238, 0.88);
+      color: #205b2f;
+    }
+    .action-tips {
+      width: 100%;
+      margin: 10px auto 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .action-tip {
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.52);
+      color: #5b3a16;
+      text-align: center;
+    }
+    .empty-state {
+      padding: 16px 12px;
+      border: 3px dashed rgba(43, 24, 8, 0.22);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.4);
+      text-align: center;
+      font-size: 12px;
+      color: #6c4a21;
+    }
+    .game-header,
+    #detailView,
+    #detailActions,
+    #noSelectHint {
+      width: 100%;
+      max-width: 420px;
+    }
+    .game-header {
+      background: rgba(255, 248, 233, 0.84);
+      border: 4px solid var(--panel-border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      backdrop-filter: blur(2px);
+      margin-top: 12px;
+    }
+    .goguma-list {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 18px;
+      gap: 8px;
+      justify-content: flex-start;
+    }
+    .goguma-chip {
+      background: rgba(255, 248, 233, 0.9);
+      border-color: var(--panel-border);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 rgba(43, 24, 8, 0.9);
+    }
+    .goguma-chip:hover, .goguma-chip.selected {
+      background: #ffd56a;
+    }
+    .status-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      background: rgba(255, 248, 233, 0.92);
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      padding: 12px 14px;
+      box-shadow: var(--shadow);
+      color: #1d1208;
+      margin-bottom: 12px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .status-icon {
+      width: 22px;
+      height: 22px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .status-bar .name {
+      margin-right: 0;
+      font-size: 13px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-bar .hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .status-bar .hp-box {
+      flex: 1;
+      width: auto;
+      height: 18px;
+      background: #fff7dd;
+      border: 3px solid #000;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .status-bar .hp-fill {
+      background: linear-gradient(90deg, #ff9d00 0%, #ff5252 100%);
+    }
+    .status-bar .arrow {
+      display: none;
+    }
+    .pot-scene {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 280px;
+      margin: 0 auto 14px;
+      padding: 18px 18px 22px;
+      border: 4px solid var(--panel-border);
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255, 248, 233, 0.88) 100%);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .pot-scene::before {
+      content: '';
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 76px;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(82, 45, 18, 0.1) 22%, rgba(82, 45, 18, 0.2) 100%),
+        url('game_images/24.png') center bottom / cover no-repeat;
+      opacity: 0.95;
+    }
+    .stage-frame {
+      position: relative;
+      z-index: 1;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .goguma-stage-image {
+      width: min(58vw, 250px);
+      max-height: 210px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 10px 0 rgba(43, 24, 8, 0.16));
+    }
+    .goguma-nameplate {
+      position: absolute;
+      left: 50%;
+      bottom: 26px;
+      transform: translateX(-50%);
+      z-index: 2;
+      min-width: 120px;
+      max-width: calc(100% - 120px);
+      padding: 6px 12px;
+      border: 3px solid #000;
+      border-radius: 999px;
+      background: rgba(255, 248, 233, 0.95);
+      box-shadow: 3px 3px 0 rgba(43, 24, 8, 0.9);
+      text-align: center;
+      font-size: 12px;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-tool {
+      position: absolute;
+      z-index: 1;
+      width: 56px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.16));
+      opacity: 0.95;
+    }
+    .stage-tool.left {
+      left: 18px;
+      bottom: 18px;
+    }
+    .stage-tool.right {
+      right: 18px;
+      bottom: 18px;
+    }
+    .action-panel {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 14px 12px 12px;
+      border: 4px solid var(--panel-border);
+      border-radius: 22px;
+      background: rgba(255, 248, 233, 0.84);
+      box-shadow: var(--shadow);
+    }
+    .action-panel-title {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: #5b3a16;
+      text-align: center;
+    }
+    .pot-scene-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+    }
+    .celebration-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .celebration-canvas.active {
+      opacity: 1;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+    }
+    .asset-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .asset-btn:hover {
+      transform: translateY(-2px);
+    }
+    .asset-btn:active {
+      transform: translateY(1px);
+    }
+    .asset-btn img {
+      width: 100%;
+      min-width: 56px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.22));
+    }
+    .asset-btn span {
+      margin-top: 6px;
+      font-size: 10px;
+      line-height: 1.2;
+      color: #3f2915;
+      text-align: center;
+      word-break: keep-all;
+    }
+    #noSelectHint {
+      padding: 16px 18px;
+      margin-top: 24px;
+      background: rgba(255, 248, 233, 0.84);
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    body[data-stage="1"] { --sky-glow: rgba(106, 137, 204, 0.72); }
+    body[data-stage="2"] { --sky-glow: rgba(135, 206, 235, 0.62); }
+    body[data-stage="3"] { --sky-glow: rgba(79, 195, 247, 0.54); }
+    body[data-stage="4"] { --sky-glow: rgba(255, 183, 77, 0.48); }
+    body[data-stage="5"] { --sky-glow: rgba(255, 215, 0, 0.45); }
+
+    @media (max-width: 420px) {
+      .screen {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .char-potato-home {
+        bottom: 126px;
+      }
+      .home-stage-strip {
+        gap: 8px;
+      }
+      .home-stage-strip img {
+        width: 40px;
+      }
+      .status-bar .name {
+        font-size: 12px;
+      }
+      .asset-btn img {
+        min-width: 48px;
+      }
+      .toolbar-row,
+      .input-row {
+        align-items: stretch;
+      }
+      .toolbar-actions,
+      .input-row {
+        width: 100%;
+      }
+      .player-tag,
+      .visit-badge {
+        width: 100%;
+        justify-content: center;
+      }
+      .toolbar-actions .pixel-btn,
+      .input-row .add-btn,
+      .input-row input {
+        flex: 1;
+      }
+      .ranking-item {
+        grid-template-columns: 22px 1fr auto 28px;
+        gap: 6px;
+        padding: 7px 8px;
+      }
+      .roulette-header h2 {
+        font-size: 24px;
+      }
+      .roulette-wheel {
+        width: min(88vw, 320px);
+      }
+      .field-grid {
+        grid-template-columns: 1fr;
+      }
+      .action-tips {
+        grid-template-columns: 1fr;
+      }
+      .ranking-hp {
+        font-size: 11px;
+      }
+    }
+
     /* 자신의 이름 입력 단계 (모달) */
     .name-input-overlay {
       position: fixed;
@@ -702,22 +1440,12 @@
     .name-input-wrap .pixel-btn {
       margin-top: 8px;
     }
-    .firework {
-      position: absolute;
-      width: 6px;
-      height: 6px;
-      background: red;
-      border-radius: 50%;
-      animation: explode 1s ease-out forwards;
-    }
-
-    @keyframes explode {
-      0% { transform: scale(1); opacity: 1; }
-      100% { transform: scale(15); opacity: 0; }
-    }
   </style>
 </head>
-<body>
+<body data-stage="2">
+  <audio id="bgmPlayer" src="game_sounds/bgm.mp3" loop preload="auto"></audio>
+  <audio id="buttonEffectPlayer" src="game_sounds/button_effect.mp3" preload="auto"></audio>
+  <button id="bgmToggle" class="pixel-btn bgm-toggle" type="button" onclick="toggleBgm()">BGM ON</button>
   <div class="pixel-bg">
     <div class="pixel-sky">
       <div id="weatherLayer" class="weather-layer"></div>
@@ -729,10 +1457,11 @@
 
   <!-- 시작 화면 -->
   <div id="home" class="screen">
+    <img class="floating-deco left" src="game_images/22.png" alt="">
+    <img class="floating-deco right" src="game_images/22.png" alt="">
     <p class="subtitle">복음을 전하며 고구마를 키우는</p>
     <div class="main-title">
-      <span class="word1">고구마</span>
-      <span class="word2"> 전도</span>
+      <img class="home-logo" src="game_images/3.png" alt="고구마 전도">
     </div>
     <div class="btn-row">
       <button class="pixel-btn" onclick="showNameInput()">시작하기</button>
@@ -746,15 +1475,13 @@
         <li>3 버튼을 눌러 고구마를 키운다!</li>
       </ul>
     </div>
-    <div class="char-potato-home">
-      <div class="body">
-        <div class="face">
-          <span class="eye"></span>
-          <span class="eye"></span>
-          <span class="mouth"></span>
-        </div>
-      </div>
+    <div class="home-stage-strip" aria-hidden="true">
+      <img src="game_images/17.png" alt="">
+      <img src="game_images/18.png" alt="">
+      <img src="game_images/19.png" alt="">
+      <img src="game_images/20.png" alt="">
     </div>
+    <img class="char-potato-home" src="game_images/21.png" alt="대표 고구마">
   </div>
 
   <!-- 이름 입력 모달 (시작하기 클릭 시 화면 가운데 표시) -->
@@ -769,96 +1496,164 @@
   <!-- 게임 화면 -->
   <div id="game" class="screen hidden">
     <div class="game-header">
-      <div style="display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%;max-width:420px;">
-        <span id="currentUserName" style="font-size:12px;color:#333"></span>
-        <div style="display:flex;gap:8px;">
+      <div class="toolbar-row">
+        <div class="player-tag">
+          <img src="game_images/23.png" alt="">
+          <span id="currentUserName"></span>
+        </div>
+        <div class="visit-badge">
+          <img src="game_images/14.png" alt="">
+          <span id="currentUserDays">누적 접속 1일</span>
+        </div>
+        <div class="toolbar-actions">
+          <button class="pixel-btn" id="btnRoulette" style="font-size:12px;padding:6px 10px" onclick="openRoulette()">7일 룰렛</button>
           <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleRanking()">랭킹표 보기</button>
           <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleBoard()">게시판</button>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:2px;width:100%;max-width:420px;">
-        <input id="nameInput" placeholder="고구마 이름" style="flex:1;">
+      <div class="input-row">
+        <input id="nameInput" placeholder="고구마 이름" style="flex:1;" onkeypress="if(event.key==='Enter')add()">
         <button class="add-btn" onclick="add()">추가</button>
       </div>
     </div>
-    <div id="rankingModal" class="speech-bubble hidden">
-      <h3>🏆 고구마 랭킹</h3>
-      <ol id="rankingList"></ol>
-      <button onclick="closeRanking()">닫기</button>
+    <div id="rankingModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'ranking')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 class="modal-heading"><img src="game_images/4.png" alt="전체 리더보드"></h3>
+          <button class="pixel-btn modal-close" onclick="closeRanking()">닫기</button>
+        </div>
+        <ol id="rankingList" class="list-panel"></ol>
+      </div>
     </div>
 
-    <div id="boardModal" class="speech-bubble hidden">
-      <h3>📜 게시판</h3>
-      <div style="margin-bottom:8px;display:flex;justify-content:flex-end;gap:8px;">
-        <button class="pixel-btn" style="font-size:11px;padding:6px 10px" onclick="togglePostForm()">작성하기</button>
+    <div id="boardModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'board')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 style="margin:0;">📜 게시판</h3>
+          <button class="pixel-btn modal-close" onclick="closeBoard()">닫기</button>
+        </div>
+        <div style="margin-bottom:8px;display:flex;justify-content:flex-end;gap:8px;">
+          <button class="pixel-btn" style="font-size:11px;padding:6px 10px" onclick="togglePostForm()">작성하기</button>
+        </div>
+        <div id="boardForm" class="hidden" style="margin-bottom:12px">
+          <input
+            id="boardTitle"
+            placeholder="제목"
+            maxlength="100"
+            style="width:100%;margin-bottom:6px;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
+          >
+          <textarea
+            id="boardContent"
+            placeholder="내용을 적어 주세요."
+            maxlength="1000"
+            rows="4"
+            style="width:100%;resize:none;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
+          ></textarea>
+          <button class="pixel-btn" style="margin-top:6px;font-size:12px;padding:6px 12px" onclick="submitPost()">등록</button>
+        </div>
+        <div class="board-scroll">
+          <ul id="boardList" class="list-panel"></ul>
+        </div>
       </div>
-      <div id="boardForm" class="hidden" style="margin-bottom:12px">
-        <input
-          id="boardTitle"
-          placeholder="제목"
-          maxlength="100"
-          style="width:100%;margin-bottom:6px;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
-        >
-        <textarea
-          id="boardContent"
-          placeholder="내용을 적어 주세요."
-          maxlength="1000"
-          rows="4"
-          style="width:100%;resize:none;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
-        ></textarea>
-        <button class="pixel-btn" style="margin-top:6px;font-size:12px;padding:6px 12px" onclick="submitPost()">등록</button>
-      </div>
-      <div style="max-height:200px;overflow-y:auto;border-top:2px solid #000;padding-top:6px">
-        <ul id="boardList" style="list-style:none;padding-left:0;margin:0;font-size:12px;"></ul>
-      </div>
-      <button class="pixel-btn" style="margin-top:10px;font-size:11px;padding:6px 12px" onclick="closeBoard()">닫기</button>
     </div>
     <div class="goguma-list" id="gogumaList"></div>
 
+    <div id="fieldDetailView" class="field-panel hidden" style="margin-top: 8px;">
+      <h2>나의 밭</h2>
+      <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
+      <div id="inlineFieldGrid" class="field-grid"></div>
+    </div>
+
     <div id="detailView" class="hidden">
       <div class="status-bar">
-        <span class="name" id="statusName"></span>
+        <div class="status-pill">
+          <img class="status-icon" src="game_images/15.png" alt="">
+          <span class="name" id="statusName"></span>
+        </div>
+        <div class="status-pill">
+          <img class="status-icon" src="game_images/14.png" alt="">
+          <span id="statusStageText">성장 1단계</span>
+        </div>
         <div class="hp-wrap">
-          <span>HP:</span>
+          <img class="status-icon" src="game_images/13.png" alt="">
+          <span>HP</span>
           <div class="hp-box">
             <div class="hp-fill" id="statusHpFill" style="width:0%"></div>
           </div>
         </div>
-        <div class="arrow"></div>
       </div>
       <div class="pot-scene" id="potScene">
         <div id="heartContainer"></div>
-        <div class="fire"></div>
-        <div class="pot"></div>
-        <div class="steam"></div>
-        <div class="steam steam2"></div>
-        <div class="potato-in-pot">
-          <div class="arm"></div>
-          <div class="body">
-            <div class="face">
-              <span class="eye"></span>
-              <span class="eye"></span>
-              <span class="mouth"></span>
-            </div>
-            <span class="blush left"></span>
-            <span class="blush right"></span>
-          </div>
+        <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
+        <div class="pot-scene-actions">
+          <button class="pixel-btn hidden" id="btnDelete" onclick="removeSelected()" style="font-size:11px;padding:8px 12px">삭제</button>
         </div>
+        <div class="stage-frame">
+          <img id="gogumaStageImage" class="goguma-stage-image" src="game_images/17.png" alt="고구마 단계">
+        </div>
+        <div id="gogumaNameplate" class="goguma-nameplate">고구마 이름</div>
+        <img class="stage-tool left" src="game_images/11.png" alt="">
+        <img class="stage-tool right" src="game_images/12.png" alt="">
       </div>
-      <div class="action-buttons">
-        <button class="pixel-btn btn-mal" onclick="grow('bible')">말씀읽기 (1점)</button>
-        <button class="pixel-btn btn-gi" onclick="grow('prayer')">기도(부탁)하기 (1점)</button>
-        <button class="pixel-btn btn-yeon" onclick="grow('contact')">연락하기 (3점)</button>
-        <button class="pixel-btn btn-man" onclick="grow('meeting')">만나기 (5점)</button>
-        <button class="pixel-btn btn-invite" onclick="grow('invite')">권유하기 (8점)</button>
+      <div class="action-panel">
+        <p class="action-panel-title">오늘의 성장 행동</p>
+        <div class="action-buttons">
+          <button class="asset-btn" onclick="grow('bible')"><img src="game_images/6.png" alt="말씀읽기 (+1)"><span>말씀 +1</span></button>
+          <button class="asset-btn" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
+          <button class="asset-btn" onclick="grow('contact')"><img src="game_images/8.png" alt="연락 (+3)"><span>연락 +3</span></button>
+          <button class="asset-btn" onclick="grow('meeting')"><img src="game_images/9.png" alt="만남권유 (+5)"><span>만남 +5</span></button>
+          <button class="asset-btn" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>초대 +8</span></button>
+        </div>
+        <div class="action-tips">
+          <div class="action-tip">행동 카드는 하루에 1번씩만 사용할 수 있습니다.</div>
+          <div class="action-tip">고구마 칩을 눌러 다른 캐릭터로 바로 전환할 수 있습니다.</div>
+        </div>
       </div>
     </div>
 
-    <p id="noSelectHint" class="subtitle" style="margin-top:40px;color:#1a237e">고구마를 추가한 뒤 목록에서 선택하세요.</p>
+    <p id="noSelectHint" class="subtitle" style="margin-top:40px;">고구마를 추가한 뒤 목록에서 선택하세요.</p>
+    <div id="inlineNotice" class="inline-notice">고구마를 선택하면 성장 상태와 행동 카드를 바로 사용할 수 있습니다.</div>
     <div id="detailActions" style="margin-top:20px">
       <button class="pixel-btn back-btn" onclick="backHome()">처음으로</button>
-      <button class="pixel-btn back-btn hidden" id="btnDelete" onclick="removeSelected()" style="margin-left:10px">삭제</button>
       <button class="pixel-btn back-btn hidden" id="btnScreenshot" onclick="captureSelectedGoguma()" style="margin-left:10px;font-size:11px;padding:8px 10px">캡쳐</button>
+    </div>
+  </div>
+
+  <div id="fieldView" class="screen field-screen hidden">
+    <div class="field-topbar">
+      <button class="pixel-btn" onclick="closeFieldView()">뒤로</button>
+      <div class="visit-badge">
+        <img src="game_images/14.png" alt="">
+        <span id="fieldDays">누적 접속 1일</span>
+      </div>
+    </div>
+    <div class="field-panel">
+      <h2>나의 밭</h2>
+      <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
+      <div id="fieldGrid" class="field-grid"></div>
+    </div>
+  </div>
+
+  <div id="roulette" class="screen roulette-screen hidden">
+    <div class="roulette-topbar">
+      <button class="pixel-btn" onclick="closeRoulette()">뒤로</button>
+      <div class="visit-badge">
+        <img src="game_images/14.png" alt="">
+        <span id="rouletteDays">누적 접속 1일</span>
+      </div>
+    </div>
+    <div class="roulette-header">
+      <h2>7일 보상 룰렛</h2>
+      <p>누적 접속 7일마다 한 번 돌릴 수 있습니다.</p>
+    </div>
+    <div class="roulette-panel">
+      <p id="rouletteStatus" class="roulette-status">누적 접속 7일이 되면 룰렛을 돌릴 수 있습니다.</p>
+      <div class="roulette-wheel-wrap">
+        <div class="roulette-pointer" aria-hidden="true"></div>
+        <img id="rouletteWheel" class="roulette-wheel" src="game_images/5.png" alt="룰렛">
+      </div>
+      <button id="spinRouletteBtn" class="pixel-btn" onclick="spinRoulette()">룰렛 돌리기</button>
+      <div id="rouletteResult" class="roulette-result" style="margin-top:16px;">아직 룰렛 결과가 없습니다.</div>
     </div>
   </div>
 
@@ -868,6 +1663,21 @@
     var data = [];
     var selectedIndex = -1;
     var currentUser = null;
+    var currentViewMode = 'field';
+    var bgmEnabled = true;
+    var lastRouletteReward = null;
+    var isRouletteSpinning = false;
+    var rouletteRotation = 0;
+    var fireworkFrameId = null;
+    var fireworkStopTimer = null;
+    var fireworkParticles = [];
+    var STAGE_ASSETS = {
+      1: 'game_images/17.png',
+      2: 'game_images/18.png',
+      3: 'game_images/19.png',
+      4: 'game_images/20.png',
+      5: 'game_images/21.png'
+    };
     let rankingInterval = null;
     let boardInterval = null;
 
@@ -881,6 +1691,171 @@
         })
         .catch(function() { return { ok: false, data: { error: '서버에 연결할 수 없습니다. 터미널에서 npm start 후 http://localhost:3001 으로 접속하세요.'} }; });
     }
+
+    function syncBgmButton() {
+      var btn = document.getElementById('bgmToggle');
+      if (!btn) return;
+      btn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF';
+    }
+
+    function tryPlayBgm() {
+      var player = document.getElementById('bgmPlayer');
+      if (!player || !bgmEnabled) return;
+      player.volume = 0.35;
+      var playPromise = player.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function() {});
+      }
+    }
+
+    function toggleBgm() {
+      var player = document.getElementById('bgmPlayer');
+      bgmEnabled = !bgmEnabled;
+      syncBgmButton();
+      if (!player) return;
+      if (bgmEnabled) {
+        tryPlayBgm();
+      } else {
+        player.pause();
+      }
+    }
+    window.toggleBgm = toggleBgm;
+
+    function playButtonEffect() {
+      var player = document.getElementById('buttonEffectPlayer');
+      if (!player) return;
+      try {
+        player.pause();
+        player.currentTime = 0;
+      } catch (e) {}
+      var playPromise = player.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function() {});
+      }
+    }
+
+    function setCurrentUser(user) {
+      currentUser = user || null;
+
+      var userNameEl = document.getElementById("currentUserName");
+      var userDaysEl = document.getElementById("currentUserDays");
+      var rouletteDaysEl = document.getElementById("rouletteDays");
+      var fieldDaysEl = document.getElementById("fieldDays");
+      var rouletteBtn = document.getElementById("btnRoulette");
+
+      if (userNameEl) {
+        userNameEl.textContent = currentUser ? (currentUser.name + "님") : "";
+      }
+
+      var loginDays = currentUser && currentUser.loginDays ? currentUser.loginDays : 1;
+      var dayText = "누적 접속 " + loginDays + "일";
+
+      if (userDaysEl) userDaysEl.textContent = dayText;
+      if (rouletteDaysEl) rouletteDaysEl.textContent = dayText;
+      if (fieldDaysEl) fieldDaysEl.textContent = dayText;
+
+      if (rouletteBtn) {
+        rouletteBtn.disabled = !currentUser;
+        if (!currentUser) {
+          rouletteBtn.textContent = "7일 룰렛";
+        } else if (currentUser.canSpinRoulette) {
+          rouletteBtn.textContent = "7일 룰렛";
+        } else {
+          var remain = Math.max(0, (currentUser.nextRouletteAt || 7) - loginDays);
+          rouletteBtn.textContent = remain > 0 ? ("룰렛 D-" + remain) : "7일 룰렛";
+        }
+      }
+    }
+
+    function setInlineNotice(message, tone) {
+      var notice = document.getElementById('inlineNotice');
+      if (!notice) return;
+      notice.textContent = message;
+      notice.className = 'inline-notice' + (tone ? (' ' + tone) : '');
+    }
+
+    function renderRoulette() {
+      var statusEl = document.getElementById("rouletteStatus");
+      var resultEl = document.getElementById("rouletteResult");
+      var spinBtn = document.getElementById("spinRouletteBtn");
+
+      if (!statusEl || !resultEl || !spinBtn) return;
+
+      if (!currentUser) {
+        statusEl.textContent = "로그인 후 룰렛을 사용할 수 있습니다.";
+        spinBtn.disabled = true;
+      } else if (currentUser.canSpinRoulette) {
+        statusEl.textContent = "누적 접속 " + currentUser.loginDays + "일 달성. 지금 룰렛을 돌릴 수 있습니다.";
+        spinBtn.disabled = isRouletteSpinning;
+      } else {
+        var remain = Math.max(0, (currentUser.nextRouletteAt || 7) - (currentUser.loginDays || 1));
+        statusEl.textContent = "누적 접속 " + (currentUser.nextRouletteAt || 7) + "일에 룰렛이 열립니다. " + remain + "일 더 접속해 주세요.";
+        spinBtn.disabled = true;
+      }
+
+      if (lastRouletteReward) {
+        var bonusText = lastRouletteReward.hpBonus > 0
+          ? ("내 고구마 전체 HP +" + lastRouletteReward.hpBonus)
+          : "이번에는 보너스가 없습니다.";
+        resultEl.innerHTML = "<strong>" + lastRouletteReward.label + "</strong>" + bonusText;
+      } else {
+        resultEl.textContent = "아직 룰렛 결과가 없습니다.";
+      }
+    }
+
+    function renderFieldView() {
+      var grids = [
+        document.getElementById('inlineFieldGrid'),
+        document.getElementById('fieldGrid')
+      ];
+
+      grids.forEach(function(grid) {
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        if (!data.length) {
+          var empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = '아직 심어진 고구마가 없습니다. 먼저 고구마를 추가해 주세요.';
+          grid.appendChild(empty);
+          return;
+        }
+
+        data.forEach(function(g) {
+          var stage = getStage(g.hp);
+          var card = document.createElement('div');
+          card.className = 'field-card';
+
+          var stageWrap = document.createElement('div');
+          stageWrap.className = 'field-stage-wrap';
+
+          var img = document.createElement('img');
+          img.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+          img.alt = g.name + ' 성장 상태';
+
+          var name = document.createElement('div');
+          name.className = 'field-card-name';
+          name.textContent = g.name;
+
+          var meta = document.createElement('div');
+          meta.className = 'field-card-meta';
+          meta.textContent = '성장 ' + stage + '단계 · HP ' + g.hp;
+
+          stageWrap.appendChild(img);
+          card.appendChild(stageWrap);
+          card.appendChild(name);
+          card.appendChild(meta);
+          grid.appendChild(card);
+        });
+      });
+    }
+
+    function handleModalBackdropClick(event, target) {
+      if (!event || event.target !== event.currentTarget) return;
+      if (target === 'ranking') closeRanking();
+      if (target === 'board') closeBoard();
+    }
+    window.handleModalBackdropClick = handleModalBackdropClick;
 
     window.toggleHelp = function() {
       var el = document.getElementById("helpBubble");
@@ -905,15 +1880,18 @@
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
-        currentUser = result.user;
+        setCurrentUser(result.user);
         data = (result.gogumas || []).map(function(g) {
           return { id: g.id, name: g.name, hp: g.hp };
         });
+        currentViewMode = 'field';
         selectedIndex = data.length > 0 ? 0 : -1;
         document.getElementById("nameInputStep").classList.add("hidden");
         document.getElementById("home").classList.add("hidden");
         document.getElementById("game").classList.remove("hidden");
-        document.getElementById("currentUserName").textContent = currentUser.name + "님";
+        document.getElementById("fieldView").classList.add("hidden");
+        document.getElementById("roulette").classList.add("hidden");
+        setInlineNotice("플레이를 시작했습니다. 고구마를 추가하거나 기존 캐릭터를 선택해 주세요.", "");
         render();
       });
     };
@@ -925,6 +1903,8 @@
     }
 
     function backHome() {
+      closeRoulette();
+      closeFieldView();
       document.getElementById("game").classList.add("hidden");
       document.getElementById("home").classList.remove("hidden");
       document.getElementById("nameInputStep").classList.add("hidden");
@@ -934,8 +1914,8 @@
 
     function add() {
       var name = document.getElementById("nameInput").value.trim();
-      if (!name) { alert("고구마 이름을 입력해 주세요."); return; }
-      if (data.length >= MAX) { alert("최대 10명까지 가능합니다."); return; }
+      if (!name) { setInlineNotice("고구마 이름을 입력해 주세요.", "error"); return; }
+      if (data.length >= MAX) { setInlineNotice("최대 10명까지 가능합니다.", "error"); return; }
       fetchJson(API + '/api/goguma/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -943,14 +1923,16 @@
         credentials: 'include'
       }).then(function(res) {
         var result = res.data;
-        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
         var g = result.goguma;
         if (g) {
           data.push({ id: g.id, name: g.name, hp: g.hp });
           document.getElementById("nameInput").value = "";
+          currentViewMode = 'detail';
           selectedIndex = data.length - 1;
           const stage = getStage(g.hp);
           updateBackgroundByStage(stage);
+          setInlineNotice(g.name + " 고구마를 추가했습니다. 행동 카드를 눌러 성장시켜 보세요.", "success");
           render();
         }
       });
@@ -959,6 +1941,7 @@
 
     function selectGoguma(i) {
       selectedIndex = i;
+      currentViewMode = 'detail';
       const stage = getStage(data[i].hp);
       updateBackgroundByStage(stage);
       render();
@@ -967,6 +1950,7 @@
 
     function grow(actionType) {
       if (selectedIndex < 0) return;
+      playButtonEffect();
       var g = data[selectedIndex];
       fetchJson(API + '/api/goguma/grow', {
         method: 'POST',
@@ -975,11 +1959,12 @@
         credentials: 'include'
       }).then(function(res) {
         var result = res.data;
-        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
         if (result.hp != null) g.hp = result.hp;
         shootHearts();
         const stage = getStage(g.hp);
         updateBackgroundByStage(stage);
+        setInlineNotice(g.name + "에게 행동을 적용했습니다. 현재 HP " + g.hp + "입니다.", "success");
         if (g.hp >= 99) {
           triggerMaxLevelEffect();
         }
@@ -992,17 +1977,113 @@
       var container = document.getElementById("heartContainer");
       if (!container) return;
       container.innerHTML = "";
-      var hearts = ["❤️", "💕", "💗", "❤️", "💕"];
-      for (var i = 0; i < hearts.length; i++) {
-        var span = document.createElement("span");
-        span.className = "heart-burst";
-        span.textContent = hearts[i];
-        span.style.animationDelay = (i * 60) + "ms";
-        container.appendChild(span);
+      for (var i = 0; i < 5; i++) {
+        var heart = document.createElement("img");
+        heart.className = "heart-burst";
+        heart.src = "game_images/13.png";
+        heart.alt = "";
+        heart.style.animationDelay = (i * 60) + "ms";
+        container.appendChild(heart);
       }
       setTimeout(function() {
         container.innerHTML = "";
       }, 1000);
+    }
+
+    function startCardFireworks() {
+      var canvas = document.getElementById('celebrationCanvas');
+      var scene = document.getElementById('potScene');
+      if (!canvas || !scene) return;
+
+      var rect = scene.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      var dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      canvas.classList.add('active');
+      fireworkParticles = [];
+
+      if (fireworkFrameId) {
+        cancelAnimationFrame(fireworkFrameId);
+        fireworkFrameId = null;
+      }
+      if (fireworkStopTimer) {
+        clearTimeout(fireworkStopTimer);
+      }
+
+      function createBurst() {
+        var xPoint = Math.random() * (rect.width - 80) + 40;
+        var yPoint = Math.random() * (rect.height * 0.45) + 30;
+        var count = Math.floor(Math.random() * 26) + 44;
+        var color = 'rgb(' +
+          (~~(Math.random() * 200 + 55)) + ',' +
+          (~~(Math.random() * 200 + 55)) + ',' +
+          (~~(Math.random() * 200 + 55)) + ')';
+
+        for (var i = 0; i < count; i++) {
+          var vx = (Math.random() - 0.5) * 6.8;
+          var vy = (Math.random() - 0.5) * 6.8;
+          fireworkParticles.push({
+            x: xPoint,
+            y: yPoint,
+            vx: vx,
+            vy: vy,
+            size: Math.random() * 2.6 + 1,
+            alpha: Math.random() * 0.4 + 0.6,
+            color: color
+          });
+        }
+      }
+
+      createBurst();
+      createBurst();
+
+      function frame() {
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.globalCompositeOperation = 'lighter';
+
+        var alive = [];
+        for (var i = 0; i < fireworkParticles.length; i++) {
+          var p = fireworkParticles[i];
+          p.x += p.vx;
+          p.vy += 0.05;
+          p.y += p.vy;
+          p.alpha -= 0.012;
+
+          if (p.alpha <= 0 || p.x < -10 || p.x > rect.width + 10 || p.y > rect.height + 10) {
+            continue;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.fillStyle = p.color;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          alive.push(p);
+        }
+
+        fireworkParticles = alive;
+
+        if (fireworkParticles.length > 0) {
+          fireworkFrameId = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas.classList.remove('active');
+          fireworkFrameId = null;
+        }
+      }
+
+      fireworkFrameId = requestAnimationFrame(frame);
+      fireworkStopTimer = setTimeout(function() {
+        fireworkParticles = [];
+      }, 1800);
     }
 
     function getScaleClass(hp) {
@@ -1092,6 +2173,91 @@
 
     window.captureSelectedGoguma = captureSelectedGoguma;
 
+    function openRoulette() {
+      if (!currentUser) return;
+      document.getElementById("game").classList.add("hidden");
+      document.getElementById("fieldView").classList.add("hidden");
+      document.getElementById("roulette").classList.remove("hidden");
+      renderRoulette();
+    }
+    window.openRoulette = openRoulette;
+
+    function closeRoulette() {
+      document.getElementById("roulette").classList.add("hidden");
+      if (!document.getElementById("home").classList.contains("hidden")) return;
+      document.getElementById("game").classList.remove("hidden");
+    }
+    window.closeRoulette = closeRoulette;
+
+    function openFieldView() {
+      if (!currentUser) return;
+      currentViewMode = 'field';
+      document.getElementById("roulette").classList.add("hidden");
+      document.getElementById("fieldView").classList.add("hidden");
+      document.getElementById("game").classList.remove("hidden");
+      render();
+    }
+    window.openFieldView = openFieldView;
+
+    function closeFieldView() {
+      document.getElementById("fieldView").classList.add("hidden");
+      if (!document.getElementById("home").classList.contains("hidden")) return;
+      if (!document.getElementById("roulette").classList.contains("hidden")) return;
+      document.getElementById("game").classList.remove("hidden");
+    }
+    window.closeFieldView = closeFieldView;
+
+    function spinRoulette() {
+      if (!currentUser || !currentUser.canSpinRoulette || isRouletteSpinning) {
+        return;
+      }
+
+      var wheel = document.getElementById("rouletteWheel");
+      var spinBtn = document.getElementById("spinRouletteBtn");
+      isRouletteSpinning = true;
+      if (spinBtn) spinBtn.disabled = true;
+
+      fetchJson(API + '/api/reward/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          isRouletteSpinning = false;
+          alert(result.error || '룰렛 처리 중 오류가 발생했습니다.');
+          renderRoulette();
+          return;
+        }
+
+        var reward = result.reward || null;
+        var segmentIndex = reward && typeof reward.segmentIndex === 'number' ? reward.segmentIndex : 0;
+        var segmentAngle = 360 / 8;
+        var segmentCenter = (segmentIndex * segmentAngle) + (segmentAngle / 2);
+        var settleAngle = (360 - segmentCenter) % 360;
+        var extraTurns = 360 * (4 + Math.floor(Math.random() * 2));
+        rouletteRotation += extraTurns + settleAngle;
+
+        if (wheel) {
+          wheel.style.transform = 'rotate(' + rouletteRotation + 'deg)';
+        }
+
+        var finalize = function() {
+          isRouletteSpinning = false;
+          lastRouletteReward = reward;
+          setCurrentUser(result.user || currentUser);
+          data = (result.gogumas || data).map(function(g) {
+            return { id: g.id, name: g.name, hp: g.hp };
+          });
+          render();
+          renderRoulette();
+        };
+
+        setTimeout(finalize, 3200);
+      });
+    }
+    window.spinRoulette = spinRoulette;
+
     function getStage(hp) {
       if (hp < 20) return 1;
       if (hp < 40) return 2;
@@ -1101,34 +2267,42 @@
     }
 
     function updateBackgroundByStage(stage) {
-      const sky = document.querySelector('.pixel-sky');
-
-      const colors = {
-        1: '#6a89cc',   // 새벽
-        2: '#87CEEB',   // 아침
-        3: '#4FC3F7',   // 낮
-        4: '#FFB74D',   // 노을
-        5: '#FFD700'    // 황금빛
-      };
-
-      sky.style.background = colors[stage];
+      document.body.setAttribute('data-stage', String(stage));
     }
 
 
     function render() {
       var listEl = document.getElementById("gogumaList");
       var detailEl = document.getElementById("detailView");
+      var fieldDetailEl = document.getElementById("fieldDetailView");
       var noHint = document.getElementById("noSelectHint");
 
-      var listHtml = '';
+      var isFieldOpen = currentViewMode === 'field';
+      var listHtml = '<button type="button" class="goguma-chip ' + (isFieldOpen ? 'selected' : '') + '" onclick="openFieldView()">전체 고구마</button>';
       data.forEach(function(g, i) {
-        listHtml += '<button type="button" class="goguma-chip ' + (i === selectedIndex ? 'selected' : '') + '" onclick="selectGoguma(' + i + ')">' + g.name + '</button>';
+        listHtml += '<button type="button" class="goguma-chip ' + (!isFieldOpen && i === selectedIndex ? 'selected' : '') + '" onclick="selectGoguma(' + i + ')">' + g.name + '</button>';
       });
       listEl.innerHTML = listHtml;
+      renderFieldView();
 
-      if (selectedIndex >= 0 && data[selectedIndex]) {
+      if (isFieldOpen) {
+        if (fieldDetailEl) fieldDetailEl.classList.remove("hidden");
+        detailEl.classList.add("hidden");
+        noHint.style.display = 'none';
+        var btnDelField = document.getElementById("btnDelete");
+        if (btnDelField) btnDelField.classList.add("hidden");
+        var btnShotField = document.getElementById("btnScreenshot");
+        if (btnShotField) btnShotField.classList.add("hidden");
+        updateBackgroundByStage(selectedIndex >= 0 && data[selectedIndex] ? getStage(data[selectedIndex].hp) : 2);
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice("전체 고구마의 성장 상태를 보고 있습니다. 이름 칩을 누르면 개별 카드로 전환됩니다.", "");
+        }
+      } else if (selectedIndex >= 0 && data[selectedIndex]) {
+        if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
         var g = data[selectedIndex];
         var lv = Math.min(99, Math.floor(g.hp));
+        var stage = getStage(g.hp);
         detailEl.classList.remove("hidden");
         noHint.style.display = 'none';
         var btnDel = document.getElementById("btnDelete");
@@ -1136,36 +2310,46 @@
         var btnShot = document.getElementById("btnScreenshot");
         if (btnShot) btnShot.classList.remove("hidden");
         document.getElementById("statusName").textContent = g.name + ':L' + lv;
+        document.getElementById("statusStageText").textContent = '성장 ' + stage + '단계';
         document.getElementById("statusHpFill").style.width = g.hp + '%';
+        var nameplate = document.getElementById("gogumaNameplate");
+        if (nameplate) {
+          nameplate.textContent = g.name;
+        }
+        var stageImage = document.getElementById("gogumaStageImage");
+        if (stageImage) {
+          stageImage.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+          stageImage.alt = g.name + ' 성장 단계';
+        }
+        updateBackgroundByStage(stage);
         var potScene = document.getElementById("potScene");
         if (potScene) {
           potScene.classList.remove("stage1", "stage2", "stage3", "stage4", "stage5");
           potScene.classList.remove("scale-sm", "scale-md", "scale-lg", "scale-xl");
-          potScene.classList.add("stage" + getStage(g.hp));
+          potScene.classList.add("stage" + stage);
           potScene.classList.add(getScaleClass(g.hp));
         }
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice(g.name + "을(를) 선택했습니다. 아래 행동 카드로 바로 성장시킬 수 있습니다.", "");
+        }
       } else {
+        if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
         detailEl.classList.add("hidden");
         noHint.style.display = 'block';
         var btnDel = document.getElementById("btnDelete");
         if (btnDel) btnDel.classList.add("hidden");
         var btnShot = document.getElementById("btnScreenshot");
         if (btnShot) btnShot.classList.add("hidden");
+        updateBackgroundByStage(2);
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice("고구마를 추가한 뒤 칩을 눌러 캐릭터를 선택해 주세요.", "");
+        }
       }
     }
     function triggerMaxLevelEffect() {
-      const container = document.querySelector('.pot-scene');
-
-      for (let i = 0; i < 20; i++) {
-        const fw = document.createElement('div');
-        fw.className = 'firework';
-        fw.style.left = Math.random() * 200 + 'px';
-        fw.style.top = Math.random() * 150 + 'px';
-        fw.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
-        container.appendChild(fw);
-
-        setTimeout(() => fw.remove(), 1000);
-      }
+      startCardFireworks();
     }
 
     async function fetchRanking() {
@@ -1179,27 +2363,54 @@
 
   function updateRankingDOM(data) {
       const list = document.getElementById('rankingList');
+      if (!list) return;
+      list.innerHTML = '';
 
-      const existingItems = list.querySelectorAll('li');
+      if (!Array.isArray(data) || data.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'empty-state';
+        empty.textContent = '아직 등록된 고구마가 없습니다.';
+        list.appendChild(empty);
+        return;
+      }
 
       data.forEach((r, i) => {
-        const text = `${r.userName} - ${r.gogumaName} (Lv.${r.hp})`;
+        const stage = getStage(Number(r.hp) || 0);
+        const li = document.createElement('li');
+        li.className = 'ranking-item' + (i === 0 ? ' is-top' : '');
 
-        if (existingItems[i]) {
-          if (existingItems[i].textContent !== text) {
-            existingItems[i].textContent = text;
-          }
-        } else {
-          const li = document.createElement('li');
-          li.textContent = text;
-          list.appendChild(li);
-        }
+        const rank = document.createElement('span');
+        rank.className = 'ranking-rank';
+        rank.textContent = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
+
+        const main = document.createElement('div');
+        main.className = 'ranking-main';
+
+        const user = document.createElement('span');
+        user.className = 'ranking-user';
+        user.textContent = r.userName || '익명';
+
+        const meta = document.createElement('span');
+        meta.className = 'ranking-meta';
+        meta.textContent = (r.gogumaName || '고구마') + ' · 성장 ' + stage + '단계';
+
+        const hp = document.createElement('span');
+        hp.className = 'ranking-hp';
+        hp.textContent = 'Lv.' + (Math.min(99, Math.floor(Number(r.hp) || 0)));
+
+        const avatar = document.createElement('img');
+        avatar.className = 'ranking-stage';
+        avatar.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+        avatar.alt = '';
+
+        main.appendChild(user);
+        main.appendChild(meta);
+        li.appendChild(rank);
+        li.appendChild(main);
+        li.appendChild(hp);
+        li.appendChild(avatar);
+        list.appendChild(li);
       });
-
-      // 남는 항목 제거
-      while (list.children.length > data.length) {
-        list.removeChild(list.lastChild);
-      }
     }
 
     function openRanking() {
@@ -1225,14 +2436,6 @@
 
     window.toggleRanking = toggleRanking;
 
-    (function attachRankingModalCloseOnClick() {
-      const modal = document.getElementById('rankingModal');
-      if (!modal) return;
-      modal.addEventListener('click', function () {
-        closeRanking();
-      });
-    })();
-
     async function fetchPosts() {
       const res = await fetch('/api/posts', { cache: 'no-store' });
       const data = await res.json();
@@ -1244,19 +2447,24 @@
       if (!ul) return;
       ul.innerHTML = '';
 
+      if (!Array.isArray(list) || list.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'empty-state';
+        empty.textContent = '아직 게시글이 없습니다. 첫 글을 남겨 보세요.';
+        ul.appendChild(empty);
+        return;
+      }
+
       list.forEach(function (p) {
         var li = document.createElement('li');
-        li.style.borderBottom = '1px dashed #000';
-        li.style.padding = '4px 0';
+        li.className = 'board-item';
 
         var titleLine = document.createElement('div');
-        titleLine.style.display = 'flex';
-        titleLine.style.alignItems = 'center';
-        titleLine.style.justifyContent = 'space-between';
+        titleLine.className = 'board-title-row';
 
         var titleText = document.createElement('span');
+        titleText.className = 'board-title';
         titleText.textContent = (p.title || '(제목 없음)') + ' - ' + (p.userName || '');
-        titleText.style.fontWeight = 'bold';
         titleLine.appendChild(titleText);
 
         if (currentUser && p.userId === currentUser.id) {
@@ -1274,6 +2482,7 @@
         }
 
         var contentLine = document.createElement('div');
+        contentLine.className = 'board-content';
         var content = (p.content || '').replace(/\s+/g, ' ').trim();
         if (content.length > 50) content = content.slice(0, 50) + '...';
         contentLine.textContent = content;
@@ -1397,6 +2606,12 @@
 
     // 페이지 로드 시 세션 확인 → 재접속 시 자동 로그인
     (function init() {
+      syncBgmButton();
+      tryPlayBgm();
+      ['pointerdown', 'keydown'].forEach(function(eventName) {
+        window.addEventListener(eventName, tryPlayBgm, { once: true });
+      });
+
       function setWeatherVisual(kind, isDay) {
         var layer = document.getElementById('weatherLayer');
         if (!layer) return;
@@ -1502,12 +2717,15 @@
       fetchJson(API + '/api/me', { credentials: 'include' }).then(function(res) {
         var result = res.data;
         if (res.ok && result && result.user && Array.isArray(result.gogumas)) {
-          currentUser = result.user;
+          setCurrentUser(result.user);
           data = result.gogumas.map(function(g) { return { id: g.id, name: g.name, hp: g.hp }; });
+          currentViewMode = 'field';
           selectedIndex = data.length > 0 ? 0 : -1;
           document.getElementById("home").classList.add("hidden");
           document.getElementById("game").classList.remove("hidden");
-          document.getElementById("currentUserName").textContent = currentUser.name + "님";
+          document.getElementById("fieldView").classList.add("hidden");
+          document.getElementById("roulette").classList.add("hidden");
+          setInlineNotice('이전 플레이 상태를 불러왔습니다. 이어서 키우면 됩니다.', 'success');
           render();
         }
       });
