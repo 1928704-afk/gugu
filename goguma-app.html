@@ -25,6 +25,7 @@
       margin: 0;
       font-family: 'NeoDunggeunmo', sans-serif;
       min-height: 100vh;
+      min-height: 100dvh;
       overflow-x: hidden;
       background: #000;
       color: #1d1208;
@@ -35,7 +36,9 @@
       position: fixed;
       inset: 0;
       z-index: 0;
-      background: #000 url('game_images/1.png') center top / contain no-repeat;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: #000 url('game_images/1.png') center top / auto 100% no-repeat;
     }
     .pixel-sky {
       position: absolute;
@@ -171,6 +174,7 @@
       position: relative;
       z-index: 1;
       min-height: 100vh;
+      min-height: 100dvh;
       width: min(100%, 480px);
       margin: 0 auto;
       padding: 24px 20px 28px;
