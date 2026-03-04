@@ -48,6 +48,23 @@ db.exec(`
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+  CREATE TABLE IF NOT EXISTS post_likes (
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(post_id, user_id)
+  );
+  CREATE TABLE IF NOT EXISTS post_comments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    post_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    content TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (post_id) REFERENCES posts(id),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 function ensureColumn(tableName, columnName, definition) {
@@ -60,6 +77,7 @@ function ensureColumn(tableName, columnName, definition) {
 
 ensureColumn('user_activity', 'total_visit_days', 'INTEGER NOT NULL DEFAULT 1');
 ensureColumn('user_activity', 'rewarded_cycle', 'INTEGER NOT NULL DEFAULT 0');
+ensureColumn('posts', 'image_data', 'TEXT');
 
 db.exec(`
   UPDATE user_activity
@@ -163,6 +181,93 @@ function toUserPayload(user) {
   };
 }
 
+function mapPostRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.userId,
+    title: row.title,
+    content: row.content,
+    imageData: row.imageData,
+    created_at: row.created_at,
+    userName: row.userName,
+    likeCount: Number(row.likeCount) || 0,
+    commentCount: Number(row.commentCount) || 0,
+    likedByMe: !!row.likedByMe
+  };
+}
+
+function getPostSummaries(viewerUserId) {
+  const viewer = viewerUserId || null;
+  const rows = db.prepare(`
+    SELECT p.id,
+           p.user_id AS userId,
+           p.title,
+           p.content,
+           p.image_data AS imageData,
+           p.created_at,
+           u.name AS userName,
+           (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likeCount,
+           (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = p.id) AS commentCount,
+           CASE
+             WHEN ? IS NOT NULL AND EXISTS (
+               SELECT 1 FROM post_likes pl2 WHERE pl2.post_id = p.id AND pl2.user_id = ?
+             ) THEN 1
+             ELSE 0
+           END AS likedByMe
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    ORDER BY p.id DESC
+    LIMIT 50
+  `).all(viewer, viewer);
+
+  return rows.map(mapPostRow);
+}
+
+function getPostDetail(postId, viewerUserId) {
+  const viewer = viewerUserId || null;
+  const row = db.prepare(`
+    SELECT p.id,
+           p.user_id AS userId,
+           p.title,
+           p.content,
+           p.image_data AS imageData,
+           p.created_at,
+           u.name AS userName,
+           (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likeCount,
+           (SELECT COUNT(*) FROM post_comments pc WHERE pc.post_id = p.id) AS commentCount,
+           CASE
+             WHEN ? IS NOT NULL AND EXISTS (
+               SELECT 1 FROM post_likes pl2 WHERE pl2.post_id = p.id AND pl2.user_id = ?
+             ) THEN 1
+             ELSE 0
+           END AS likedByMe
+    FROM posts p
+    JOIN users u ON p.user_id = u.id
+    WHERE p.id = ?
+  `).get(viewer, viewer, postId);
+
+  if (!row) return null;
+
+  const comments = db.prepare(`
+    SELECT c.id,
+           c.post_id AS postId,
+           c.user_id AS userId,
+           c.content,
+           c.created_at,
+           u.name AS userName
+    FROM post_comments c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.post_id = ?
+    ORDER BY c.id ASC
+  `).all(postId);
+
+  return {
+    post: mapPostRow(row),
+    comments
+  };
+}
+
 // 세션 (파일 저장 → 재접속·서버 재시작 후에도 유지)
 app.use(session({
   store: new FileStore({ path: path.join(__dirname, 'sessions') }),
@@ -172,7 +277,17 @@ app.use(session({
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
+app.use(express.urlencoded({ extended: true, limit: '8mb' }));
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ error: '이미지 용량이 너무 큽니다. 더 작은 이미지를 사용해 주세요.' });
+  }
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ error: '요청 형식이 올바르지 않습니다.' });
+  }
+  return next(err);
+});
 app.use(express.static(__dirname));
 
 // 루트(/) 접속 시 앱 페이지로 이동
@@ -338,11 +453,11 @@ app.post('/api/reward/spin', (req, res) => {
   const segments = [
     { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 0 },
     { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 1 },
-    { key: 'chupachups', label: '춥파춥스', hpBonus: 3, segmentIndex: 2 },
+    { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 2 },
     { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 3 },
     { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 4 },
     { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 5 },
-    { key: 'chupachups', label: '춥파춥스', hpBonus: 3, segmentIndex: 6 },
+    { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 6 },
     { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 7 }
   ];
 
@@ -386,20 +501,21 @@ app.get('/api/ranking', (req, res) => {
 
 // 게시글 목록
 app.get('/api/posts', (req, res) => {
-  const rows = db.prepare(`
-    SELECT p.id,
-           p.user_id AS userId,
-           p.title,
-           p.content,
-           p.created_at,
-           u.name AS userName
-    FROM posts p
-    JOIN users u ON p.user_id = u.id
-    ORDER BY p.id DESC
-    LIMIT 50
-  `).all();
+  res.json(getPostSummaries(req.session.userId));
+});
 
-  res.json(rows);
+app.get('/api/posts/:id', (req, res) => {
+  const postId = parseInt(req.params.id, 10);
+  if (!postId) {
+    return res.status(400).json({ error: '잘못된 게시글입니다.' });
+  }
+
+  const detail = getPostDetail(postId, req.session.userId);
+  if (!detail) {
+    return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
+  }
+
+  res.json(detail);
 });
 
 // 게시글 추가
@@ -410,6 +526,7 @@ app.post('/api/posts/add', (req, res) => {
 
   const title = (req.body.title || '').trim();
   const content = (req.body.content || '').trim();
+  const imageData = typeof req.body.imageData === 'string' ? req.body.imageData.trim() : '';
 
   if (!title) {
     return res.status(400).json({ error: '제목을 입력해 주세요.' });
@@ -423,26 +540,160 @@ app.post('/api/posts/add', (req, res) => {
   if (content.length > 1000) {
     return res.status(400).json({ error: '내용은 1000자 이내로 작성해 주세요.' });
   }
+  if (imageData && imageData.length > 6_000_000) {
+    return res.status(400).json({ error: '이미지 용량이 너무 큽니다. 더 작은 이미지를 사용해 주세요.' });
+  }
 
   const insert = db.prepare(`
-    INSERT INTO posts (user_id, title, content)
-    VALUES (?, ?, ?)
+    INSERT INTO posts (user_id, title, content, image_data)
+    VALUES (?, ?, ?, ?)
   `);
-  const info = insert.run(req.session.userId, title, content);
+  const info = insert.run(req.session.userId, title, content, imageData || null);
 
-  const row = db.prepare(`
-    SELECT p.id,
-           p.user_id AS userId,
-           p.title,
-           p.content,
-           p.created_at,
+  res.json(getPostDetail(info.lastInsertRowid, req.session.userId));
+});
+
+app.post('/api/posts/:id/like', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const postId = parseInt(req.params.id, 10);
+  if (!postId) {
+    return res.status(400).json({ error: '잘못된 게시글입니다.' });
+  }
+
+  const postExists = db.prepare('SELECT id FROM posts WHERE id = ?').get(postId);
+  if (!postExists) {
+    return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
+  }
+
+  const existing = db.prepare('SELECT 1 FROM post_likes WHERE post_id = ? AND user_id = ?').get(postId, req.session.userId);
+  if (existing) {
+    db.prepare('DELETE FROM post_likes WHERE post_id = ? AND user_id = ?').run(postId, req.session.userId);
+  } else {
+    db.prepare('INSERT INTO post_likes (post_id, user_id) VALUES (?, ?)').run(postId, req.session.userId);
+  }
+
+  const detail = getPostDetail(postId, req.session.userId);
+  res.json({
+    likedByMe: detail.post.likedByMe,
+    likeCount: detail.post.likeCount,
+    commentCount: detail.post.commentCount
+  });
+});
+
+app.post('/api/posts/:id/comments', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const postId = parseInt(req.params.id, 10);
+  if (!postId) {
+    return res.status(400).json({ error: '잘못된 게시글입니다.' });
+  }
+
+  const postExists = db.prepare('SELECT id FROM posts WHERE id = ?').get(postId);
+  if (!postExists) {
+    return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
+  }
+
+  const content = (req.body.content || '').trim();
+  if (!content) {
+    return res.status(400).json({ error: '댓글을 입력해 주세요.' });
+  }
+  if (content.length > 300) {
+    return res.status(400).json({ error: '댓글은 300자 이내로 작성해 주세요.' });
+  }
+
+  const info = db.prepare(`
+    INSERT INTO post_comments (post_id, user_id, content)
+    VALUES (?, ?, ?)
+  `).run(postId, req.session.userId, content);
+
+  const comment = db.prepare(`
+    SELECT c.id,
+           c.post_id AS postId,
+           c.user_id AS userId,
+           c.content,
+           c.created_at,
            u.name AS userName
-    FROM posts p
-    JOIN users u ON p.user_id = u.id
-    WHERE p.id = ?
+    FROM post_comments c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.id = ?
   `).get(info.lastInsertRowid);
 
-  res.json({ post: row });
+  const countRow = db.prepare('SELECT COUNT(*) AS count FROM post_comments WHERE post_id = ?').get(postId);
+
+  res.json({
+    comment,
+    commentCount: Number(countRow.count) || 0
+  });
+});
+
+app.post('/api/comments/:id/update', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const commentId = parseInt(req.params.id, 10);
+  if (!commentId) {
+    return res.status(400).json({ error: '잘못된 댓글입니다.' });
+  }
+
+  const ownedComment = db.prepare('SELECT id FROM post_comments WHERE id = ? AND user_id = ?').get(commentId, req.session.userId);
+  if (!ownedComment) {
+    return res.status(404).json({ error: '댓글을 찾을 수 없거나 권한이 없습니다.' });
+  }
+
+  const content = (req.body.content || '').trim();
+  if (!content) {
+    return res.status(400).json({ error: '댓글을 입력해 주세요.' });
+  }
+  if (content.length > 300) {
+    return res.status(400).json({ error: '댓글은 300자 이내로 작성해 주세요.' });
+  }
+
+  db.prepare('UPDATE post_comments SET content = ? WHERE id = ? AND user_id = ?').run(content, commentId, req.session.userId);
+
+  const comment = db.prepare(`
+    SELECT c.id,
+           c.post_id AS postId,
+           c.user_id AS userId,
+           c.content,
+           c.created_at,
+           u.name AS userName
+    FROM post_comments c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.id = ?
+  `).get(commentId);
+
+  res.json({ comment });
+});
+
+app.post('/api/comments/:id/delete', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const commentId = parseInt(req.params.id, 10);
+  if (!commentId) {
+    return res.status(400).json({ error: '잘못된 댓글입니다.' });
+  }
+
+  const ownedComment = db.prepare('SELECT id, post_id AS postId FROM post_comments WHERE id = ? AND user_id = ?').get(commentId, req.session.userId);
+  if (!ownedComment) {
+    return res.status(404).json({ error: '댓글을 찾을 수 없거나 권한이 없습니다.' });
+  }
+
+  db.prepare('DELETE FROM post_comments WHERE id = ? AND user_id = ?').run(commentId, req.session.userId);
+
+  const countRow = db.prepare('SELECT COUNT(*) AS count FROM post_comments WHERE post_id = ?').get(ownedComment.postId);
+  res.json({
+    ok: true,
+    postId: ownedComment.postId,
+    commentCount: Number(countRow.count) || 0
+  });
 });
 
 // 게시글 삭제
@@ -456,6 +707,13 @@ app.post('/api/posts/delete', (req, res) => {
     return res.status(400).json({ error: '잘못된 요청입니다.' });
   }
 
+  const ownedPost = db.prepare('SELECT id FROM posts WHERE id = ? AND user_id = ?').get(id, req.session.userId);
+  if (!ownedPost) {
+    return res.status(404).json({ error: '게시글을 찾을 수 없거나 권한이 없습니다.' });
+  }
+
+  db.prepare('DELETE FROM post_likes WHERE post_id = ?').run(id);
+  db.prepare('DELETE FROM post_comments WHERE post_id = ?').run(id);
   const stmt = db.prepare('DELETE FROM posts WHERE id = ? AND user_id = ?');
   const result = stmt.run(id, req.session.userId);
 

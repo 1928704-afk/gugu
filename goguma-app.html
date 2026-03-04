@@ -177,15 +177,15 @@
       min-height: 100dvh;
       width: min(100%, 480px);
       margin: 0 auto;
-      padding: 24px 20px 28px;
+      padding: calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
       display: flex;
       flex-direction: column;
       align-items: center;
     }
     .bgm-toggle {
       position: fixed;
-      top: 12px;
-      right: 12px;
+      top: calc(12px + env(safe-area-inset-top));
+      right: calc(12px + env(safe-area-inset-right));
       z-index: 120;
       min-width: 44px;
       padding: 8px 10px;
@@ -230,6 +230,7 @@
       image-rendering: pixelated;
       box-shadow: 4px 4px 0 #000;
       border-radius: 14px;
+      transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, filter 120ms ease;
     }
     .pixel-btn:hover {
       background: #FFC107;
@@ -592,11 +593,28 @@
     .heart-burst:nth-child(4) { animation-duration: 0.75s; animation-delay: 30ms; left: -20px; }
     .heart-burst:nth-child(5) { animation-duration: 0.95s; animation-delay: 70ms; left: 20px; }
 
+    @keyframes gogumaFloat {
+      0%, 100% {
+        transform: translateY(0) scale(var(--goguma-scale, 1));
+      }
+      50% {
+        transform: translateY(-8px) scale(var(--goguma-scale, 1));
+      }
+    }
+    @keyframes fieldGogumaFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
     /* 레벨별 크기 (pot-scene scale) */
-    .pot-scene.scale-sm .goguma-stage-image { transform: scale(0.76); }
-    .pot-scene.scale-md .goguma-stage-image { transform: scale(0.9); }
-    .pot-scene.scale-lg .goguma-stage-image { transform: scale(1.02); }
-    .pot-scene.scale-xl .goguma-stage-image { transform: scale(1.14); }
+    .pot-scene.scale-sm .goguma-stage-image { --goguma-scale: 0.76; }
+    .pot-scene.scale-md .goguma-stage-image { --goguma-scale: 0.9; }
+    .pot-scene.scale-lg .goguma-stage-image { --goguma-scale: 1.02; }
+    .pot-scene.scale-xl .goguma-stage-image { --goguma-scale: 1.14; }
 
     /* 레벨별 고구마 모습 (단계) - 색 + 모양 변화 */
     .pot-scene.stage1 .potato-in-pot .body {
@@ -735,9 +753,14 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding:
+        calc(20px + env(safe-area-inset-top))
+        calc(20px + env(safe-area-inset-right))
+        calc(20px + env(safe-area-inset-bottom))
+        calc(20px + env(safe-area-inset-left));
       background: rgba(28, 15, 4, 0.48);
       backdrop-filter: blur(4px);
+      animation: overlayFade 160ms ease-out;
     }
     .modal-card {
       max-width: 440px;
@@ -745,6 +768,7 @@
       padding: 18px 18px 16px;
       margin: 0;
       overflow: auto;
+      animation: modalPop 180ms ease-out;
     }
     .modal-card::after,
     .modal-card::before {
@@ -984,58 +1008,566 @@
       text-align: center;
       line-height: 1.5;
     }
-    .field-grid {
+    .field-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .field-summary-item {
+      padding: 8px 6px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.58);
+      text-align: center;
+    }
+    .field-summary-label {
+      display: block;
+      font-size: 10px;
+      color: #6c4a21;
+      margin-bottom: 4px;
+    }
+    .field-summary-value {
+      display: block;
+      font-size: 13px;
+      color: #2b1808;
+    }
+    .community-screen {
+      justify-content: flex-start;
+      gap: 14px;
+      padding:
+        calc(18px + env(safe-area-inset-top))
+        12px
+        calc(18px + env(safe-area-inset-bottom));
+    }
+    .community-shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: calc(100dvh - 36px);
+      background: #ecf3ff;
+      border: 4px solid rgba(255,255,255,0.9);
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+    }
+    .community-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.96);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .community-header-title {
+      font-size: 15px;
+      color: #051125;
+    }
+    .community-header-user {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #dbe7ff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #051125;
+    }
+    .community-body {
+      padding: 16px;
+      position: relative;
+    }
+    #communityListView,
+    #communityDetailView {
+      min-height: 0;
+    }
+    .community-list-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .community-list-caption {
+      margin: 0;
+      font-size: 11px;
+      color: #667790;
+    }
+    .community-compose-modal {
+      position: absolute;
+      top: 8px;
+      left: 16px;
+      right: 16px;
+      z-index: 8;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-18px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .community-compose-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .community-compose,
+    .community-post-card,
+    .community-detail-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      padding: 16px;
+    }
+    .community-compose {
+      margin-bottom: 14px;
+    }
+    .community-compose-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .community-section-title {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #051125;
+    }
+    .community-input,
+    .community-textarea {
+      width: 100%;
+      border: 1px solid #d8e3f3;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 13px;
+      background: #f8fbff;
+    }
+    .community-input {
+      margin-bottom: 8px;
+    }
+    .community-textarea {
+      resize: vertical;
+      min-height: 110px;
+    }
+    .community-compose-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .community-upload-btn {
+      padding: 8px 12px;
+      font-size: 11px;
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .community-image-preview {
+      margin-top: 10px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #edf4ff;
+      display: none;
+    }
+    .community-image-preview.visible {
+      display: block;
+    }
+    .community-image-preview img {
+      display: block;
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+    }
+    .community-list {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 12px;
+      max-height: min(52dvh, 480px);
+      overflow-y: auto;
+      align-content: start;
+      padding-right: 2px;
     }
-    .field-card {
+    .community-list .empty-state {
+      grid-column: 1 / -1;
+    }
+    .community-post-card {
+      cursor: pointer;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+    .community-post-card:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .community-post-card h3,
+    .community-detail-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #051125;
+      line-height: 1.45;
+    }
+    .community-post-card h3 {
+      margin: 0;
+      font-size: 12px;
+      min-height: 2.9em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .community-post-meta,
+    .community-detail-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: #6b7b95;
+      flex-wrap: wrap;
+    }
+    .community-post-meta {
+      margin-bottom: 0;
+      font-size: 10px;
+      gap: 4px;
+      color: #75849b;
+    }
+    .community-post-image,
+    .community-detail-image {
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #edf4ff;
+      margin-bottom: 10px;
+    }
+    .community-post-image {
+      margin-bottom: 0;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(160deg, rgba(255,226,121,0.9), rgba(255,160,96,0.9)),
+        #edf4ff;
+    }
+    .community-post-image.is-empty {
+      border: 2px dashed rgba(5,17,37,0.16);
+    }
+    .community-post-image.is-empty span {
+      font-size: 11px;
+      color: rgba(5,17,37,0.55);
+    }
+    .community-post-image img,
+    .community-detail-image img {
+      display: block;
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+    }
+    .community-post-image img {
+      height: 100%;
+      max-height: none;
+    }
+    .community-detail-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: #f5f8ff;
+    }
+    .community-detail-image img {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: min(56dvh, 480px);
+      object-fit: contain;
+      margin: 0 auto;
+      border-radius: 10px;
+    }
+    .community-post-content,
+    .community-detail-content {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #55657d;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .community-post-content {
+      display: none;
+    }
+    .community-detail-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .community-inline-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .community-detail-loading {
+      text-align: center;
+      font-size: 12px;
+      color: #6b7b95;
+      padding: 28px 0;
+    }
+    .community-detail-image {
+      cursor: zoom-in;
       position: relative;
-      min-height: 188px;
-      padding: 12px 10px 12px;
+    }
+    .community-detail-image-button {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      padding: 6px 8px;
+      font-size: 10px;
+      border: 2px solid #000;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      color: #2b1808;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+    }
+    .community-engagement {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .community-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(5,17,37,0.12);
+      background: #f6f9ff;
+      font-size: 11px;
+      color: #45556f;
+    }
+    .community-like-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      font-size: 11px;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .community-like-btn.is-active {
+      background: #ffb7c4;
+    }
+    .community-comment-form {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 14px;
+      margin-bottom: 12px;
+    }
+    .community-comment-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid #d8e3f3;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 12px;
+      background: #f8fbff;
+    }
+    .community-comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .community-comment-empty {
+      padding: 12px;
+      border-radius: 14px;
+      background: #f6f9ff;
+      color: #73839b;
+      font-size: 11px;
+      text-align: center;
+    }
+    .community-comment-item {
+      border-radius: 14px;
+      background: #f8fbff;
+      border: 1px solid #dbe6f6;
+      padding: 10px 12px;
+    }
+    .community-comment-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+      font-size: 10px;
+      color: #76869d;
+    }
+    .community-comment-author {
+      font-size: 11px;
+      color: #1f2e45;
+    }
+    .community-comment-body {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #44546a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .community-comment-actions {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .community-post-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+    .community-post-stats .community-stat-pill {
+      min-height: 28px;
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    .image-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 160;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(20px + env(safe-area-inset-top))
+        calc(20px + env(safe-area-inset-right))
+        calc(20px + env(safe-area-inset-bottom))
+        calc(20px + env(safe-area-inset-left));
+      background: rgba(3, 7, 15, 0.88);
+      backdrop-filter: blur(8px);
+      animation: overlayFade 160ms ease-out;
+    }
+    .image-lightbox img {
+      display: block;
+      max-width: min(92vw, 880px);
+      max-height: min(82vh, 920px);
+      object-fit: contain;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+    .image-lightbox-close {
+      position: absolute;
+      top: calc(16px + env(safe-area-inset-top));
+      right: calc(16px + env(safe-area-inset-right));
+      z-index: 2;
+    }
+    @keyframes overlayFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes modalPop {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .field-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .field-toolbar-label {
+      font-size: 11px;
+      color: #6c4a21;
+    }
+    .field-sort-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .field-sort-btn {
+      padding: 6px 10px;
+      font-size: 10px;
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .field-grid {
+      position: relative;
+      min-height: 220px;
+      padding: 18px 14px 16px;
       border: 4px solid rgba(43, 24, 8, 0.14);
       border-radius: 22px;
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.44) 0%, rgba(255,255,255,0.12) 52%, rgba(119, 74, 30, 0.06) 100%),
-        url('game_images/24.png') center bottom / cover no-repeat;
+        linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.18) 60%, rgba(119, 74, 30, 0.08) 100%),
+        url('game_images/24.png') center 30% / 100% auto no-repeat;
       overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
     }
-    .field-card::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 42%;
-      background:
-        linear-gradient(180deg, transparent 0%, rgba(81, 46, 15, 0.08) 30%, rgba(81, 46, 15, 0.2) 100%),
-        url('game_images/24.png') center bottom / cover no-repeat;
-      opacity: 0.92;
-    }
-    .field-stage-wrap {
+    .field-slot {
       position: relative;
       z-index: 1;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      width: calc(25% - 8px);
+      min-width: 74px;
+      min-height: 168px;
+      padding: 8px 4px 0;
+    }
+    .field-stage-wrap {
+      display: flex;
       justify-content: center;
       align-items: flex-end;
-      min-height: 108px;
-      margin-bottom: 10px;
+      width: 100%;
+      min-height: 104px;
+      margin-bottom: 8px;
     }
     .field-stage-wrap img {
-      width: 84px;
-      max-height: 98px;
+      width: min(100%, 70px);
+      max-height: 94px;
       object-fit: contain;
       image-rendering: pixelated;
       filter: drop-shadow(0 6px 0 rgba(43, 24, 8, 0.16));
+      transform-origin: center bottom;
+      animation: fieldGogumaFloat 2.9s ease-in-out infinite;
+      animation-delay: var(--float-delay, 0s);
+      will-change: transform;
     }
     .field-card-name,
     .field-card-meta {
       position: relative;
       z-index: 1;
       text-align: center;
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 10px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.18);
     }
     .field-card-name {
-      font-size: 13px;
+      font-size: 12px;
+      font-weight: bold;
       color: #2b1808;
       margin-bottom: 4px;
       white-space: nowrap;
@@ -1043,9 +1575,11 @@
       text-overflow: ellipsis;
     }
     .field-card-meta {
-      font-size: 11px;
-      color: #6c4a21;
-      line-height: 1.5;
+      font-size: 10px;
+      color: #5b3a16;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: keep-all;
     }
     .inline-notice {
       width: 100%;
@@ -1211,11 +1745,15 @@
       justify-content: center;
     }
     .goguma-stage-image {
+      --goguma-scale: 1;
       width: min(58vw, 250px);
       max-height: 210px;
       object-fit: contain;
       image-rendering: pixelated;
       filter: drop-shadow(0 10px 0 rgba(43, 24, 8, 0.16));
+      transform-origin: center bottom;
+      animation: gogumaFloat 2.8s ease-in-out infinite;
+      will-change: transform;
     }
     .goguma-nameplate {
       position: absolute;
@@ -1390,7 +1928,11 @@
       .roulette-wheel {
         width: min(88vw, 320px);
       }
-      .field-grid {
+      .field-slot {
+        width: calc(33.333% - 7px);
+        min-width: 0;
+      }
+      .field-summary {
         grid-template-columns: 1fr;
       }
       .action-tips {
@@ -1398,6 +1940,15 @@
       }
       .ranking-hp {
         font-size: 11px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .name-input-wrap input,
+      #nameInput,
+      #boardTitle,
+      #boardContent {
+        font-size: 16px !important;
       }
     }
 
@@ -1512,7 +2063,7 @@
         <div class="toolbar-actions">
           <button class="pixel-btn" id="btnRoulette" style="font-size:12px;padding:6px 10px" onclick="openRoulette()">7일 룰렛</button>
           <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleRanking()">랭킹표 보기</button>
-          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleBoard()">게시판</button>
+          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="openCommunity()">커뮤니티</button>
         </div>
       </div>
       <div class="input-row">
@@ -1565,6 +2116,15 @@
     <div id="fieldDetailView" class="field-panel hidden" style="margin-top: 8px;">
       <h2>나의 밭</h2>
       <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
+      <div id="fieldSummary" class="field-summary"></div>
+      <div class="field-toolbar">
+        <span class="field-toolbar-label">정렬</span>
+        <div class="field-sort-buttons">
+          <button type="button" class="pixel-btn field-sort-btn" id="sortByCreated" onclick="setFieldSort('created')">기본순</button>
+          <button type="button" class="pixel-btn field-sort-btn" id="sortByHp" onclick="setFieldSort('hp')">HP순</button>
+          <button type="button" class="pixel-btn field-sort-btn" id="sortByName" onclick="setFieldSort('name')">이름순</button>
+        </div>
+      </div>
       <div id="inlineFieldGrid" class="field-grid"></div>
     </div>
 
@@ -1661,6 +2221,49 @@
     </div>
   </div>
 
+  <div id="community" class="screen community-screen hidden">
+    <div class="community-shell">
+      <div class="community-header">
+        <button class="pixel-btn" style="font-size:11px;padding:8px 10px" onclick="closeCommunity()">뒤로</button>
+        <span class="community-header-title">Community</span>
+        <span id="communityUserBadge" class="community-header-user">ME</span>
+      </div>
+      <div class="community-body">
+        <div id="communityListView">
+          <div class="community-list-toolbar">
+            <p class="community-list-caption">최근 글을 이미지 중심으로 둘러볼 수 있습니다.</p>
+            <button class="pixel-btn" type="button" style="font-size:11px;padding:8px 12px" onclick="openCommunityComposer()">작성</button>
+          </div>
+          <div id="communityComposeModal" class="community-compose-modal hidden">
+            <div class="community-compose">
+              <div class="community-compose-header">
+                <h3 class="community-section-title" style="margin:0;">새 글 작성</h3>
+                <button class="pixel-btn" type="button" style="font-size:10px;padding:6px 10px" onclick="closeCommunityComposer()">닫기</button>
+              </div>
+              <input id="communityTitle" class="community-input" type="text" maxlength="100" placeholder="제목을 입력해 주세요.">
+              <textarea id="communityContent" class="community-textarea" maxlength="1000" placeholder="오늘의 이야기를 적어 주세요."></textarea>
+              <input id="communityImageInput" type="file" accept="image/*" class="hidden">
+              <div class="community-compose-actions">
+                <button class="pixel-btn community-upload-btn" type="button" onclick="pickCommunityImage()">사진첨부</button>
+                <button class="pixel-btn" type="button" onclick="submitCommunityPost()">글작성</button>
+              </div>
+              <div id="communityImagePreview" class="community-image-preview">
+                <img id="communityPreviewImage" src="" alt="첨부 이미지 미리보기">
+              </div>
+            </div>
+          </div>
+          <div id="communityList" class="community-list"></div>
+        </div>
+        <div id="communityDetailView" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageLightbox" class="image-lightbox hidden" onclick="handleImageLightboxBackdrop(event)">
+    <button class="pixel-btn image-lightbox-close" type="button" style="font-size:11px;padding:8px 10px" onclick="closeImageLightbox()">닫기</button>
+    <img id="imageLightboxImg" src="" alt="확대 이미지">
+  </div>
+
   <script>
     var MAX = 10;
     var API = '';
@@ -1668,7 +2271,14 @@
     var selectedIndex = -1;
     var currentUser = null;
     var currentViewMode = 'field';
+    var fieldSortMode = 'created';
     var bgmEnabled = true;
+    var communityPosts = [];
+    var communityDetailPost = null;
+    var selectedCommunityPostId = null;
+    var communityImageData = '';
+    var activeZoomImage = '';
+    var communityCommentSubmitting = false;
     var lastRouletteReward = null;
     var isRouletteSpinning = false;
     var rouletteRotation = 0;
@@ -1778,6 +2388,551 @@
       notice.className = 'inline-notice' + (tone ? (' ' + tone) : '');
     }
 
+    function formatCommunityDate(text) {
+      if (!text) return '';
+      return String(text).replace('T', ' ').slice(0, 16);
+    }
+
+    function resetCommunityComposer() {
+      var titleEl = document.getElementById('communityTitle');
+      var contentEl = document.getElementById('communityContent');
+      var imageInput = document.getElementById('communityImageInput');
+      var preview = document.getElementById('communityImagePreview');
+      var previewImage = document.getElementById('communityPreviewImage');
+      communityImageData = '';
+      if (titleEl) titleEl.value = '';
+      if (contentEl) contentEl.value = '';
+      if (imageInput) imageInput.value = '';
+      if (preview) preview.classList.remove('visible');
+      if (previewImage) previewImage.src = '';
+    }
+
+    function openCommunityComposer() {
+      var modal = document.getElementById('communityComposeModal');
+      var titleEl = document.getElementById('communityTitle');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      requestAnimationFrame(function() {
+        modal.classList.add('open');
+        if (titleEl) titleEl.focus();
+      });
+    }
+    window.openCommunityComposer = openCommunityComposer;
+
+    function closeCommunityComposer() {
+      var modal = document.getElementById('communityComposeModal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      setTimeout(function() {
+        if (!modal.classList.contains('open')) {
+          modal.classList.add('hidden');
+        }
+      }, 180);
+    }
+    window.closeCommunityComposer = closeCommunityComposer;
+
+    function pickCommunityImage() {
+      var input = document.getElementById('communityImageInput');
+      if (input) input.click();
+    }
+    window.pickCommunityImage = pickCommunityImage;
+
+    function applyCommunityImagePreview(dataUrl) {
+      communityImageData = String(dataUrl || '');
+      var preview = document.getElementById('communityImagePreview');
+      var previewImage = document.getElementById('communityPreviewImage');
+      if (previewImage) previewImage.src = communityImageData;
+      if (preview) {
+        if (communityImageData) {
+          preview.classList.add('visible');
+        } else {
+          preview.classList.remove('visible');
+        }
+      }
+    }
+
+    function handleCommunityImageChange(event) {
+      var file = event && event.target && event.target.files ? event.target.files[0] : null;
+      if (!file) return;
+      if (!/^image\//.test(file.type)) {
+        alert('이미지 파일만 첨부할 수 있습니다.');
+        return;
+      }
+
+      var maxSourceSize = 12 * 1024 * 1024;
+      if (file.size > maxSourceSize) {
+        alert('이미지 파일이 너무 큽니다. 12MB 이하 이미지를 사용해 주세요.');
+        event.target.value = '';
+        return;
+      }
+
+      var objectUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        try {
+          var maxWidth = 1280;
+          var maxHeight = 1280;
+          var width = img.naturalWidth || img.width;
+          var height = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxWidth / width, maxHeight / height);
+          var targetWidth = Math.max(1, Math.round(width * scale));
+          var targetHeight = Math.max(1, Math.round(height * scale));
+
+          var canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) {
+            throw new Error('canvas');
+          }
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+          var quality = 0.86;
+          var dataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (dataUrl.length > 1_800_000 && quality > 0.45) {
+            quality -= 0.08;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          if (dataUrl.length > 1_800_000) {
+            alert('이미지를 더 작게 줄인 뒤 다시 시도해 주세요.');
+            event.target.value = '';
+            applyCommunityImagePreview('');
+            return;
+          }
+
+          applyCommunityImagePreview(dataUrl);
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(objectUrl);
+        alert('이미지를 불러오지 못했습니다.');
+        event.target.value = '';
+      };
+      img.src = objectUrl;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderCommunityList() {
+      var listEl = document.getElementById('communityList');
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      var badge = document.getElementById('communityUserBadge');
+      if (!listEl || !listView || !detailView) return;
+
+      if (badge) {
+        badge.textContent = currentUser && currentUser.name ? currentUser.name.slice(0, 3) : 'ME';
+      }
+
+      listView.classList.remove('hidden');
+      detailView.classList.add('hidden');
+      listEl.innerHTML = '';
+
+      if (!communityPosts.length) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = '아직 커뮤니티 글이 없습니다. 첫 글을 남겨 보세요.';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      communityPosts.forEach(function(post) {
+        var card = document.createElement('div');
+        card.className = 'community-post-card';
+        card.addEventListener('click', function() { openCommunityDetail(post.id); });
+
+        var imageWrap = document.createElement('div');
+        imageWrap.className = 'community-post-image';
+        if (post.imageData) {
+          var image = document.createElement('img');
+          image.src = post.imageData;
+          image.alt = post.title || '첨부 이미지';
+          imageWrap.appendChild(image);
+        } else {
+          imageWrap.classList.add('is-empty');
+          var placeholder = document.createElement('span');
+          placeholder.textContent = 'NO IMAGE';
+          imageWrap.appendChild(placeholder);
+        }
+
+        var title = document.createElement('h3');
+        title.textContent = post.title || '(제목 없음)';
+
+        var meta = document.createElement('div');
+        meta.className = 'community-post-meta';
+        meta.innerHTML = '<span>' + (post.userName || '') + '</span><span>' + formatCommunityDate(post.created_at || post.createdAt) + '</span>';
+
+        card.appendChild(imageWrap);
+        card.appendChild(title);
+        card.appendChild(meta);
+
+        var stats = document.createElement('div');
+        stats.className = 'community-post-stats';
+
+        var likeStat = document.createElement('span');
+        likeStat.className = 'community-stat-pill';
+        likeStat.textContent = '♥ ' + (Number(post.likeCount) || 0);
+
+        var commentStat = document.createElement('span');
+        commentStat.className = 'community-stat-pill';
+        commentStat.textContent = '댓글 ' + (Number(post.commentCount) || 0);
+
+        stats.appendChild(likeStat);
+        stats.appendChild(commentStat);
+
+        var content = document.createElement('p');
+        content.className = 'community-post-content';
+        var text = (post.content || '').trim();
+        content.textContent = text.length > 120 ? text.slice(0, 120) + '...' : text;
+        card.appendChild(content);
+        card.appendChild(stats);
+        listEl.appendChild(card);
+      });
+    }
+
+    function renderCommunityDetail() {
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      var post = communityDetailPost;
+      if (!post || !listView || !detailView) return;
+
+      listView.classList.add('hidden');
+      detailView.classList.remove('hidden');
+
+      var actions = '';
+      if (currentUser && post.userId === currentUser.id) {
+        actions = '<div class="community-inline-actions"><button class="pixel-btn" style="font-size:10px;padding:6px 10px" onclick="deleteCommunityPost(' + post.id + ')">삭제</button></div>';
+      }
+
+      var imageHtml = post.imageData
+        ? '<div id="communityDetailImage" class="community-detail-image"><img src="' + post.imageData + '" alt="' + escapeHtml(post.title || '첨부 이미지') + '"><span class="community-detail-image-button">확대</span></div>'
+        : '';
+
+      var comments = Array.isArray(post.comments) ? post.comments : [];
+      var commentsHtml = comments.length
+        ? comments.map(function(comment) {
+            var commentActions = '';
+            if (currentUser && Number(comment.userId) === Number(currentUser.id)) {
+              commentActions =
+                '<span class="community-comment-actions">' +
+                  '<button class="pixel-btn" style="font-size:9px;padding:4px 8px" onclick="editCommunityComment(' + comment.id + ')">수정</button>' +
+                  '<button class="pixel-btn" style="font-size:9px;padding:4px 8px" onclick="deleteCommunityComment(' + comment.id + ')">삭제</button>' +
+                '</span>';
+            }
+            return (
+              '<div class="community-comment-item">' +
+                '<div class="community-comment-head">' +
+                  '<span class="community-comment-author">' + escapeHtml(comment.userName || '익명') + '</span>' +
+                  commentActions +
+                  '<span>' + escapeHtml(formatCommunityDate(comment.created_at || comment.createdAt)) + '</span>' +
+                '</div>' +
+                '<div class="community-comment-body">' + escapeHtml(comment.content || '') + '</div>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div class="community-comment-empty">아직 댓글이 없습니다. 첫 반응을 남겨 보세요.</div>';
+
+      detailView.innerHTML =
+        '<div class="community-detail-card">' +
+          '<div class="community-detail-actions">' +
+            '<button class="pixel-btn" style="font-size:10px;padding:6px 10px" onclick="backToCommunityList()">목록</button>' +
+            actions +
+          '</div>' +
+          '<h3>' + escapeHtml(post.title || '(제목 없음)') + '</h3>' +
+          '<div class="community-detail-meta"><span>' + escapeHtml(post.userName || '') + '</span><span>' + escapeHtml(formatCommunityDate(post.created_at || post.createdAt)) + '</span></div>' +
+          imageHtml +
+          '<div class="community-engagement">' +
+            '<button class="pixel-btn community-like-btn' + (post.likedByMe ? ' is-active' : '') + '" onclick="toggleCommunityLike(' + post.id + ')">♥ 공감 ' + (Number(post.likeCount) || 0) + '</button>' +
+            '<span class="community-stat-pill">댓글 ' + (Number(post.commentCount) || 0) + '개</span>' +
+          '</div>' +
+          '<p class="community-detail-content">' + escapeHtml(post.content || '') + '</p>' +
+          '<div class="community-comment-form">' +
+            '<input id="communityCommentInput" class="community-comment-input" type="text" maxlength="300" placeholder="댓글을 입력해 주세요.">' +
+            '<button class="pixel-btn" style="font-size:11px;padding:8px 12px" onclick="submitCommunityComment(' + post.id + ')">댓글</button>' +
+          '</div>' +
+          '<div class="community-comment-list">' + commentsHtml + '</div>' +
+        '</div>';
+
+      var commentInput = document.getElementById('communityCommentInput');
+      if (commentInput) {
+        commentInput.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            submitCommunityComment(post.id);
+          }
+        });
+      }
+      var detailImage = document.getElementById('communityDetailImage');
+      if (detailImage && post.imageData) {
+        detailImage.addEventListener('click', function() {
+          openImageLightbox(post.imageData);
+        });
+      }
+    }
+
+    function fetchCommunityPostDetail(postId) {
+      selectedCommunityPostId = postId;
+      communityDetailPost = null;
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      if (!listView || !detailView) return;
+
+      listView.classList.add('hidden');
+      detailView.classList.remove('hidden');
+      detailView.innerHTML = '<div class="community-detail-card"><div class="community-detail-loading">글을 불러오는 중입니다...</div></div>';
+
+      fetchJson(API + '/api/posts/' + postId, { credentials: 'include' }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || !result || result.error || !result.post) {
+          detailView.innerHTML = '<div class="community-detail-card"><div class="community-detail-loading">' + escapeHtml((result && result.error) || '게시글을 불러오지 못했습니다.') + '</div></div>';
+          return;
+        }
+        communityDetailPost = result.post;
+        communityDetailPost.comments = Array.isArray(result.comments) ? result.comments : [];
+        renderCommunityDetail();
+      });
+    }
+
+    function openCommunityDetail(postId) {
+      fetchCommunityPostDetail(postId);
+    }
+    window.openCommunityDetail = openCommunityDetail;
+
+    function backToCommunityList() {
+      selectedCommunityPostId = null;
+      communityDetailPost = null;
+      renderCommunityList();
+    }
+    window.backToCommunityList = backToCommunityList;
+
+    function toggleCommunityLike(postId) {
+      fetchJson(API + '/api/posts/' + postId + '/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '공감 처리 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchCommunityPosts();
+        fetchCommunityPostDetail(postId);
+      });
+    }
+    window.toggleCommunityLike = toggleCommunityLike;
+
+    function submitCommunityComment(postId) {
+      var input = document.getElementById('communityCommentInput');
+      if (!input) return;
+      var content = input.value.trim();
+      if (!content) {
+        alert('댓글을 입력해 주세요.');
+        return;
+      }
+      if (communityCommentSubmitting) {
+        return;
+      }
+      communityCommentSubmitting = true;
+
+      fetchJson(API + '/api/posts/' + postId + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: content })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          communityCommentSubmitting = false;
+          alert((result && result.error) || '댓글 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        input.value = '';
+        fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' }).then(function(listRes) {
+          communityPosts = Array.isArray(listRes.data) ? listRes.data : communityPosts;
+          fetchCommunityPostDetail(postId);
+        });
+      }).finally(function() {
+        communityCommentSubmitting = false;
+      });
+    }
+    window.submitCommunityComment = submitCommunityComment;
+
+    function editCommunityComment(commentId) {
+      if (!communityDetailPost || !Array.isArray(communityDetailPost.comments)) return;
+      var comment = communityDetailPost.comments.find(function(item) { return Number(item.id) === Number(commentId); });
+      if (!comment) return;
+      var nextContent = prompt('댓글 수정', comment.content || '');
+      if (nextContent == null) return;
+      nextContent = nextContent.trim();
+      if (!nextContent) {
+        alert('댓글을 입력해 주세요.');
+        return;
+      }
+
+      fetchJson(API + '/api/comments/' + commentId + '/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: nextContent })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '댓글 수정 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchCommunityPostDetail(communityDetailPost.id);
+      });
+    }
+    window.editCommunityComment = editCommunityComment;
+
+    function deleteCommunityComment(commentId) {
+      if (!communityDetailPost) return;
+      if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
+
+      fetchJson(API + '/api/comments/' + commentId + '/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '댓글 삭제 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' }).then(function(listRes) {
+          communityPosts = Array.isArray(listRes.data) ? listRes.data : communityPosts;
+          fetchCommunityPostDetail(communityDetailPost.id);
+        });
+      });
+    }
+    window.deleteCommunityComment = deleteCommunityComment;
+
+    function openImageLightbox(src) {
+      var lightbox = document.getElementById('imageLightbox');
+      var img = document.getElementById('imageLightboxImg');
+      if (!lightbox || !img || !src) return;
+      activeZoomImage = String(src);
+      img.src = activeZoomImage;
+      lightbox.classList.remove('hidden');
+    }
+    window.openImageLightbox = openImageLightbox;
+
+    function closeImageLightbox() {
+      var lightbox = document.getElementById('imageLightbox');
+      var img = document.getElementById('imageLightboxImg');
+      activeZoomImage = '';
+      if (img) img.src = '';
+      if (lightbox) lightbox.classList.add('hidden');
+    }
+    window.closeImageLightbox = closeImageLightbox;
+
+    function handleImageLightboxBackdrop(event) {
+      if (event.target && event.target.id === 'imageLightbox') {
+        closeImageLightbox();
+      }
+    }
+    window.handleImageLightboxBackdrop = handleImageLightboxBackdrop;
+
+    async function fetchCommunityPosts() {
+      const res = await fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' });
+      const data = res.data;
+      communityPosts = Array.isArray(data) ? data : [];
+      if (selectedCommunityPostId) {
+        var stillExists = communityPosts.some(function(item) { return item.id === selectedCommunityPostId; });
+        if (stillExists) {
+          fetchCommunityPostDetail(selectedCommunityPostId);
+          return;
+        }
+        selectedCommunityPostId = null;
+        communityDetailPost = null;
+      }
+      renderCommunityList();
+    }
+
+    function openCommunity() {
+      if (!currentUser) return;
+      document.getElementById('game').classList.add('hidden');
+      document.getElementById('roulette').classList.add('hidden');
+      document.getElementById('fieldView').classList.add('hidden');
+      document.getElementById('community').classList.remove('hidden');
+      closeCommunityComposer();
+      fetchCommunityPosts();
+    }
+    window.openCommunity = openCommunity;
+
+    function closeCommunity() {
+      closeCommunityComposer();
+      closeImageLightbox();
+      document.getElementById('community').classList.add('hidden');
+      if (!document.getElementById('home').classList.contains('hidden')) return;
+      document.getElementById('game').classList.remove('hidden');
+    }
+    window.closeCommunity = closeCommunity;
+
+    function submitCommunityPost() {
+      const titleEl = document.getElementById('communityTitle');
+      const contentEl = document.getElementById('communityContent');
+      if (!titleEl || !contentEl) return;
+      const title = titleEl.value.trim();
+      const content = contentEl.value.trim();
+
+      if (!title) {
+        alert('제목을 입력해 주세요.');
+        return;
+      }
+      if (!content) {
+        alert('내용을 입력해 주세요.');
+        return;
+      }
+
+      fetchJson(API + '/api/posts/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: title, content: content, imageData: communityImageData })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert(result.error || '게시글 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        resetCommunityComposer();
+        closeCommunityComposer();
+        fetchCommunityPosts();
+      });
+    }
+    window.submitCommunityPost = submitCommunityPost;
+
+    function deleteCommunityPost(id) {
+      if (!confirm('이 글을 삭제하시겠습니까?')) return;
+      fetchJson(API + '/api/posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert(result.error || '삭제 중 오류가 발생했습니다.');
+          return;
+        }
+        selectedCommunityPostId = null;
+        fetchCommunityPosts();
+      });
+    }
+    window.deleteCommunityPost = deleteCommunityPost;
+
     function renderRoulette() {
       var statusEl = document.getElementById("rouletteStatus");
       var resultEl = document.getElementById("rouletteResult");
@@ -1808,6 +2963,40 @@
     }
 
     function renderFieldView() {
+      var summaryEl = document.getElementById('fieldSummary');
+      var sortButtons = {
+        created: document.getElementById('sortByCreated'),
+        hp: document.getElementById('sortByHp'),
+        name: document.getElementById('sortByName')
+      };
+
+      Object.keys(sortButtons).forEach(function(key) {
+        var btn = sortButtons[key];
+        if (!btn) return;
+        btn.style.background = fieldSortMode === key ? '#ffd56a' : '#fff7dd';
+      });
+
+      if (summaryEl) {
+        if (!data.length) {
+          summaryEl.innerHTML = '';
+        } else {
+          var totalHp = data.reduce(function(sum, item) { return sum + (Number(item.hp) || 0); }, 0);
+          var avgHp = Math.round(totalHp / data.length);
+          var topGoguma = data.slice().sort(function(a, b) { return b.hp - a.hp; })[0];
+          summaryEl.innerHTML =
+            '<div class="field-summary-item"><span class="field-summary-label">총 고구마</span><span class="field-summary-value">' + data.length + '개</span></div>' +
+            '<div class="field-summary-item"><span class="field-summary-label">평균 HP</span><span class="field-summary-value">' + avgHp + '</span></div>' +
+            '<div class="field-summary-item"><span class="field-summary-label">최고 성장</span><span class="field-summary-value">' + (topGoguma ? topGoguma.name : '-') + '</span></div>';
+        }
+      }
+
+      var sortedData = data.slice();
+      if (fieldSortMode === 'hp') {
+        sortedData.sort(function(a, b) { return (b.hp - a.hp) || a.name.localeCompare(b.name, 'ko'); });
+      } else if (fieldSortMode === 'name') {
+        sortedData.sort(function(a, b) { return a.name.localeCompare(b.name, 'ko'); });
+      }
+
       var grids = [
         document.getElementById('inlineFieldGrid'),
         document.getElementById('fieldGrid')
@@ -1825,10 +3014,10 @@
           return;
         }
 
-        data.forEach(function(g) {
+        sortedData.forEach(function(g) {
           var stage = getStage(g.hp);
           var card = document.createElement('div');
-          card.className = 'field-card';
+          card.className = 'field-slot';
 
           var stageWrap = document.createElement('div');
           stageWrap.className = 'field-stage-wrap';
@@ -1836,6 +3025,7 @@
           var img = document.createElement('img');
           img.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
           img.alt = g.name + ' 성장 상태';
+          img.style.setProperty('--float-delay', (((Number(g.id) || 0) % 7) * 0.18) + 's');
 
           var name = document.createElement('div');
           name.className = 'field-card-name';
@@ -1849,10 +3039,22 @@
           card.appendChild(stageWrap);
           card.appendChild(name);
           card.appendChild(meta);
+          card.addEventListener('click', function() {
+            var index = data.findIndex(function(item) { return item.id === g.id; });
+            if (index >= 0) {
+              selectGoguma(index);
+            }
+          });
           grid.appendChild(card);
         });
       });
     }
+
+    function setFieldSort(mode) {
+      fieldSortMode = mode;
+      renderFieldView();
+    }
+    window.setFieldSort = setFieldSort;
 
     function handleModalBackdropClick(event, target) {
       if (!event || event.target !== event.currentTarget) return;
@@ -1895,6 +3097,7 @@
         document.getElementById("game").classList.remove("hidden");
         document.getElementById("fieldView").classList.add("hidden");
         document.getElementById("roulette").classList.add("hidden");
+        document.getElementById("community").classList.add("hidden");
         setInlineNotice("플레이를 시작했습니다. 고구마를 추가하거나 기존 캐릭터를 선택해 주세요.", "");
         render();
       });
@@ -1909,6 +3112,7 @@
     function backHome() {
       closeRoulette();
       closeFieldView();
+      closeCommunity();
       document.getElementById("game").classList.add("hidden");
       document.getElementById("home").classList.remove("hidden");
       document.getElementById("nameInputStep").classList.add("hidden");
@@ -2179,9 +3383,10 @@
 
     function openRoulette() {
       if (!currentUser) return;
-      document.getElementById("game").classList.add("hidden");
-      document.getElementById("fieldView").classList.add("hidden");
-      document.getElementById("roulette").classList.remove("hidden");
+        document.getElementById("game").classList.add("hidden");
+        document.getElementById("fieldView").classList.add("hidden");
+        document.getElementById("community").classList.add("hidden");
+        document.getElementById("roulette").classList.remove("hidden");
       renderRoulette();
     }
     window.openRoulette = openRoulette;
@@ -2197,6 +3402,7 @@
       if (!currentUser) return;
       currentViewMode = 'field';
       document.getElementById("roulette").classList.add("hidden");
+      document.getElementById("community").classList.add("hidden");
       document.getElementById("fieldView").classList.add("hidden");
       document.getElementById("game").classList.remove("hidden");
       render();
@@ -2237,7 +3443,7 @@
         var reward = result.reward || null;
         var segmentIndex = reward && typeof reward.segmentIndex === 'number' ? reward.segmentIndex : 0;
         var segmentAngle = 360 / 8;
-        var segmentCenter = (segmentIndex * segmentAngle) + (segmentAngle / 2);
+        var segmentCenter = segmentIndex * segmentAngle;
         var settleAngle = (360 - segmentCenter) % 360;
         var extraTurns = 360 * (4 + Math.floor(Math.random() * 2));
         rouletteRotation += extraTurns + settleAngle;
@@ -2615,6 +3821,10 @@
       ['pointerdown', 'keydown'].forEach(function(eventName) {
         window.addEventListener(eventName, tryPlayBgm, { once: true });
       });
+      var communityImageInput = document.getElementById('communityImageInput');
+      if (communityImageInput) {
+        communityImageInput.addEventListener('change', handleCommunityImageChange);
+      }
 
       function setWeatherVisual(kind, isDay) {
         var layer = document.getElementById('weatherLayer');
@@ -2729,6 +3939,7 @@
           document.getElementById("game").classList.remove("hidden");
           document.getElementById("fieldView").classList.add("hidden");
           document.getElementById("roulette").classList.add("hidden");
+          document.getElementById("community").classList.add("hidden");
           setInlineNotice('이전 플레이 상태를 불러왔습니다. 이어서 키우면 됩니다.', 'success');
           render();
         }
