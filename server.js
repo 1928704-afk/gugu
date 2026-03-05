@@ -65,6 +65,16 @@ db.exec(`
     FOREIGN KEY (post_id) REFERENCES posts(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
+  CREATE TABLE IF NOT EXISTS mission_rewards (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    mission_key TEXT NOT NULL,
+    period_key TEXT NOT NULL,
+    reward_hp INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, mission_key, period_key)
+  );
 `);
 
 function ensureColumn(tableName, columnName, definition) {
@@ -78,6 +88,7 @@ function ensureColumn(tableName, columnName, definition) {
 ensureColumn('user_activity', 'total_visit_days', 'INTEGER NOT NULL DEFAULT 1');
 ensureColumn('user_activity', 'rewarded_cycle', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('posts', 'image_data', 'TEXT');
+ensureColumn('posts', 'category', "TEXT NOT NULL DEFAULT '출석인사'");
 
 db.exec(`
   UPDATE user_activity
@@ -86,15 +97,375 @@ db.exec(`
 `);
 
 const ACTION_VALUES = {
+  postWrite: 1, // 게시판 작성
   bible: 1,   // 말씀읽기
   prayer: 1,  // 기도(부탁)하기
   contact: 3, // 연락하기
   meeting: 5, // 만나기
   invite: 8   // 권유하기
 };
+const ACTION_PRIORITY = ['invite', 'meeting', 'contact', 'postWrite', 'bible', 'prayer'];
+const MISSION_KEYS = {
+  daily: 'daily_core3'
+};
+const MISSION_REWARDS = { daily: 4 };
+const WEEKLY_MISSION_VARIANTS = [
+  {
+    key: 'weekly_active5',
+    label: '주간 출석 미션',
+    description: '이번 주 5일 이상 행동하기',
+    type: 'activeDays',
+    target: 5,
+    rewardHp: 8
+  },
+  {
+    key: 'weekly_meeting2',
+    label: '주간 만남 미션',
+    description: '이번 주 만남 행동 2회 달성',
+    type: 'actionCount',
+    actionType: 'meeting',
+    target: 2,
+    rewardHp: 10
+  },
+  {
+    key: 'weekly_post3',
+    label: '주간 작성 미션',
+    description: '이번 주 게시판 작성 행동 3회 달성',
+    type: 'actionCount',
+    actionType: 'postWrite',
+    target: 3,
+    rewardHp: 8
+  }
+];
+
+const COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '전도인증', '묵상나눔'];
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+const INPUT_LIMITS = {
+  userName: 20,
+  gogumaName: 20,
+  postTitle: 100,
+  postContent: 1000,
+  comment: 300
+};
+const rateLimitStore = new Map();
+let lastRateLimitCleanupAt = 0;
 
 function getTodayDate() {
-  return new Date().toISOString().slice(0, 10); // YYYY-MM-DD (UTC 기준)
+  // YYYY-MM-DD (KST 기준)
+  return new Date(Date.now() + KST_OFFSET_MS).toISOString().slice(0, 10);
+}
+
+function sanitizeTextInput(value) {
+  if (typeof value !== 'string') return '';
+  return value
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function validateDisplayName(value, maxLen) {
+  const text = sanitizeTextInput(value);
+  if (!text) {
+    return { ok: false, value: '', error: '입력값을 확인해 주세요.' };
+  }
+  if (text.length > maxLen) {
+    return { ok: false, value: '', error: `최대 ${maxLen}자까지 입력할 수 있습니다.` };
+  }
+  return { ok: true, value: text, error: null };
+}
+
+function getRateLimitActor(req) {
+  if (req.session && req.session.userId) return `u:${req.session.userId}`;
+  const sid = req.sessionID ? `s:${req.sessionID}` : '';
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.connection?.remoteAddress || 'unknown';
+  return sid || `ip:${ip}`;
+}
+
+function createRateLimiter({ keyPrefix, windowMs, max, message }) {
+  return (req, res, next) => {
+    const actor = getRateLimitActor(req);
+    const bucketKey = `${keyPrefix}:${actor}`;
+    const now = Date.now();
+    if (rateLimitStore.size > 5000 || now - lastRateLimitCleanupAt > 5 * 60 * 1000) {
+      for (const [key, state] of rateLimitStore.entries()) {
+        if (!state || state.resetAt <= now) {
+          rateLimitStore.delete(key);
+        }
+      }
+      lastRateLimitCleanupAt = now;
+    }
+
+    let state = rateLimitStore.get(bucketKey);
+    if (!state || state.resetAt <= now) {
+      state = { count: 0, resetAt: now + windowMs };
+    }
+
+    state.count += 1;
+    rateLimitStore.set(bucketKey, state);
+
+    if (state.count > max) {
+      const retrySec = Math.max(1, Math.ceil((state.resetAt - now) / 1000));
+      res.set('Retry-After', String(retrySec));
+      return res.status(429).json({ error: message || '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
+    }
+    return next();
+  };
+}
+
+function applyBasicSecurityHeaders(req, res, next) {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+}
+
+function getWeekStartDate(baseDateText) {
+  // baseDateText는 KST 날짜 문자열이므로, 요일 계산만 UTC 메서드로 사용해도 안전하다.
+  const d = new Date(baseDateText + 'T00:00:00Z');
+  const day = d.getUTCDay(); // 0=Sun, 1=Mon...
+  const diffToMonday = day === 0 ? 6 : day - 1;
+  d.setUTCDate(d.getUTCDate() - diffToMonday);
+  return d.toISOString().slice(0, 10);
+}
+
+function pickWeeklyMissionVariant(userId, weekStart) {
+  const source = String(userId) + '|' + String(weekStart);
+  let hash = 0;
+  for (let i = 0; i < source.length; i += 1) {
+    hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+  }
+  const index = hash % WEEKLY_MISSION_VARIANTS.length;
+  return WEEKLY_MISSION_VARIANTS[index];
+}
+
+function getMissionState(userId) {
+  const today = getTodayDate();
+  const weekStart = getWeekStartDate(today);
+  const weekEndDate = new Date(weekStart + 'T00:00:00Z');
+  weekEndDate.setUTCDate(weekEndDate.getUTCDate() + 6);
+  const weekEnd = weekEndDate.toISOString().slice(0, 10);
+
+  const dailyActionRows = db.prepare(`
+    SELECT action_type
+    FROM actions
+    WHERE user_id = ?
+      AND action_date LIKE ?
+    GROUP BY action_type
+  `).all(userId, today + '%');
+  const dailyActionSet = new Set(dailyActionRows.map((row) => row.action_type));
+  const dailyRequired = ['bible', 'prayer', 'contact'];
+  const dailyCompletedCount = dailyRequired.filter((key) => dailyActionSet.has(key)).length;
+
+  const dailyClaimed = !!db.prepare(`
+    SELECT 1
+    FROM mission_rewards
+    WHERE user_id = ?
+      AND mission_key = ?
+      AND period_key = ?
+  `).get(userId, MISSION_KEYS.daily, today);
+
+  const weeklyVariant = pickWeeklyMissionVariant(userId, weekStart);
+  let weeklyProgress = 0;
+  if (weeklyVariant.type === 'activeDays') {
+    const weeklyRow = db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM (
+        SELECT substr(action_date, 1, 10) AS day
+        FROM actions
+        WHERE user_id = ?
+          AND substr(action_date, 1, 10) BETWEEN ? AND ?
+        GROUP BY day
+      ) d
+    `).get(userId, weekStart, weekEnd);
+    weeklyProgress = Number(weeklyRow && weeklyRow.count) || 0;
+  } else if (weeklyVariant.type === 'actionCount' && weeklyVariant.actionType) {
+    const weeklyRow = db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM actions
+      WHERE user_id = ?
+        AND action_type = ?
+        AND substr(action_date, 1, 10) BETWEEN ? AND ?
+    `).get(userId, weeklyVariant.actionType, weekStart, weekEnd);
+    weeklyProgress = Number(weeklyRow && weeklyRow.count) || 0;
+  }
+
+  const weeklyClaimed = !!db.prepare(`
+    SELECT 1
+    FROM mission_rewards
+    WHERE user_id = ?
+      AND mission_key = ?
+      AND period_key = ?
+  `).get(userId, weeklyVariant.key, weekStart);
+
+  return {
+    daily: {
+      key: MISSION_KEYS.daily,
+      label: '오늘의 3종 미션',
+      periodKey: today,
+      rewardHp: MISSION_REWARDS.daily,
+      requiredActions: dailyRequired,
+      completedActions: dailyRequired.filter((key) => dailyActionSet.has(key)),
+      progress: { current: dailyCompletedCount, total: dailyRequired.length },
+      completed: dailyCompletedCount >= dailyRequired.length,
+      claimed: dailyClaimed
+    },
+    weekly: {
+      key: weeklyVariant.key,
+      label: weeklyVariant.label,
+      description: weeklyVariant.description,
+      periodKey: weekStart,
+      rewardHp: weeklyVariant.rewardHp,
+      weekStart,
+      weekEnd,
+      progress: { current: weeklyProgress, total: weeklyVariant.target },
+      completed: weeklyProgress >= weeklyVariant.target,
+      claimed: weeklyClaimed
+    }
+  };
+}
+
+function getGogumaActionScores(userId, gogumaId) {
+  const rows = db
+    .prepare(`
+      SELECT action_type, COUNT(*) AS count
+      FROM actions
+      WHERE user_id = ? AND goguma_id = ?
+      GROUP BY action_type
+    `)
+    .all(userId, gogumaId);
+
+  const scores = {};
+  rows.forEach((row) => {
+    const actionType = row.action_type;
+    if (!ACTION_VALUES[actionType]) return;
+    const count = Number(row.count) || 0;
+    scores[actionType] = count * ACTION_VALUES[actionType];
+  });
+  return scores;
+}
+
+function getTodayActionFlags(userId, gogumaId) {
+  const today = getTodayDate();
+  const rows = db.prepare(`
+    SELECT action_type
+    FROM actions
+    WHERE user_id = ?
+      AND goguma_id = ?
+      AND action_date = ?
+  `).all(userId, gogumaId, today);
+
+  const flags = {};
+  rows.forEach((row) => {
+    if (!ACTION_VALUES[row.action_type]) return;
+    flags[row.action_type] = true;
+  });
+  return flags;
+}
+
+function getRecentDateKeys(days) {
+  const today = new Date(getTodayDate() + 'T00:00:00Z');
+  const keys = [];
+  for (let i = days - 1; i >= 0; i -= 1) {
+    const d = new Date(today);
+    d.setUTCDate(today.getUTCDate() - i);
+    keys.push(d.toISOString().slice(0, 10));
+  }
+  return keys;
+}
+
+function getGogumaHistory(userId, gogumaId) {
+  const dateKeys = getRecentDateKeys(7);
+  const startDate = dateKeys[0];
+  const endDate = dateKeys[dateKeys.length - 1];
+
+  const rows = db.prepare(`
+    SELECT substr(action_date, 1, 10) AS day,
+           action_type,
+           COUNT(*) AS count
+    FROM actions
+    WHERE user_id = ?
+      AND goguma_id = ?
+      AND substr(action_date, 1, 10) BETWEEN ? AND ?
+    GROUP BY day, action_type
+    ORDER BY day ASC
+  `).all(userId, gogumaId, startDate, endDate);
+
+  const dayMap = {};
+  dateKeys.forEach((day) => {
+    dayMap[day] = { date: day, score: 0, actionCount: 0, actions: {} };
+  });
+
+  rows.forEach((row) => {
+    if (!dayMap[row.day]) return;
+    const actionType = row.action_type;
+    const count = Number(row.count) || 0;
+    const value = Number(ACTION_VALUES[actionType]) || 0;
+    dayMap[row.day].actions[actionType] = count;
+    dayMap[row.day].actionCount += count;
+    dayMap[row.day].score += count * value;
+  });
+
+  const recentActions = db.prepare(`
+    SELECT action_type, action_date
+    FROM actions
+    WHERE user_id = ?
+      AND goguma_id = ?
+    ORDER BY id DESC
+    LIMIT 20
+  `).all(userId, gogumaId).map((row) => ({
+    actionType: row.action_type,
+    actionDate: String(row.action_date || '').slice(0, 10),
+    score: Number(ACTION_VALUES[row.action_type]) || 0
+  }));
+
+  return {
+    last7Days: dateKeys.map((day) => dayMap[day]),
+    recentActions
+  };
+}
+
+function getDominantAction(scores) {
+  let winner = null;
+  let best = -1;
+  ACTION_PRIORITY.forEach((actionType) => {
+    const score = Number(scores[actionType]) || 0;
+    if (score > best) {
+      best = score;
+      winner = actionType;
+    }
+  });
+  return best > 0 ? winner : null;
+}
+
+function getPassiveBonus(userId, gogumaId, actionType) {
+  const scores = getGogumaActionScores(userId, gogumaId);
+  const dominantAction = getDominantAction(scores);
+  if (!dominantAction) {
+    return { bonus: 0, dominantAction: null };
+  }
+  return {
+    bonus: dominantAction === actionType ? 1 : 0,
+    dominantAction
+  };
+}
+
+function toGogumaPayload(row, userId) {
+  const scores = getGogumaActionScores(userId, row.id);
+  return {
+    id: row.id,
+    name: row.name,
+    hp: row.hp,
+    dominantAction: getDominantAction(scores),
+    actionScores: scores,
+    todayActions: getTodayActionFlags(userId, row.id)
+  };
+}
+
+function getUserGogumas(userId) {
+  const rows = db
+    .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
+    .all(userId);
+  return rows.map((row) => toGogumaPayload(row, userId));
 }
 
 function isTester(userId) {
@@ -189,6 +560,7 @@ function mapPostRow(row) {
     title: row.title,
     content: row.content,
     imageData: row.imageData,
+    category: row.category || '출석인사',
     created_at: row.created_at,
     userName: row.userName,
     likeCount: Number(row.likeCount) || 0,
@@ -205,6 +577,7 @@ function getPostSummaries(viewerUserId) {
            p.title,
            p.content,
            p.image_data AS imageData,
+           p.category,
            p.created_at,
            u.name AS userName,
            (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likeCount,
@@ -232,6 +605,7 @@ function getPostDetail(postId, viewerUserId) {
            p.title,
            p.content,
            p.image_data AS imageData,
+           p.category,
            p.created_at,
            u.name AS userName,
            (SELECT COUNT(*) FROM post_likes pl WHERE pl.post_id = p.id) AS likeCount,
@@ -277,6 +651,7 @@ app.use(session({
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
 }));
 
+app.use(applyBasicSecurityHeaders);
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true, limit: '8mb' }));
 app.use((err, req, res, next) => {
@@ -289,6 +664,37 @@ app.use((err, req, res, next) => {
   return next(err);
 });
 app.use(express.static(__dirname));
+
+const limitStart = createRateLimiter({
+  keyPrefix: 'start',
+  windowMs: 60 * 1000,
+  max: 8,
+  message: '시작 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+});
+const limitGrow = createRateLimiter({
+  keyPrefix: 'grow',
+  windowMs: 60 * 1000,
+  max: 90,
+  message: '성장 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+});
+const limitWrite = createRateLimiter({
+  keyPrefix: 'write',
+  windowMs: 60 * 1000,
+  max: 40,
+  message: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+});
+const limitCommunityWrite = createRateLimiter({
+  keyPrefix: 'community-write',
+  windowMs: 60 * 1000,
+  max: 20,
+  message: '커뮤니티 작성 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+});
+const limitCommunityReact = createRateLimiter({
+  keyPrefix: 'community-react',
+  windowMs: 60 * 1000,
+  max: 45,
+  message: '커뮤니티 반응 요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+});
 
 // 루트(/) 접속 시 앱 페이지로 이동
 app.get('/', (req, res) => {
@@ -308,18 +714,17 @@ app.get('/api/me', (req, res) => {
 
   applyInactivityPenalty(user.id);
 
-  const gogumas = db
-    .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
-    .all(user.id);
-  res.json({ user: toUserPayload(user), gogumas });
+  const gogumas = getUserGogumas(user.id);
+  res.json({ user: toUserPayload(user), gogumas, missions: getMissionState(user.id) });
 });
 
 // 시작(로그인): 이름 입력 → 유저 생성/조회, 세션 설정
-app.post('/api/start', (req, res) => {
-  const userName = (req.body.userName || '').trim();
-  if (!userName) {
-    return res.status(400).json({ error: '이름을 입력해 주세요.' });
+app.post('/api/start', limitStart, (req, res) => {
+  const userNameResult = validateDisplayName(req.body.userName, INPUT_LIMITS.userName);
+  if (!userNameResult.ok) {
+    return res.status(400).json({ error: userNameResult.error === '입력값을 확인해 주세요.' ? '이름을 입력해 주세요.' : userNameResult.error });
   }
+  const userName = userNameResult.value;
   let user = db.prepare('SELECT id, name FROM users WHERE name = ?').get(userName);
   if (!user) {
     const stmt = db.prepare('INSERT INTO users (name) VALUES (?)');
@@ -330,27 +735,28 @@ app.post('/api/start', (req, res) => {
 
   applyInactivityPenalty(user.id);
 
-  const gogumas = db
-    .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
-    .all(user.id);
-  res.json({ user: toUserPayload(user), gogumas });
+  const gogumas = getUserGogumas(user.id);
+  res.json({ user: toUserPayload(user), gogumas, missions: getMissionState(user.id) });
 });
 
 // 고구마 추가
-app.post('/api/goguma/add', (req, res) => {
+app.post('/api/goguma/add', limitWrite, (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: '로그인이 필요합니다.' });
-  const name = (req.body.name || '').trim();
-  if (!name) return res.status(400).json({ error: '고구마 이름을 입력해 주세요.' });
+  const nameResult = validateDisplayName(req.body.name, INPUT_LIMITS.gogumaName);
+  if (!nameResult.ok) {
+    return res.status(400).json({ error: nameResult.error === '입력값을 확인해 주세요.' ? '고구마 이름을 입력해 주세요.' : nameResult.error });
+  }
+  const name = nameResult.value;
   const count = db.prepare('SELECT COUNT(*) as c FROM gogumas WHERE user_id = ?').get(req.session.userId).c;
   if (count >= 10) return res.status(400).json({ error: '최대 10명까지 가능합니다.' });
   const stmt = db.prepare('INSERT INTO gogumas (user_id, name, hp) VALUES (?, ?, 10)');
   const info = stmt.run(req.session.userId, name);
   const row = db.prepare('SELECT id, name, hp FROM gogumas WHERE id = ?').get(info.lastInsertRowid);
-  res.json({ goguma: row });
+  res.json({ goguma: toGogumaPayload(row, req.session.userId) });
 });
 
-// 고구마 HP 증가 (행동별로 하루 1회 제한)
-app.post('/api/goguma/grow', (req, res) => {
+// 고구마 온도 증가 (행동별로 하루 1회 제한)
+app.post('/api/goguma/grow', limitGrow, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -373,9 +779,27 @@ app.post('/api/goguma/grow', (req, res) => {
   // 테스터(권진호)는 하루 제한 없이 가능
   if (isTester(req.session.userId)) {
     const valTester = ACTION_VALUES[actionType];
-    const newHpTester = Math.min(100, row.hp + valTester);
+    const passive = getPassiveBonus(req.session.userId, id, actionType);
+    const totalGainTester = valTester + passive.bonus;
+    const newHpTester = Math.min(100, row.hp + totalGainTester);
+    // 테스터는 1일 제한 없이 사용 가능하되, 전직 판정을 위해 행동 점수 로그는 적재한다.
+    const actionDate = getTodayDate() + 'T' + Date.now();
+    db.prepare(
+      'INSERT INTO actions (user_id, goguma_id, action_type, action_date) VALUES (?, ?, ?, ?)'
+    ).run(req.session.userId, id, actionType, actionDate);
     db.prepare('UPDATE gogumas SET hp = ? WHERE id = ?').run(newHpTester, id);
-    return res.json({ id, hp: newHpTester });
+    const scores = getGogumaActionScores(req.session.userId, id);
+    return res.json({
+      id,
+      hp: newHpTester,
+      dominantAction: getDominantAction(scores),
+      actionScores: scores,
+      todayActions: getTodayActionFlags(req.session.userId, id),
+      baseGain: valTester,
+      passiveBonus: passive.bonus,
+      totalGain: totalGainTester,
+      missions: getMissionState(req.session.userId)
+    });
   }
 
   const today = getTodayDate();
@@ -393,7 +817,9 @@ app.post('/api/goguma/grow', (req, res) => {
   }
 
   const val = ACTION_VALUES[actionType];
-  const newHp = Math.min(100, row.hp + val);
+  const passive = getPassiveBonus(req.session.userId, id, actionType);
+  const totalGain = val + passive.bonus;
+  const newHp = Math.min(100, row.hp + totalGain);
 
   const insertAction = db.prepare(
     'INSERT INTO actions (user_id, goguma_id, action_type, action_date) VALUES (?, ?, ?, ?)'
@@ -408,16 +834,127 @@ app.post('/api/goguma/grow', (req, res) => {
   }
 
   db.prepare('UPDATE gogumas SET hp = ? WHERE id = ?').run(newHp, id);
-  res.json({ id, hp: newHp });
+  const scores = getGogumaActionScores(req.session.userId, id);
+  res.json({
+    id,
+    hp: newHp,
+    dominantAction: getDominantAction(scores),
+    actionScores: scores,
+    todayActions: getTodayActionFlags(req.session.userId, id),
+    baseGain: val,
+    passiveBonus: passive.bonus,
+    totalGain,
+    missions: getMissionState(req.session.userId)
+  });
+});
+
+app.get('/api/missions', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+  res.json(getMissionState(req.session.userId));
+});
+
+app.post('/api/missions/:key/claim', limitWrite, (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const key = String(req.params.key || '');
+  const state = getMissionState(req.session.userId);
+
+  let mission = null;
+  let rewardHp = 0;
+  if (key === state.daily.key) {
+    mission = state.daily;
+    rewardHp = Number(state.daily.rewardHp) || MISSION_REWARDS.daily;
+  } else if (key === state.weekly.key) {
+    mission = state.weekly;
+    rewardHp = Number(state.weekly.rewardHp) || 0;
+  } else {
+    return res.status(400).json({ error: '잘못된 미션입니다.' });
+  }
+
+  if (!mission.completed) {
+    return res.status(400).json({ error: '아직 미션을 완료하지 않았습니다.' });
+  }
+  if (mission.claimed) {
+    return res.status(400).json({ error: '이미 보상을 받았습니다.' });
+  }
+
+  const claimTx = db.transaction((userId, missionKey, periodKey, hpBonus) => {
+    db.prepare(`
+      INSERT INTO mission_rewards (user_id, mission_key, period_key, reward_hp)
+      VALUES (?, ?, ?, ?)
+    `).run(userId, missionKey, periodKey, hpBonus);
+
+    if (hpBonus > 0) {
+      db.prepare('UPDATE gogumas SET hp = MIN(100, hp + ?) WHERE user_id = ?').run(hpBonus, userId);
+    }
+  });
+
+  try {
+    claimTx(req.session.userId, mission.key, mission.periodKey, rewardHp);
+  } catch (e) {
+    return res.status(400).json({ error: '이미 보상을 받았습니다.' });
+  }
+
+  const user = db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.session.userId);
+  const gogumas = getUserGogumas(req.session.userId);
+  res.json({
+    ok: true,
+    missionKey: mission.key,
+    rewardHp,
+    user: user ? toUserPayload(user) : null,
+    gogumas,
+    missions: getMissionState(req.session.userId)
+  });
 });
 
 // 고구마 삭제
-app.post('/api/goguma/remove', (req, res) => {
+app.post('/api/goguma/remove', limitWrite, (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: '로그인이 필요합니다.' });
   const id = parseInt(req.body.id, 10);
-  const result = db.prepare('DELETE FROM gogumas WHERE id = ? AND user_id = ?').run(id, req.session.userId);
-  if (result.changes === 0) return res.status(404).json({ error: '고구마를 찾을 수 없습니다.' });
-  res.json({ ok: true });
+  if (!id) return res.status(400).json({ error: '잘못된 요청입니다.' });
+
+  const removeTx = db.transaction((userId, gogumaId) => {
+    const owned = db
+      .prepare('SELECT id FROM gogumas WHERE id = ? AND user_id = ?')
+      .get(gogumaId, userId);
+    if (!owned) return false;
+
+    db.prepare('DELETE FROM actions WHERE user_id = ? AND goguma_id = ?').run(userId, gogumaId);
+    const removed = db.prepare('DELETE FROM gogumas WHERE id = ? AND user_id = ?').run(gogumaId, userId);
+    return removed.changes > 0;
+  });
+
+  try {
+    const ok = removeTx(req.session.userId, id);
+    if (!ok) return res.status(404).json({ error: '고구마를 찾을 수 없습니다.' });
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: '삭제 중 오류가 발생했습니다.' });
+  }
+});
+
+app.get('/api/goguma/:id/history', (req, res) => {
+  if (!req.session.userId) {
+    return res.status(401).json({ error: '로그인이 필요합니다.' });
+  }
+
+  const id = parseInt(req.params.id, 10);
+  if (!id) {
+    return res.status(400).json({ error: '잘못된 요청입니다.' });
+  }
+
+  const owned = db
+    .prepare('SELECT id FROM gogumas WHERE id = ? AND user_id = ?')
+    .get(id, req.session.userId);
+  if (!owned) {
+    return res.status(404).json({ error: '고구마를 찾을 수 없습니다.' });
+  }
+
+  res.json(getGogumaHistory(req.session.userId, id));
 });
 
 // 로그아웃
@@ -427,7 +964,7 @@ app.post('/api/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-app.post('/api/reward/spin', (req, res) => {
+app.post('/api/reward/spin', limitWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -487,6 +1024,8 @@ app.post('/api/reward/spin', (req, res) => {
 app.get('/api/ranking', (req, res) => {
   const rows = db.prepare(`
     SELECT users.name as userName,
+           gogumas.id as gogumaId,
+           gogumas.user_id as userId,
            gogumas.name as gogumaName,
            gogumas.hp as hp
     FROM gogumas
@@ -496,7 +1035,17 @@ app.get('/api/ranking', (req, res) => {
     LIMIT 50
   `).all();
 
-  res.json(rows);
+  const ranking = rows.map((row) => {
+    const scores = getGogumaActionScores(row.userId, row.gogumaId);
+    return {
+      userName: row.userName,
+      gogumaName: row.gogumaName,
+      hp: row.hp,
+      dominantAction: getDominantAction(scores)
+    };
+  });
+
+  res.json(ranking);
 });
 
 // 게시글 목록
@@ -519,14 +1068,15 @@ app.get('/api/posts/:id', (req, res) => {
 });
 
 // 게시글 추가
-app.post('/api/posts/add', (req, res) => {
+app.post('/api/posts/add', limitCommunityWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
 
-  const title = (req.body.title || '').trim();
-  const content = (req.body.content || '').trim();
+  const title = sanitizeTextInput(req.body.title);
+  const content = sanitizeTextInput(req.body.content);
   const imageData = typeof req.body.imageData === 'string' ? req.body.imageData.trim() : '';
+  const category = sanitizeTextInput(req.body.category) || '출석인사';
 
   if (!title) {
     return res.status(400).json({ error: '제목을 입력해 주세요.' });
@@ -534,26 +1084,32 @@ app.post('/api/posts/add', (req, res) => {
   if (!content) {
     return res.status(400).json({ error: '내용을 입력해 주세요.' });
   }
-  if (title.length > 100) {
+  if (title.length > INPUT_LIMITS.postTitle) {
     return res.status(400).json({ error: '제목은 100자 이내로 작성해 주세요.' });
   }
-  if (content.length > 1000) {
+  if (content.length > INPUT_LIMITS.postContent) {
     return res.status(400).json({ error: '내용은 1000자 이내로 작성해 주세요.' });
+  }
+  if (!COMMUNITY_CATEGORIES.includes(category)) {
+    return res.status(400).json({ error: '올바른 카테고리를 선택해 주세요.' });
+  }
+  if (imageData && !/^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(imageData)) {
+    return res.status(400).json({ error: '이미지 데이터 형식이 올바르지 않습니다.' });
   }
   if (imageData && imageData.length > 6_000_000) {
     return res.status(400).json({ error: '이미지 용량이 너무 큽니다. 더 작은 이미지를 사용해 주세요.' });
   }
 
   const insert = db.prepare(`
-    INSERT INTO posts (user_id, title, content, image_data)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO posts (user_id, title, content, image_data, category)
+    VALUES (?, ?, ?, ?, ?)
   `);
-  const info = insert.run(req.session.userId, title, content, imageData || null);
+  const info = insert.run(req.session.userId, title, content, imageData || null, category);
 
   res.json(getPostDetail(info.lastInsertRowid, req.session.userId));
 });
 
-app.post('/api/posts/:id/like', (req, res) => {
+app.post('/api/posts/:id/like', limitCommunityReact, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -583,7 +1139,7 @@ app.post('/api/posts/:id/like', (req, res) => {
   });
 });
 
-app.post('/api/posts/:id/comments', (req, res) => {
+app.post('/api/posts/:id/comments', limitCommunityWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -598,11 +1154,11 @@ app.post('/api/posts/:id/comments', (req, res) => {
     return res.status(404).json({ error: '게시글을 찾을 수 없습니다.' });
   }
 
-  const content = (req.body.content || '').trim();
+  const content = sanitizeTextInput(req.body.content);
   if (!content) {
     return res.status(400).json({ error: '댓글을 입력해 주세요.' });
   }
-  if (content.length > 300) {
+  if (content.length > INPUT_LIMITS.comment) {
     return res.status(400).json({ error: '댓글은 300자 이내로 작성해 주세요.' });
   }
 
@@ -631,7 +1187,7 @@ app.post('/api/posts/:id/comments', (req, res) => {
   });
 });
 
-app.post('/api/comments/:id/update', (req, res) => {
+app.post('/api/comments/:id/update', limitCommunityWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -646,11 +1202,11 @@ app.post('/api/comments/:id/update', (req, res) => {
     return res.status(404).json({ error: '댓글을 찾을 수 없거나 권한이 없습니다.' });
   }
 
-  const content = (req.body.content || '').trim();
+  const content = sanitizeTextInput(req.body.content);
   if (!content) {
     return res.status(400).json({ error: '댓글을 입력해 주세요.' });
   }
-  if (content.length > 300) {
+  if (content.length > INPUT_LIMITS.comment) {
     return res.status(400).json({ error: '댓글은 300자 이내로 작성해 주세요.' });
   }
 
@@ -671,7 +1227,7 @@ app.post('/api/comments/:id/update', (req, res) => {
   res.json({ comment });
 });
 
-app.post('/api/comments/:id/delete', (req, res) => {
+app.post('/api/comments/:id/delete', limitCommunityWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
@@ -697,7 +1253,7 @@ app.post('/api/comments/:id/delete', (req, res) => {
 });
 
 // 게시글 삭제
-app.post('/api/posts/delete', (req, res) => {
+app.post('/api/posts/delete', limitCommunityWrite, (req, res) => {
   if (!req.session.userId) {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }

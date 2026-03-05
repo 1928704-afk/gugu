@@ -356,21 +356,36 @@
     }
 
     /* 리스트 (고구마 선택) */
+    .goguma-list-bar {
+      width: 100%;
+      margin: 8px auto 14px;
+      padding: 8px 10px;
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 248, 233, 0.92) 0%, rgba(247, 223, 176, 0.9) 100%);
+      box-shadow: var(--shadow);
+    }
     .goguma-list {
       display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      gap: 6px;
+      margin-bottom: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
     .goguma-chip {
       font-family: 'NeoDunggeunmo', sans-serif;
-      background: #fff;
-      border: 3px solid #000;
-      padding: 8px 14px;
-      font-size: 12px;
+      background: rgba(255, 248, 233, 0.95);
+      border: 3px solid var(--panel-border);
+      padding: 6px 12px;
+      font-size: 11px;
       cursor: pointer;
-      box-shadow: 2px 2px 0 #000;
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.75);
+      white-space: nowrap;
+      flex: 0 0 auto;
     }
     .goguma-chip:hover, .goguma-chip.selected {
       background: #FFD700;
@@ -381,10 +396,7 @@
       display: inline-flex;
       align-items: center;
       background: #333;
-      border: 3px solid #000;
-      padding: 8px 16px 8px 12px;
       margin-bottom: 8px;
-      box-shadow: 4px 4px 0 #000;
       color: #fff;
       font-size: 12px;
     }
@@ -407,6 +419,62 @@
       height: 100%;
       background: #ff9800;
       transition: width 0.2s;
+    }
+    .status-bar-inline {
+      position: absolute;
+      left: 45%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: calc(90% - 24px);
+      width: calc(100% - 24px);
+      padding: 0;
+      margin-bottom: 0;
+      font-size: 10px;
+    }
+    .status-bar-inline .status-pill {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .status-bar-inline .hp-wrap {
+      gap: 6px;
+      min-width: 0;
+      width: 100%;
+      color: rgba(43, 24, 8, 0.88);
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.35);
+    }
+    .status-bar-inline .hp-box {
+      position: relative;
+      flex: 1;
+      width: auto;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(56, 37, 15, 0.24);
+      border: 2px solid rgba(43, 24, 8, 0.32);
+      overflow: hidden;
+    }
+    .status-bar-inline .hp-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      font-size: 9px;
+      line-height: 1;
+      color: #2b1808;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.45);
+      pointer-events: none;
+    }
+    .status-bar-inline .status-icon {
+      filter: drop-shadow(1px 1px 0 rgba(255,255,255,0.25));
     }
     .status-bar .arrow {
       width: 0;
@@ -701,7 +769,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-top: 2px;
+      margin-top: 0;
       width: 100%;
       max-width: 420px;
     }
@@ -954,7 +1022,6 @@
       object-fit: contain;
       image-rendering: pixelated;
       transform-origin: center center;
-      transition: transform 3.2s cubic-bezier(0.12, 0.9, 0.08, 1);
       filter: drop-shadow(0 8px 0 rgba(43, 24, 8, 0.18));
     }
     .roulette-result {
@@ -971,6 +1038,19 @@
       display: block;
       font-size: 16px;
       margin-bottom: 4px;
+    }
+    .roulette-debug {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 2px dashed rgba(43, 24, 8, 0.22);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.58);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-size: 10px;
+      color: #3b2310;
+      line-height: 1.45;
+      text-align: left;
+      white-space: pre-line;
     }
     .field-screen {
       justify-content: flex-start;
@@ -1097,6 +1177,29 @@
       font-size: 11px;
       color: #667790;
     }
+    .community-category-filters {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .community-category-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(5,17,37,0.12);
+      background: #fff;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 10px;
+      color: #44546a;
+      cursor: pointer;
+    }
+    .community-category-chip.is-active {
+      background: #ffd56a;
+      color: #1d1208;
+      border-color: rgba(0,0,0,0.3);
+    }
     .community-compose-modal {
       position: absolute;
       top: 8px;
@@ -1137,6 +1240,7 @@
       color: #051125;
     }
     .community-input,
+    .community-select,
     .community-textarea {
       width: 100%;
       border: 1px solid #d8e3f3;
@@ -1148,6 +1252,10 @@
     }
     .community-input {
       margin-bottom: 8px;
+    }
+    .community-select {
+      margin-bottom: 8px;
+      appearance: none;
     }
     .community-textarea {
       resize: vertical;
@@ -1213,6 +1321,18 @@
       font-size: 15px;
       color: #051125;
       line-height: 1.45;
+    }
+    .community-category-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ffe6a3;
+      color: #5b3a16;
+      font-size: 10px;
+      border: 1px solid rgba(91,58,22,0.12);
+      white-space: nowrap;
     }
     .community-post-card h3 {
       margin: 0;
@@ -1604,7 +1724,6 @@
     .action-tips {
       width: 100%;
       margin: 10px auto 0;
-      display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
       font-size: 11px;
@@ -1617,6 +1736,217 @@
       color: #5b3a16;
       text-align: center;
     }
+    .mission-panel {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 2px solid rgba(43,24,8,0.2);
+      background: rgba(255,255,255,0.62);
+    }
+    .mission-empty {
+      font-size: 11px;
+      color: #6c4a21;
+      text-align: center;
+    }
+    .mission-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .mission-card {
+      border-radius: 12px;
+      border: 2px solid rgba(43,24,8,0.15);
+      background: rgba(255, 253, 245, 0.88);
+      padding: 8px;
+    }
+    .mission-card.completed {
+      border-color: rgba(47, 125, 50, 0.5);
+      background: rgba(232, 245, 233, 0.92);
+    }
+    .mission-card.claimed {
+      opacity: 0.72;
+    }
+    .mission-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 10px;
+      color: #5b3a16;
+    }
+    .mission-title {
+      font-size: 11px;
+      color: #2b1808;
+    }
+    .mission-progress {
+      font-size: 10px;
+      color: #5b3a16;
+      margin-bottom: 6px;
+    }
+    .mission-desc {
+      font-size: 10px;
+      color: #6c4a21;
+      margin-bottom: 6px;
+    }
+    .mission-checklist {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .mission-chip {
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,24,8,0.2);
+      background: #fff;
+      font-size: 10px;
+      color: #6c4a21;
+      white-space: nowrap;
+    }
+    .mission-chip.done {
+      border-color: rgba(47, 125, 50, 0.5);
+      color: #1b5e20;
+      background: #e8f5e9;
+    }
+    .mission-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+    }
+    .mission-reward {
+      font-size: 10px;
+      color: #2b1808;
+    }
+    .mission-claim-btn {
+      font-size: 10px;
+      padding: 6px 9px;
+      min-width: 78px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .mission-claim-btn:disabled {
+      cursor: default;
+      filter: grayscale(0.2);
+      opacity: 0.7;
+    }
+    .history-panel {
+      width: 100%;
+      max-width: 420px;
+      margin: 10px auto 0;
+      padding: 12px;
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      background: rgba(255, 248, 233, 0.84);
+      box-shadow: var(--shadow);
+    }
+    .history-title {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: #5b3a16;
+      text-align: center;
+    }
+    .history-empty {
+      font-size: 11px;
+      color: #6c4a21;
+      text-align: center;
+      padding: 8px 0;
+    }
+    .history-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .history-stat {
+      border: 2px solid rgba(43,24,8,0.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.68);
+      padding: 6px 7px;
+    }
+    .history-stat-label {
+      display: block;
+      font-size: 9px;
+      color: #6c4a21;
+      margin-bottom: 3px;
+    }
+    .history-stat-value {
+      display: block;
+      font-size: 11px;
+      color: #2b1808;
+    }
+    .history-ratio {
+      margin-bottom: 10px;
+      border: 2px solid rgba(43,24,8,0.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.68);
+      padding: 6px 7px;
+      font-size: 10px;
+      color: #5b3a16;
+      line-height: 1.45;
+    }
+    .history-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      align-items: end;
+      min-height: 96px;
+      margin-bottom: 10px;
+    }
+    .history-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .history-bar-wrap {
+      width: 100%;
+      height: 64px;
+      border: 2px solid rgba(43,24,8,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .history-bar {
+      width: 100%;
+      min-height: 4px;
+      background: linear-gradient(180deg, #ffcf66 0%, #f59e0b 100%);
+      border-top: 2px solid rgba(0,0,0,0.2);
+    }
+    .history-score {
+      font-size: 9px;
+      color: #5b3a16;
+      line-height: 1;
+    }
+    .history-date {
+      font-size: 9px;
+      color: #6c4a21;
+      line-height: 1;
+    }
+    .history-log {
+      max-height: 122px;
+      overflow-y: auto;
+      border-top: 2px solid rgba(43,24,8,0.14);
+      padding-top: 8px;
+    }
+    .history-log-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10px;
+      color: #5b3a16;
+      padding: 4px 2px;
+      border-bottom: 1px dashed rgba(43,24,8,0.12);
+    }
+    .history-log-item:last-child {
+      border-bottom: 0;
+    }
+    .history-log-action {
+      color: #2b1808;
+    }
     .empty-state {
       padding: 16px 12px;
       border: 3px dashed rgba(43, 24, 8, 0.22);
@@ -1627,6 +1957,7 @@
       color: #6c4a21;
     }
     .game-header,
+    .goguma-list-bar,
     #detailView,
     #detailActions,
     #noSelectHint {
@@ -1644,10 +1975,13 @@
     }
     .goguma-list {
       width: 100%;
-      max-width: 420px;
-      margin-top: 18px;
+      margin-top: 0;
       gap: 8px;
       justify-content: flex-start;
+    }
+    #detailView,
+    #fieldDetailView {
+      margin-top: 4px;
     }
     .goguma-chip {
       background: rgba(255, 248, 233, 0.9);
@@ -1663,13 +1997,10 @@
       display: grid;
       grid-template-columns: 1fr;
       gap: 8px;
-      background: rgba(255, 248, 233, 0.92);
-      border: 4px solid var(--panel-border);
+      background: rgba(211, 211, 200);
       border-radius: 18px;
-      padding: 12px 14px;
-      box-shadow: var(--shadow);
       color: #1d1208;
-      margin-bottom: 12px;
+      margin-bottom: -1px;
     }
     .status-pill {
       display: inline-flex;
@@ -1722,9 +2053,36 @@
       border: 4px solid var(--panel-border);
       border-radius: 26px;
       background:
-        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255, 248, 233, 0.88) 100%);
+        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255, 248, 233, 0.72) 100%) 0 0 / cover no-repeat,
+        var(--pot-bg-image, url('game_images/Backgrounds/backgroundForest.png')) 0 center / auto 100% repeat-x;
       box-shadow: var(--shadow);
       overflow: hidden;
+      animation: potCardBgLoop 36s linear infinite;
+    }
+    @keyframes potCardBgLoop {
+      from { background-position: 0 0, 0 center; }
+      to { background-position: 0 0, -360px center; }
+    }
+    .card-bg-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 4;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      padding: 0;
+      border: 3px solid #000;
+      border-radius: 999px;
+      background: rgba(255, 253, 244, 0.9);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.7);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .card-bg-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 rgba(43, 24, 8, 0.7);
     }
     .pot-scene::before {
       content: '';
@@ -1735,14 +2093,32 @@
         linear-gradient(180deg, transparent 0%, rgba(82, 45, 18, 0.1) 22%, rgba(82, 45, 18, 0.2) 100%),
         url('game_images/24.png') center bottom / cover no-repeat;
       opacity: 0.95;
+      z-index: 0;
+    }
+    .stage-fire-gif {
+      position: absolute;
+      left: 50%;
+      bottom: 30px;
+      width: clamp(130px, 38vw, 190px);
+      transform: translateX(-50%);
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.86;
+      filter: drop-shadow(0 6px 0 rgba(43, 24, 8, 0.18));
+      animation: stageFireFlicker 1.4s ease-in-out infinite;
+    }
+    @keyframes stageFireFlicker {
+      0%, 100% { opacity: 0.82; transform: translateX(-50%) scale(0.98); }
+      50% { opacity: 0.94; transform: translateX(-50%) scale(1.03); }
     }
     .stage-frame {
       position: relative;
-      z-index: 1;
+      z-index: 2;
       height: 100%;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
     }
     .goguma-stage-image {
       --goguma-scale: 1;
@@ -1755,19 +2131,124 @@
       animation: gogumaFloat 2.8s ease-in-out infinite;
       will-change: transform;
     }
+    @keyframes gogumaSpeechFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+    .goguma-speech {
+      position: absolute;
+      top: 12px;
+      left: 142px;
+      display: inline-block;
+      width: auto;
+      min-width: 48px;
+      max-width: 152px;
+      max-height: 120px;
+      padding: 10px 8px;
+      background: rgba(255, 253, 244, 0.88);
+      color: #000;
+      box-sizing: border-box;
+      font-size: 10px;
+      line-height: 1.45;
+      text-align: center;
+      box-shadow:
+        0 -4px #fff,
+        0 -8px #000,
+        4px 0 #fff,
+        4px -4px #000,
+        8px 0 #000,
+        0 4px #fff,
+        0 8px #000,
+        -4px 0 #fff,
+        -4px 4px #000,
+        -8px 0 #000,
+        -4px -4px #000,
+        4px 4px #000;
+      z-index: 3;
+      word-break: keep-all;
+      overflow-y: auto;
+      animation: gogumaSpeechFloat 2.8s ease-in-out infinite;
+      will-change: transform;
+    }
+    .goguma-speech-text {
+      display: block;
+      padding-right: 12px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .goguma-speech-close {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      border: 2px solid #000;
+      background: rgba(255, 253, 244, 0.92);
+      color: #000;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 9px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .goguma-speech-toggle {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 3;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 3px solid #000;
+      border-radius: 999px;
+      background: rgba(255, 253, 244, 0.86);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.8);
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      animation: gogumaSpeechFloat 2.8s ease-in-out infinite;
+    }
+    .goguma-speech.is-multi {
+      max-width: 240px;
+    }
+    .goguma-speech::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      left: 28px;
+      bottom: -8px;
+      background: rgba(255, 253, 244, 0.88);
+      box-shadow:
+        0 4px #000,
+        0 8px #000,
+        0 12px #000,
+        0 16px #000,
+        -4px 12px #000,
+        -8px 8px #000,
+        -12px 4px #000,
+        -4px 4px #fff,
+        -8px 4px #fff,
+        -4px 8px #fff,
+        -4px 0 #fff,
+        -8px 0 #fff,
+        -12px 0 #fff;
+    }
     .goguma-nameplate {
       position: absolute;
       left: 50%;
-      bottom: 26px;
+      bottom: 40px;
       transform: translateX(-50%);
       z-index: 2;
       min-width: 120px;
       max-width: calc(100% - 120px);
       padding: 6px 12px;
-      border: 3px solid #000;
       border-radius: 999px;
       background: rgba(255, 248, 233, 0.95);
-      box-shadow: 3px 3px 0 rgba(43, 24, 8, 0.9);
       text-align: center;
       font-size: 12px;
       color: #2b1808;
@@ -1791,6 +2272,11 @@
       right: 18px;
       bottom: 18px;
     }
+    .stage-tool-history {
+      cursor: pointer;
+      z-index: 5;
+      pointer-events: auto;
+    }
     .action-panel {
       width: 100%;
       max-width: 420px;
@@ -1809,9 +2295,30 @@
     }
     .pot-scene-actions {
       position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 3;
+      left: 90%;
+      bottom: 2px;
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+    .pot-delete-btn {
+      min-width: 30px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 999px;
+      font-size: 14px;
+      line-height: 1;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.7);
+      opacity: 0.84;
+    }
+    .pot-delete-btn:hover {
+      background: rgba(255, 224, 178, 0.96);
+      opacity: 1;
+    }
+    .pot-delete-btn:active {
+      box-shadow: 1px 1px 0 rgba(0,0,0,0.7);
+      transform: translate(1px, 1px);
     }
     .celebration-canvas {
       position: absolute;
@@ -1828,13 +2335,14 @@
     }
     .action-buttons {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 8px;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 2px;
       width: 100%;
       max-width: 420px;
       margin: 0 auto;
     }
     .asset-btn {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1842,6 +2350,7 @@
       border: 0;
       background: transparent;
       padding: 0;
+      width: 100%;
       cursor: pointer;
       transition: transform 0.12s ease;
     }
@@ -1851,14 +2360,38 @@
     .asset-btn:active {
       transform: translateY(1px);
     }
+    .asset-btn:disabled {
+      cursor: default;
+      opacity: 0.7;
+      transform: none !important;
+      filter: grayscale(0.25);
+    }
+    .asset-btn.is-used::after {
+      content: '오늘 완료';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,24,8,0.22);
+      background: rgba(255,255,255,0.92);
+      color: #6c4a21;
+      font-size: 9px;
+      line-height: 1;
+    }
+    .asset-btn.is-passive {
+      transform: translateY(-2px);
+      filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.5));
+    }
     .asset-btn img {
       width: 100%;
-      min-width: 56px;
+      height: 86px;
+      object-fit: contain;
       image-rendering: pixelated;
       filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.22));
     }
     .asset-btn span {
-      margin-top: 6px;
+      margin-top: 4px;
       font-size: 10px;
       line-height: 1.2;
       color: #3f2915;
@@ -1895,9 +2428,6 @@
       }
       .status-bar .name {
         font-size: 12px;
-      }
-      .asset-btn img {
-        min-width: 48px;
       }
       .toolbar-row,
       .input-row {
@@ -2062,7 +2592,7 @@
         </div>
         <div class="toolbar-actions">
           <button class="pixel-btn" id="btnRoulette" style="font-size:12px;padding:6px 10px" onclick="openRoulette()">7일 룰렛</button>
-          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleRanking()">랭킹표 보기</button>
+          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleRanking()">리더보드</button>
           <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="openCommunity()">커뮤니티</button>
         </div>
       </div>
@@ -2074,7 +2604,7 @@
     <div id="rankingModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'ranking')">
       <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
         <div class="modal-head-row">
-          <h3 class="modal-heading"><img src="game_images/4.png" alt="전체 리더보드"></h3>
+          <h3 class="modal-heading">전체 리더보드</h3>
           <button class="pixel-btn modal-close" onclick="closeRanking()">닫기</button>
         </div>
         <ol id="rankingList" class="list-panel"></ol>
@@ -2111,66 +2641,78 @@
         </div>
       </div>
     </div>
-    <div class="goguma-list" id="gogumaList"></div>
+    <div id="historyModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'history')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 id="historyModalHeading" class="modal-heading">성장 히스토리 (최근 7일)</h3>
+          <button class="pixel-btn modal-close" onclick="closeHistoryModal()">닫기</button>
+        </div>
+        <div id="historyModalContent" class="history-empty">고구마를 선택하면 히스토리를 확인할 수 있습니다.</div>
+      </div>
+    </div>
+    <div class="goguma-list-bar">
+      <div class="goguma-list" id="gogumaList"></div>
+    </div>
 
     <div id="fieldDetailView" class="field-panel hidden" style="margin-top: 8px;">
       <h2>나의 밭</h2>
       <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
       <div id="fieldSummary" class="field-summary"></div>
       <div class="field-toolbar">
-        <span class="field-toolbar-label">정렬</span>
-        <div class="field-sort-buttons">
-          <button type="button" class="pixel-btn field-sort-btn" id="sortByCreated" onclick="setFieldSort('created')">기본순</button>
-          <button type="button" class="pixel-btn field-sort-btn" id="sortByHp" onclick="setFieldSort('hp')">HP순</button>
-          <button type="button" class="pixel-btn field-sort-btn" id="sortByName" onclick="setFieldSort('name')">이름순</button>
-        </div>
       </div>
       <div id="inlineFieldGrid" class="field-grid"></div>
     </div>
 
     <div id="detailView" class="hidden">
-      <div class="status-bar">
-        <div class="status-pill">
-          <img class="status-icon" src="game_images/15.png" alt="">
-          <span class="name" id="statusName"></span>
-        </div>
-        <div class="status-pill">
-          <img class="status-icon" src="game_images/14.png" alt="">
-          <span id="statusStageText">성장 1단계</span>
-        </div>
-        <div class="hp-wrap">
-          <img class="status-icon" src="game_images/13.png" alt="">
-          <span>HP</span>
-          <div class="hp-box">
-            <div class="hp-fill" id="statusHpFill" style="width:0%"></div>
-          </div>
-        </div>
-      </div>
       <div class="pot-scene" id="potScene">
         <div id="heartContainer"></div>
         <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
+        <button type="button" id="cardBgBtn" class="card-bg-btn" onclick="cycleSelectedGogumaCardBg()" aria-label="카드 배경 변경" title="카드 배경 변경">🖼️</button>
+        <img class="stage-fire-gif" src="game_images/fire.gif" alt="" onerror="this.style.display='none'">
         <div class="pot-scene-actions">
-          <button class="pixel-btn hidden" id="btnDelete" onclick="removeSelected()" style="font-size:11px;padding:8px 12px">삭제</button>
+          <button class="pixel-btn pot-delete-btn hidden" id="btnDelete" onclick="removeSelected()" aria-label="고구마 삭제" title="삭제">🗑</button>
         </div>
-        <div class="stage-frame">
+        <div id="gogumaSpeech" class="goguma-speech">
+          <button type="button" class="goguma-speech-close" onclick="hideGogumaSpeech(event)" aria-label="말풍선 숨기기">x</button>
+          <span id="gogumaSpeechText" class="goguma-speech-text">오늘도 함께 자라요!</span>
+        </div>
+        <button type="button" id="gogumaSpeechToggle" class="goguma-speech-toggle hidden" onclick="showGogumaSpeech()" aria-label="말풍선 다시 보기">💬</button>
+        <div class="stage-frame" onclick="advanceGogumaSpeech(true)">
           <img id="gogumaStageImage" class="goguma-stage-image" src="game_images/17.png" alt="고구마 단계">
         </div>
-        <div id="gogumaNameplate" class="goguma-nameplate">고구마 이름</div>
+        <div class="status-bar status-bar-inline">
+          <div class="hp-wrap">
+            <img class="status-icon" src="game_images/13.png" alt="">
+            <span>온도</span>
+            <div class="hp-box">
+              <div class="hp-fill" id="statusHpFill" style="width:0%"></div>
+              <span class="hp-value" id="statusHpValue">0</span>
+            </div>
+          </div>
+        </div>
         <img class="stage-tool left" src="game_images/11.png" alt="">
-        <img class="stage-tool right" src="game_images/12.png" alt="">
+        <img class="stage-tool right stage-tool-history" src="game_images/12.png" alt="성장 히스토리 보기" role="button" tabindex="0" onclick="openSelectedHistory()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSelectedHistory();}">
       </div>
       <div class="action-panel">
-        <p class="action-panel-title">오늘의 성장 행동</p>
+        <p class="action-panel-title">오늘의 미션</p>
         <div class="action-buttons">
-          <button class="asset-btn" onclick="grow('bible')"><img src="game_images/6.png" alt="말씀읽기 (+1)"><span>말씀 +1</span></button>
-          <button class="asset-btn" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
-          <button class="asset-btn" onclick="grow('contact')"><img src="game_images/8.png" alt="연락 (+3)"><span>연락 +3</span></button>
-          <button class="asset-btn" onclick="grow('meeting')"><img src="game_images/9.png" alt="만남권유 (+5)"><span>만남 +5</span></button>
-          <button class="asset-btn" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>초대 +8</span></button>
+          <button class="asset-btn" data-action="postWrite" onclick="grow('postWrite')" aria-label="게시판작성 (+1)">
+            <img src="game_images/27.png" alt="게시판작성 (+1)">
+            <span>게시판 작성 +1</span>
+          </button>
+          <button class="asset-btn" data-action="bible" onclick="grow('bible')"><img src="game_images/6.png" alt="말씀읽기 (+1)"><span>말씀 +1</span></button>
+          <button class="asset-btn" data-action="prayer" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
+          <button class="asset-btn" data-action="contact" onclick="grow('contact')"><img src="game_images/8.png" alt="연락 (+3)"><span>연락 +3</span></button>
+          <button class="asset-btn" data-action="meeting" onclick="grow('meeting')"><img src="game_images/9.png" alt="만남권유 (+5)"><span>만남 +5</span></button>
+          <button class="asset-btn" data-action="invite" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>초대 +8</span></button>
         </div>
         <div class="action-tips">
           <div class="action-tip">행동 카드는 하루에 1번씩만 사용할 수 있습니다.</div>
-          <div class="action-tip">고구마 칩을 눌러 다른 캐릭터로 바로 전환할 수 있습니다.</div>
+          <div id="passiveTip" class="action-tip">전직 패시브가 아직 없습니다. 행동을 누적해 전직을 정해 보세요.</div>
+          <div id="actionResetTimer" class="action-tip">다음 리셋(KST)까지 --:--:--</div>
+        </div>
+        <div id="missionPanel" class="mission-panel">
+          <div id="missionContent" class="mission-empty">미션 정보를 불러오는 중입니다...</div>
         </div>
       </div>
     </div>
@@ -2234,6 +2776,7 @@
             <p class="community-list-caption">최근 글을 이미지 중심으로 둘러볼 수 있습니다.</p>
             <button class="pixel-btn" type="button" style="font-size:11px;padding:8px 12px" onclick="openCommunityComposer()">작성</button>
           </div>
+          <div id="communityCategoryFilters" class="community-category-filters"></div>
           <div id="communityComposeModal" class="community-compose-modal hidden">
             <div class="community-compose">
               <div class="community-compose-header">
@@ -2241,6 +2784,12 @@
                 <button class="pixel-btn" type="button" style="font-size:10px;padding:6px 10px" onclick="closeCommunityComposer()">닫기</button>
               </div>
               <input id="communityTitle" class="community-input" type="text" maxlength="100" placeholder="제목을 입력해 주세요.">
+              <select id="communityCategory" class="community-select">
+                <option value="출석인사">출석인사</option>
+                <option value="간식당첨">간식당첨</option>
+                <option value="전도인증">전도인증</option>
+                <option value="묵상나눔">묵상나눔</option>
+              </select>
               <textarea id="communityContent" class="community-textarea" maxlength="1000" placeholder="오늘의 이야기를 적어 주세요."></textarea>
               <input id="communityImageInput" type="file" accept="image/*" class="hidden">
               <div class="community-compose-actions">
@@ -2279,12 +2828,27 @@
     var communityImageData = '';
     var activeZoomImage = '';
     var communityCommentSubmitting = false;
+    var communityCategoryFilter = 'all';
+    var gogumaSpeechIndex = 0;
+    var gogumaSpeechTargetId = null;
+    var gogumaSpeechTimer = null;
+    var gogumaSpeechDismissed = false;
     var lastRouletteReward = null;
     var isRouletteSpinning = false;
-    var rouletteRotation = 0;
+    var rouletteBaseRotationDeg = 0;
+    var rouletteWheelLoaded = false;
+    var rouletteSeedOverride = null;
+    var rouletteSeededRng = null;
+    var rouletteSeededRngSeed = null;
     var fireworkFrameId = null;
     var fireworkStopTimer = null;
     var fireworkParticles = [];
+    var missionState = null;
+    var missionClaimLoading = '';
+    var gogumaHistoryById = {};
+    var historyLoadingById = {};
+    var actionUsageDayKey = '';
+    var actionCooldownTimer = null;
     var STAGE_ASSETS = {
       1: 'game_images/17.png',
       2: 'game_images/18.png',
@@ -2292,6 +2856,94 @@
       4: 'game_images/20.png',
       5: 'game_images/21.png'
     };
+    var SPROUT_TRANSFORM_ASSETS = {
+      bible: 'game_images/sprout_charactors/01_word_reader.png',
+      prayer: 'game_images/sprout_charactors/02_prayer.png',
+      contact: 'game_images/sprout_charactors/03_contact_angel.png',
+      meeting: 'game_images/sprout_charactors/04_meeting.png',
+      invite: 'game_images/sprout_charactors/05_invite.png',
+      postWrite: 'game_images/sprout_charactors/01_word_reader.png'
+    };
+    var SPROUT_TRANSFORM_ASSETS_2 = {
+      bible: 'game_images/sprout_charactors2/01_성경2.png',
+      prayer: 'game_images/sprout_charactors2/02_기도2.png',
+      contact: 'game_images/sprout_charactors2/03_연락2.png',
+      meeting: 'game_images/sprout_charactors2/04_만남2.png',
+      invite: 'game_images/sprout_charactors2/05_초대2.png',
+      postWrite: 'game_images/sprout_charactors2/01_성경2.png'
+    };
+    var ACTION_VALUES_CLIENT = {
+      postWrite: 1,
+      bible: 1,
+      prayer: 1,
+      contact: 3,
+      meeting: 5,
+      invite: 8
+    };
+    var ACTION_PRIORITY_CLIENT = ['invite', 'meeting', 'contact', 'postWrite', 'bible', 'prayer'];
+    var ACTION_LABELS_CLIENT = {
+      postWrite: '게시판 작성',
+      bible: '말씀',
+      prayer: '기도',
+      contact: '연락',
+      meeting: '만남',
+      invite: '초대'
+    };
+    var MISSION_ACTION_LABELS = {
+      bible: '말씀',
+      prayer: '기도',
+      contact: '연락'
+    };
+    var GOGUMA_CARD_BACKGROUNDS = [
+      'game_images/Backgrounds/backgroundForest.png',
+      'game_images/Backgrounds/backgroundColorForest.png',
+      'game_images/Backgrounds/backgroundColorGrass.png',
+      'game_images/Backgrounds/backgroundColorFall.png',
+      'game_images/Backgrounds/backgroundDesert.png',
+      'game_images/Backgrounds/backgroundColorDesert.png',
+      'game_images/Backgrounds/backgroundCastles.png',
+      'game_images/Backgrounds/backgroundEmpty.png'
+    ];
+    var CARD_BG_STORAGE_KEY = 'goguma.cardBgPrefs.v1';
+    var gogumaCardBgPrefById = {};
+    // 12시(0deg) 정중앙 = 벳세다 상품권 1000원
+    // 이후 시계 방향 배치
+    var ROULETTE_SEGMENTS = [
+      { id: 'voucher_1000', label: '벳세다 상품권 1000원', weight: 1, hpBonus: 0 },
+      { id: 'miss_a', label: '꽝', weight: 1, hpBonus: 0 },
+      { id: 'jelly_a', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'jelly_b', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'all_plus_5_a', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
+      { id: 'all_plus_5_b', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
+      { id: 'jelly_c', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'miss_b', label: '꽝', weight: 1, hpBonus: 0 }
+    ];
+    var rouletteEngine = {
+      pointerAngle: 0,
+      imageOffsetDeg: 0,
+      minSpins: 5,
+      maxSpins: 7,
+      minDurationMs: 2500,
+      maxDurationMs: 4500,
+      debug: true,
+      onSpinEnd: null
+    };
+    var COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '전도인증', '묵상나눔'];
+    var GOGUMA_SPEECH_LINES = [
+      '{name}를 위해 기도하고 있어요!',
+      '따뜻한 마음으로 함께 전해요!',
+      '기도하면 제 온도가 올라가요!',
+      '오늘도 묵상을 나눠 볼까요?',
+      '전도인증도 기대하고 있어요!',
+      '저를 눌러 주면 더 신나요!',
+      '{name}가 연락을 기다려요!',
+      '작은 순종이 큰 열매가 돼요!',
+	    '지금도 늦지 않았어요!',
+	    '말씀 한줄이 내 마음을 바꿔요!',
+	    '오늘의 기도가 내일을 만들어요!',
+	    '포기 말고 한 번만 더!',
+	    '당신의 걸음이 누군가의 기도가 돼요!'
+    ];
     let rankingInterval = null;
     let boardInterval = null;
 
@@ -2388,6 +3040,757 @@
       notice.className = 'inline-notice' + (tone ? (' ' + tone) : '');
     }
 
+    function setMissionState(nextState) {
+      missionState = nextState && typeof nextState === 'object' ? nextState : null;
+      renderMissionPanel();
+    }
+
+    function fetchMissions() {
+      if (!currentUser) {
+        setMissionState(null);
+        return;
+      }
+      fetchJson(API + '/api/missions', { credentials: 'include', cache: 'no-store' })
+        .then(function(res) {
+          if (!res.ok || !res.data || res.data.error) return;
+          setMissionState(res.data);
+        });
+    }
+
+    function missionClaimButtonText(mission) {
+      if (!mission) return '받기';
+      if (mission.claimed) return '수령 완료';
+      if (missionClaimLoading && missionClaimLoading === mission.key) return '처리 중...';
+      if (!mission.completed) return '진행 중';
+      return '보상 받기';
+    }
+
+    function renderDailyMissionChecklist(mission) {
+      var required = Array.isArray(mission.requiredActions) ? mission.requiredActions : [];
+      var completedSet = new Set(Array.isArray(mission.completedActions) ? mission.completedActions : []);
+      return required.map(function(actionKey) {
+        var done = completedSet.has(actionKey);
+        var label = MISSION_ACTION_LABELS[actionKey] || actionKey;
+        return '<span class="mission-chip ' + (done ? 'done' : '') + '">' + (done ? '완료' : '대기') + ' ' + label + '</span>';
+      }).join('');
+    }
+
+    function renderMissionCard(mission, subText, checklistHtml) {
+      if (!mission) return '';
+      var cardClass = 'mission-card' + (mission.completed ? ' completed' : '') + (mission.claimed ? ' claimed' : '');
+      var btnDisabled = mission.claimed || !mission.completed || !!missionClaimLoading;
+      return (
+        '<div class="' + cardClass + '">' +
+          '<div class="mission-head">' +
+            '<strong class="mission-title">' + mission.label + '</strong>' +
+            '<span>' + subText + '</span>' +
+          '</div>' +
+          (mission.description ? ('<div class="mission-desc">' + mission.description + '</div>') : '') +
+          '<div class="mission-progress">진행도 ' + (mission.progress && mission.progress.current || 0) + ' / ' + (mission.progress && mission.progress.total || 0) + '</div>' +
+          (checklistHtml ? ('<div class="mission-checklist">' + checklistHtml + '</div>') : '') +
+          '<div class="mission-actions">' +
+            '<span class="mission-reward">보상: 전체 온도 +' + (mission.rewardHp || 0) + '</span>' +
+            '<button class="pixel-btn mission-claim-btn" onclick="claimMissionReward(\'' + mission.key + '\')" ' + (btnDisabled ? 'disabled' : '') + '>' + missionClaimButtonText(mission) + '</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderMissionPanel() {
+      var contentEl = document.getElementById('missionContent');
+      if (!contentEl) return;
+      if (!currentUser) {
+        contentEl.className = 'mission-empty';
+        contentEl.textContent = '로그인 후 미션을 확인할 수 있습니다.';
+        return;
+      }
+      if (!missionState || !missionState.daily || !missionState.weekly) {
+        contentEl.className = 'mission-empty';
+        contentEl.textContent = '미션 정보를 불러오는 중입니다...';
+        return;
+      }
+
+      var daily = missionState.daily;
+      var weekly = missionState.weekly;
+      var dailyChecklist = renderDailyMissionChecklist(daily);
+      var weeklySub = (weekly.weekStart && weekly.weekEnd) ? (weekly.weekStart + ' ~ ' + weekly.weekEnd) : '이번 주';
+
+      contentEl.className = 'mission-list';
+      contentEl.innerHTML =
+        renderMissionCard(daily, '오늘', dailyChecklist) +
+        renderMissionCard(weekly, weeklySub, '');
+    }
+
+    function claimMissionReward(missionKey) {
+      if (!missionKey || missionClaimLoading) return;
+      missionClaimLoading = missionKey;
+      renderMissionPanel();
+
+      fetchJson(API + '/api/missions/' + missionKey + '/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || !result || result.error) {
+          setInlineNotice((result && result.error) || '미션 보상 수령 중 오류가 발생했습니다.', 'error');
+          return;
+        }
+
+        if (result.user) {
+          setCurrentUser(result.user);
+        }
+        if (Array.isArray(result.gogumas)) {
+          data = result.gogumas.map(function(g) { return normalizeGoguma(g); });
+          if (selectedIndex >= data.length) selectedIndex = data.length - 1;
+        }
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
+
+        setInlineNotice('미션 보상을 받았습니다. 전체 온도 +' + (Number(result.rewardHp) || 0) + ' 적용!', 'success');
+        render();
+      }).finally(function() {
+        missionClaimLoading = '';
+        renderMissionPanel();
+      });
+    }
+    window.claimMissionReward = claimMissionReward;
+
+    function formatHistoryDateShort(dateText) {
+      var text = String(dateText || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      return text.slice(5).replace('-', '/');
+    }
+
+    function getActionLabel(actionType) {
+      return ACTION_LABELS_CLIENT[actionType] || actionType || '행동';
+    }
+
+    function getKstDateKeyNow() {
+      var kstOffsetMs = 9 * 60 * 60 * 1000;
+      return new Date(Date.now() + kstOffsetMs).toISOString().slice(0, 10);
+    }
+
+    function getMsUntilNextKstMidnight() {
+      var kstOffsetMs = 9 * 60 * 60 * 1000;
+      var now = new Date();
+      // KST 시각을 UTC 시간축으로 옮겨 계산한 뒤 다시 원래 시간축으로 환산한다.
+      var kstNow = new Date(now.getTime() + kstOffsetMs);
+      var kstNext = new Date(kstNow);
+      kstNext.setUTCHours(24, 0, 0, 0);
+      var nextUtcMs = kstNext.getTime() - kstOffsetMs;
+      return Math.max(0, nextUtcMs - now.getTime());
+    }
+
+    function formatRemainHms(ms) {
+      var totalSec = Math.max(0, Math.floor(ms / 1000));
+      var h = Math.floor(totalSec / 3600);
+      var m = Math.floor((totalSec % 3600) / 60);
+      var s = totalSec % 60;
+      var hh = String(h).padStart(2, '0');
+      var mm = String(m).padStart(2, '0');
+      var ss = String(s).padStart(2, '0');
+      return hh + ':' + mm + ':' + ss;
+    }
+
+    function clearDailyActionUsageLocal() {
+      data.forEach(function(g) {
+        if (!g || typeof g !== 'object') return;
+        g.todayActions = {};
+      });
+    }
+
+    function renderActionCooldownState() {
+      var timerTip = document.getElementById('actionResetTimer');
+      var dayKey = getKstDateKeyNow();
+      if (actionUsageDayKey && actionUsageDayKey !== dayKey) {
+        actionUsageDayKey = dayKey;
+        clearDailyActionUsageLocal();
+      } else if (!actionUsageDayKey) {
+        actionUsageDayKey = dayKey;
+      }
+
+      if (timerTip) {
+        timerTip.textContent = '다음 리셋(KST)까지 ' + formatRemainHms(getMsUntilNextKstMidnight());
+      }
+
+      var selected = (currentViewMode !== 'field' && selectedIndex >= 0 && data[selectedIndex]) ? data[selectedIndex] : null;
+      var usedActions = selected && selected.todayActions && typeof selected.todayActions === 'object'
+        ? selected.todayActions
+        : {};
+
+      var buttons = document.querySelectorAll('.action-buttons .asset-btn[data-action]');
+      buttons.forEach(function(btn) {
+        var actionType = btn.getAttribute('data-action') || '';
+        var used = !!usedActions[actionType];
+        btn.disabled = !selected || used;
+        btn.classList.toggle('is-used', used);
+      });
+    }
+
+    function startActionCooldownTimer() {
+      if (actionCooldownTimer) clearInterval(actionCooldownTimer);
+      actionCooldownTimer = setInterval(function() {
+        renderActionCooldownState();
+      }, 1000);
+    }
+
+    function renderPassiveTip() {
+      var tip = document.getElementById('passiveTip');
+      if (!tip) return;
+
+      var buttons = document.querySelectorAll('.action-buttons .asset-btn[data-action]');
+      buttons.forEach(function(btn) {
+        btn.classList.remove('is-passive');
+      });
+
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        tip.textContent = '고구마를 선택하면 전직 패시브를 확인할 수 있습니다.';
+        return;
+      }
+
+      var g = data[selectedIndex];
+      var dominant = g && g.dominantAction ? String(g.dominantAction) : '';
+      if (!dominant) {
+        tip.textContent = '전직 패시브가 아직 없습니다. 행동을 누적해 전직을 정해 보세요.';
+        return;
+      }
+
+      var label = getActionLabel(dominant);
+      tip.textContent = '전직 패시브: ' + label + ' 행동 시 추가 +1';
+      var activeBtn = document.querySelector('.action-buttons .asset-btn[data-action="' + dominant + '"]');
+      if (activeBtn) {
+        activeBtn.classList.add('is-passive');
+      }
+    }
+
+    function renderHistoryContentForElement(contentEl, noSelectionMessage) {
+      if (!contentEl) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        contentEl.className = 'history-empty';
+        contentEl.textContent = noSelectionMessage || '고구마를 선택하면 히스토리를 확인할 수 있습니다.';
+        return;
+      }
+
+      var g = data[selectedIndex];
+      var cache = gogumaHistoryById[String(g.id)];
+      if (!cache) {
+        if (historyLoadingById[String(g.id)]) {
+          contentEl.className = 'history-empty';
+          contentEl.textContent = '히스토리를 불러오는 중입니다...';
+          return;
+        }
+        fetchGogumaHistory(g.id);
+        contentEl.className = 'history-empty';
+        contentEl.textContent = '히스토리를 불러오는 중입니다...';
+        return;
+      }
+
+      var last7 = Array.isArray(cache.last7Days) ? cache.last7Days : [];
+      var logs = Array.isArray(cache.recentActions) ? cache.recentActions : [];
+      var totalScore7 = 0;
+      var bestDay = null;
+      var actionCountByType = {};
+      var totalActionCount = 0;
+
+      last7.forEach(function(day) {
+        var score = Number(day && day.score) || 0;
+        totalScore7 += score;
+        if (!bestDay || score > (Number(bestDay.score) || 0)) {
+          bestDay = day;
+        }
+        var actions = day && day.actions && typeof day.actions === 'object' ? day.actions : {};
+        Object.keys(actions).forEach(function(actionType) {
+          var count = Number(actions[actionType]) || 0;
+          if (count <= 0) return;
+          actionCountByType[actionType] = (Number(actionCountByType[actionType]) || 0) + count;
+          totalActionCount += count;
+        });
+      });
+
+      var maxScore = last7.reduce(function(max, day) {
+        return Math.max(max, Number(day && day.score) || 0);
+      }, 1);
+
+      var bestDayText = bestDay
+        ? (formatHistoryDateShort(bestDay.date) + ' (+' + (Number(bestDay.score) || 0) + ')')
+        : '-';
+      var avgScore7 = last7.length ? Math.round((totalScore7 / last7.length) * 10) / 10 : 0;
+
+      var ratioRows = Object.keys(actionCountByType)
+        .map(function(actionType) {
+          var count = Number(actionCountByType[actionType]) || 0;
+          var ratio = totalActionCount > 0 ? Math.round((count / totalActionCount) * 100) : 0;
+          return {
+            actionType: actionType,
+            count: count,
+            ratio: ratio
+          };
+        })
+        .sort(function(a, b) { return (b.count - a.count) || a.actionType.localeCompare(b.actionType); });
+
+      var ratioText = ratioRows.length
+        ? ratioRows.slice(0, 3).map(function(row) {
+            return getActionLabel(row.actionType) + ' ' + row.ratio + '% (' + row.count + '회)';
+          }).join(' · ')
+        : '아직 행동 기록이 없습니다.';
+
+      var chartHtml = last7.map(function(day) {
+        var score = Number(day && day.score) || 0;
+        var height = score > 0 ? Math.max(6, Math.round((score / maxScore) * 100)) : 4;
+        return (
+          '<div class="history-day">' +
+            '<div class="history-bar-wrap"><div class="history-bar" style="height:' + height + '%"></div></div>' +
+            '<div class="history-score">+' + score + '</div>' +
+            '<div class="history-date">' + formatHistoryDateShort(day && day.date) + '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      var logHtml = logs.length
+        ? logs.map(function(item) {
+            return (
+              '<div class="history-log-item">' +
+                '<span class="history-log-action">' + getActionLabel(item.actionType) + ' (+' + (Number(item.score) || 0) + ')</span>' +
+                '<span>' + formatHistoryDateShort(item.actionDate) + '</span>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div class="history-empty">아직 행동 기록이 없습니다.</div>';
+
+      contentEl.className = '';
+      contentEl.innerHTML =
+        '<div class="history-summary">' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 총점</span><span class="history-stat-value">+' + totalScore7 + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 평균</span><span class="history-stat-value">+' + avgScore7 + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최고 성장일</span><span class="history-stat-value">' + bestDayText + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 행동 수</span><span class="history-stat-value">' + totalActionCount + '회</span></div>' +
+        '</div>' +
+        '<div class="history-ratio"><strong>행동 비율:</strong> ' + ratioText + '</div>' +
+        '<div class="history-chart">' + chartHtml + '</div>' +
+        '<div class="history-log">' + logHtml + '</div>';
+    }
+
+    function renderHistoryModalForSelected() {
+      renderHistoryContentForElement(document.getElementById('historyModalContent'), '고구마를 선택하면 히스토리를 확인할 수 있습니다.');
+    }
+
+    function updateHistoryModalHeading() {
+      var heading = document.getElementById('historyModalHeading');
+      if (!heading) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        heading.textContent = '성장 히스토리 (최근 7일)';
+        return;
+      }
+      heading.textContent = data[selectedIndex].name + ' 성장 히스토리 (최근 7일)';
+    }
+
+    function openHistoryModal() {
+      var modal = document.getElementById('historyModal');
+      if (!modal) return;
+      updateHistoryModalHeading();
+      renderHistoryModalForSelected();
+      modal.classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      var modal = document.getElementById('historyModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeHistoryModal = closeHistoryModal;
+
+    function openSelectedHistory() {
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        setInlineNotice('히스토리를 보려면 고구마를 먼저 선택해 주세요.', '');
+        return;
+      }
+
+      openHistoryModal();
+    }
+
+    function fetchGogumaHistory(gogumaId) {
+      if (!gogumaId || historyLoadingById[String(gogumaId)]) return;
+      historyLoadingById[String(gogumaId)] = true;
+
+      fetchJson(API + '/api/goguma/' + gogumaId + '/history', {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(function(res) {
+        if (!res.ok || !res.data || res.data.error) return;
+        gogumaHistoryById[String(gogumaId)] = res.data;
+      }).finally(function() {
+        historyLoadingById[String(gogumaId)] = false;
+        if (selectedIndex >= 0 && data[selectedIndex] && Number(data[selectedIndex].id) === Number(gogumaId)) {
+          var historyModal = document.getElementById('historyModal');
+          if (historyModal && !historyModal.classList.contains('hidden')) {
+            renderHistoryModalForSelected();
+          }
+        }
+      });
+    }
+
+    function invalidateGogumaHistory(gogumaId) {
+      if (!gogumaId) return;
+      delete gogumaHistoryById[String(gogumaId)];
+    }
+
+    function normalizeDeg(deg) {
+      var n = Number(deg) % 360;
+      if (n < 0) n += 360;
+      return n;
+    }
+
+    function createSeededRng(seed) {
+      if (seed == null || seed === '') {
+        var cryptoApi = window.crypto || window.msCrypto;
+        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+          return function() {
+            var buf = new Uint32Array(1);
+            cryptoApi.getRandomValues(buf);
+            return buf[0] / 4294967296;
+          };
+        }
+        return function() { return Math.random(); };
+      }
+      var state = Number(seed);
+      if (!Number.isFinite(state)) {
+        var cryptoApi = window.crypto || window.msCrypto;
+        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+          return function() {
+            var buf = new Uint32Array(1);
+            cryptoApi.getRandomValues(buf);
+            return buf[0] / 4294967296;
+          };
+        }
+        return function() { return Math.random(); };
+      }
+      state = (Math.floor(state) >>> 0) || 1;
+      return function() {
+        state = (1664525 * state + 1013904223) >>> 0;
+        return state / 4294967296;
+      };
+    }
+
+    function getRouletteRng() {
+      if (Number.isFinite(rouletteSeedOverride)) {
+        if (!rouletteSeededRng || rouletteSeededRngSeed !== rouletteSeedOverride) {
+          rouletteSeededRng = createSeededRng(rouletteSeedOverride);
+          rouletteSeededRngSeed = rouletteSeedOverride;
+        }
+        return rouletteSeededRng;
+      }
+      return createSeededRng(null);
+    }
+
+    function easeOutCubic(t) {
+      var x = Math.min(1, Math.max(0, t));
+      return 1 - Math.pow(1 - x, 3);
+    }
+
+    function getRouletteSegmentAngle() {
+      return 360 / ROULETTE_SEGMENTS.length;
+    }
+
+    function getSegmentCenterAngle(index) {
+      return normalizeDeg(index * getRouletteSegmentAngle());
+    }
+
+    function getLandingIndexFromRotation(rotationDeg) {
+      var segmentAngle = getRouletteSegmentAngle();
+      var wheelAngleAtPointer = normalizeDeg(
+        rouletteEngine.pointerAngle - normalizeDeg(rotationDeg) - rouletteEngine.imageOffsetDeg
+      );
+      return Math.floor((wheelAngleAtPointer + segmentAngle / 2) / segmentAngle) % ROULETTE_SEGMENTS.length;
+    }
+
+    // 입력 각도(finalAngleDeg, 0deg=12시 기준)에서 정확한 상품 반환
+    // 범위 기준:
+    // 0번(상품권): -22.5~22.5, 이후 45도 단위 시계 방향
+    function getRoulettePrizeByFinalAngle(finalAngleDeg) {
+      var a = normalizeDeg(finalAngleDeg);
+      var idx = Math.floor(((a + 22.5) % 360) / 45);
+      return ROULETTE_SEGMENTS[idx] || ROULETTE_SEGMENTS[0];
+    }
+    window.getRoulettePrizeByFinalAngle = getRoulettePrizeByFinalAngle;
+
+    function getRouletteSpinPlan(rng, currentRotationDeg) {
+      var sectors = ROULETTE_SEGMENTS.length; // 8칸
+      var sectorAngle = 360 / sectors; // 45도
+
+      // 1) 먼저 당첨 칸을 랜덤 선정
+      var winnerIndex = Math.floor(rng() * sectors);
+      // 2) 최소 5바퀴 이상 회전
+      var minRotation = 360 * 5;
+      // 3) 당첨 칸 중앙 각도
+      var targetAngle = winnerIndex * sectorAngle;
+      // 4) 칸 내부 랜덤 오차 (+-15도)
+      var randomOffset = (rng() - 0.5) * 30;
+      var targetAngleWithOffset = normalizeDeg(targetAngle + randomOffset);
+
+      // 현재 회전 상태/포인터/이미지 오프셋을 반영해 목표 각도까지 필요한 추가 회전량 계산
+      var currentDeg = normalizeDeg(currentRotationDeg);
+      var desiredEndDeg = normalizeDeg(
+        rouletteEngine.pointerAngle - rouletteEngine.imageOffsetDeg - targetAngleWithOffset
+      );
+      var forwardDeltaDeg = normalizeDeg(desiredEndDeg - currentDeg);
+      var targetDeg = minRotation + forwardDeltaDeg;
+
+      var durationMs = rouletteEngine.minDurationMs + Math.floor(
+        rng() * (rouletteEngine.maxDurationMs - rouletteEngine.minDurationMs + 1)
+      );
+
+      return {
+        targetAngle: targetAngleWithOffset,
+        winnerIndex: winnerIndex,
+        spins: 5,
+        randomOffset: randomOffset,
+        durationMs: durationMs,
+        desiredEndDeg: desiredEndDeg,
+        deltaDeg: targetDeg
+      };
+    }
+
+    function setWheelRotation(deg) {
+      var wheel = document.getElementById('rouletteWheel');
+      if (!wheel) return;
+      wheel.style.transform = 'rotate(' + deg + 'deg)';
+    }
+
+    function updateRouletteDebug(info) {
+      var debugEl = document.getElementById('rouletteDebug');
+      if (!debugEl) return;
+      if (!rouletteEngine.debug) {
+        debugEl.classList.add('hidden');
+        return;
+      }
+      debugEl.classList.remove('hidden');
+      debugEl.textContent =
+        'angle=' + normalizeDeg(info.currentDeg || 0).toFixed(2) + 'deg\n' +
+        'offset=' + Number(rouletteEngine.imageOffsetDeg).toFixed(2) + 'deg\n' +
+        'winnerIndex=' + String(info.winnerIndex != null ? info.winnerIndex : '-') + '\n' +
+        'landingIndex=' + String(info.landingIndex != null ? info.landingIndex : '-') + '\n' +
+        'targetAngle=' + String(info.targetAngle != null ? info.targetAngle : '-');
+    }
+
+    function initRouletteWheel() {
+      var wheel = document.getElementById('rouletteWheel');
+      if (!wheel) return;
+      function markLoaded() {
+        rouletteWheelLoaded = true;
+      }
+      wheel.addEventListener('load', markLoaded);
+      wheel.addEventListener('error', function() {
+        rouletteWheelLoaded = false;
+      });
+      if (wheel.complete && wheel.naturalWidth > 0) {
+        rouletteWheelLoaded = true;
+      }
+    }
+
+    function setRouletteSeed(seed) {
+      rouletteSeedOverride = seed == null ? null : Number(seed);
+      rouletteSeededRng = null;
+      rouletteSeededRngSeed = null;
+    }
+    window.setRouletteSeed = setRouletteSeed;
+
+    function setRouletteOnSpinEnd(callback) {
+      rouletteEngine.onSpinEnd = typeof callback === 'function' ? callback : null;
+    }
+    window.setRouletteOnSpinEnd = setRouletteOnSpinEnd;
+
+    function setRouletteImageOffsetDeg(deg) {
+      rouletteEngine.imageOffsetDeg = Number(deg) || 0;
+      updateRouletteDebug({
+        currentDeg: rouletteBaseRotationDeg,
+        winnerIndex: lastRouletteReward ? lastRouletteReward.segmentIndex : null,
+        landingIndex: lastRouletteReward ? getLandingIndexFromRotation(rouletteBaseRotationDeg) : null,
+        jitter: 0
+      });
+    }
+    window.setRouletteImageOffsetDeg = setRouletteImageOffsetDeg;
+
+    function sanitizeCardBgIndex(value) {
+      var n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      n = Math.floor(n);
+      if (n < 0) return 0;
+      if (n >= GOGUMA_CARD_BACKGROUNDS.length) return GOGUMA_CARD_BACKGROUNDS.length - 1;
+      return n;
+    }
+
+    function loadCardBgPrefs() {
+      try {
+        var raw = localStorage.getItem(CARD_BG_STORAGE_KEY);
+        if (!raw) return;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        gogumaCardBgPrefById = parsed;
+      } catch (e) {
+        gogumaCardBgPrefById = {};
+      }
+    }
+
+    function saveCardBgPrefs() {
+      try {
+        localStorage.setItem(CARD_BG_STORAGE_KEY, JSON.stringify(gogumaCardBgPrefById));
+      } catch (e) {}
+    }
+
+    function normalizeGoguma(g) {
+      var pref = g && g.id != null ? gogumaCardBgPrefById[String(g.id)] : null;
+      var cardBgIndex = sanitizeCardBgIndex(g && g.cardBgIndex != null ? g.cardBgIndex : pref);
+      return {
+        id: g.id,
+        name: g.name,
+        hp: g.hp,
+        dominantAction: g && g.dominantAction ? String(g.dominantAction) : null,
+        actionScores: g && g.actionScores && typeof g.actionScores === 'object' ? g.actionScores : {},
+        todayActions: g && g.todayActions && typeof g.todayActions === 'object' ? g.todayActions : {},
+        cardBgIndex: cardBgIndex
+      };
+    }
+
+    function updateDominantActionFromScores(g) {
+      if (!g || !g.actionScores) return;
+      var bestAction = null;
+      var bestScore = -1;
+      ACTION_PRIORITY_CLIENT.forEach(function(actionType) {
+        var score = Number(g.actionScores[actionType]) || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          bestAction = actionType;
+        }
+      });
+      g.dominantAction = bestScore > 0 ? bestAction : null;
+    }
+
+    function applyGrowActionScore(g, actionType) {
+      if (!g || !ACTION_VALUES_CLIENT[actionType]) return;
+      if (!g.actionScores || typeof g.actionScores !== 'object') g.actionScores = {};
+      g.actionScores[actionType] = (Number(g.actionScores[actionType]) || 0) + ACTION_VALUES_CLIENT[actionType];
+      updateDominantActionFromScores(g);
+    }
+
+    function getGogumaStageImage(g, stage) {
+      if (stage === 2) {
+        if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS[g.dominantAction]) {
+          return SPROUT_TRANSFORM_ASSETS[g.dominantAction];
+        }
+        return SPROUT_TRANSFORM_ASSETS.bible;
+      }
+      if (stage === 3) {
+        if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS_2[g.dominantAction]) {
+          return SPROUT_TRANSFORM_ASSETS_2[g.dominantAction];
+        }
+        return SPROUT_TRANSFORM_ASSETS_2.bible;
+      }
+      return STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+    }
+
+    function applyPotSceneBackground(index) {
+      var potScene = document.getElementById('potScene');
+      if (!potScene) return;
+      var safeIndex = sanitizeCardBgIndex(index);
+      var imagePath = GOGUMA_CARD_BACKGROUNDS[safeIndex] || GOGUMA_CARD_BACKGROUNDS[0];
+      potScene.style.setProperty('--pot-bg-image', "url('" + imagePath + "')");
+    }
+
+    function cycleSelectedGogumaCardBg() {
+      if (selectedIndex < 0 || !data[selectedIndex]) return;
+      var g = data[selectedIndex];
+      var nextIndex = (sanitizeCardBgIndex(g.cardBgIndex) + 1) % GOGUMA_CARD_BACKGROUNDS.length;
+      g.cardBgIndex = nextIndex;
+      gogumaCardBgPrefById[String(g.id)] = nextIndex;
+      saveCardBgPrefs();
+      applyPotSceneBackground(nextIndex);
+    }
+    window.cycleSelectedGogumaCardBg = cycleSelectedGogumaCardBg;
+
+    function updateGogumaSpeech() {
+      var bubble = document.getElementById('gogumaSpeech');
+      var bubbleText = document.getElementById('gogumaSpeechText');
+      var bubbleToggle = document.getElementById('gogumaSpeechToggle');
+      if (!bubble) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        bubble.classList.add('hidden');
+        if (bubbleToggle) bubbleToggle.classList.add('hidden');
+        return;
+      }
+
+      var g = data[selectedIndex];
+
+      if (gogumaSpeechTargetId !== g.id) {
+        gogumaSpeechTargetId = g.id;
+        gogumaSpeechIndex = 0;
+      }
+
+      var template = GOGUMA_SPEECH_LINES[gogumaSpeechIndex % GOGUMA_SPEECH_LINES.length];
+      bubble.classList.remove('is-multi');
+      if (bubbleText) {
+        bubbleText.textContent = template.replace(/\{name\}/g, g.name);
+      }
+
+      if (gogumaSpeechDismissed) {
+        bubble.classList.add('hidden');
+        if (bubbleToggle) bubbleToggle.classList.remove('hidden');
+        return;
+      }
+
+      bubble.classList.remove('hidden');
+      if (bubbleToggle) bubbleToggle.classList.add('hidden');
+
+      requestAnimationFrame(function() {
+        if (bubble.classList.contains('hidden')) return;
+        var lineHeight = parseFloat(window.getComputedStyle(bubble).lineHeight) || 14;
+        if (bubble.offsetHeight > lineHeight * 2.1) {
+          bubble.classList.add('is-multi');
+        }
+      });
+    }
+
+    function advanceGogumaSpeech(isManual) {
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) return;
+      if (gogumaSpeechTargetId !== data[selectedIndex].id) {
+        gogumaSpeechTargetId = data[selectedIndex].id;
+        gogumaSpeechIndex = 0;
+      } else if (isManual) {
+        gogumaSpeechIndex = (gogumaSpeechIndex + 1) % GOGUMA_SPEECH_LINES.length;
+      } else {
+        gogumaSpeechIndex = (gogumaSpeechIndex + 1) % GOGUMA_SPEECH_LINES.length;
+      }
+      updateGogumaSpeech();
+    }
+    window.advanceGogumaSpeech = advanceGogumaSpeech;
+
+    function hideGogumaSpeech(event) {
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
+      gogumaSpeechDismissed = true;
+      updateGogumaSpeech();
+    }
+    window.hideGogumaSpeech = hideGogumaSpeech;
+
+    function showGogumaSpeech() {
+      gogumaSpeechDismissed = false;
+      updateGogumaSpeech();
+    }
+    window.showGogumaSpeech = showGogumaSpeech;
+
+    function startGogumaSpeechTimer() {
+      if (gogumaSpeechTimer) {
+        clearInterval(gogumaSpeechTimer);
+      }
+      gogumaSpeechTimer = setInterval(function() {
+        advanceGogumaSpeech(false);
+      }, 10000);
+    }
+
     function formatCommunityDate(text) {
       if (!text) return '';
       return String(text).replace('T', ' ').slice(0, 16);
@@ -2395,12 +3798,14 @@
 
     function resetCommunityComposer() {
       var titleEl = document.getElementById('communityTitle');
+      var categoryEl = document.getElementById('communityCategory');
       var contentEl = document.getElementById('communityContent');
       var imageInput = document.getElementById('communityImageInput');
       var preview = document.getElementById('communityImagePreview');
       var previewImage = document.getElementById('communityPreviewImage');
       communityImageData = '';
       if (titleEl) titleEl.value = '';
+      if (categoryEl) categoryEl.value = COMMUNITY_CATEGORIES[0];
       if (contentEl) contentEl.value = '';
       if (imageInput) imageInput.value = '';
       if (preview) preview.classList.remove('visible');
@@ -2523,6 +3928,36 @@
         .replace(/'/g, '&#39;');
     }
 
+    function renderCommunityCategoryFilters() {
+      var filtersEl = document.getElementById('communityCategoryFilters');
+      if (!filtersEl) return;
+
+      var html = '<button type="button" class="community-category-chip ' + (communityCategoryFilter === 'all' ? 'is-active' : '') + '" data-category="all">전체</button>';
+      COMMUNITY_CATEGORIES.forEach(function(category) {
+        html += '<button type="button" class="community-category-chip ' + (communityCategoryFilter === category ? 'is-active' : '') + '" data-category="' + escapeHtml(category) + '">' + category + '</button>';
+      });
+      filtersEl.innerHTML = html;
+    }
+
+    function setCommunityCategoryFilter(category) {
+      communityCategoryFilter = category || 'all';
+      renderCommunityCategoryFilters();
+      renderCommunityList();
+    }
+    window.setCommunityCategoryFilter = setCommunityCategoryFilter;
+
+    function bindCommunityCategoryFilterEvents() {
+      var filtersEl = document.getElementById('communityCategoryFilters');
+      if (!filtersEl || filtersEl.dataset.bound === 'true') return;
+      filtersEl.dataset.bound = 'true';
+      filtersEl.addEventListener('click', function(event) {
+        var target = event.target;
+        if (!target || !target.classList || !target.classList.contains('community-category-chip')) return;
+        var category = target.getAttribute('data-category') || 'all';
+        setCommunityCategoryFilter(category);
+      });
+    }
+
     function renderCommunityList() {
       var listEl = document.getElementById('communityList');
       var listView = document.getElementById('communityListView');
@@ -2537,16 +3972,23 @@
       listView.classList.remove('hidden');
       detailView.classList.add('hidden');
       listEl.innerHTML = '';
+      renderCommunityCategoryFilters();
 
-      if (!communityPosts.length) {
+      var filteredPosts = communityPosts.filter(function(post) {
+        return communityCategoryFilter === 'all' || (post.category || '출석인사') === communityCategoryFilter;
+      });
+
+      if (!filteredPosts.length) {
         var empty = document.createElement('div');
         empty.className = 'empty-state';
-        empty.textContent = '아직 커뮤니티 글이 없습니다. 첫 글을 남겨 보세요.';
+        empty.textContent = communityPosts.length
+          ? '선택한 카테고리에 아직 글이 없습니다.'
+          : '아직 커뮤니티 글이 없습니다. 첫 글을 남겨 보세요.';
         listEl.appendChild(empty);
         return;
       }
 
-      communityPosts.forEach(function(post) {
+      filteredPosts.forEach(function(post) {
         var card = document.createElement('div');
         card.className = 'community-post-card';
         card.addEventListener('click', function() { openCommunityDetail(post.id); });
@@ -2570,7 +4012,7 @@
 
         var meta = document.createElement('div');
         meta.className = 'community-post-meta';
-        meta.innerHTML = '<span>' + (post.userName || '') + '</span><span>' + formatCommunityDate(post.created_at || post.createdAt) + '</span>';
+        meta.innerHTML = '<span class="community-category-badge">' + escapeHtml(post.category || '출석인사') + '</span><span>' + formatCommunityDate(post.created_at || post.createdAt) + '</span>';
 
         card.appendChild(imageWrap);
         card.appendChild(title);
@@ -2649,7 +4091,7 @@
             actions +
           '</div>' +
           '<h3>' + escapeHtml(post.title || '(제목 없음)') + '</h3>' +
-          '<div class="community-detail-meta"><span>' + escapeHtml(post.userName || '') + '</span><span>' + escapeHtml(formatCommunityDate(post.created_at || post.createdAt)) + '</span></div>' +
+          '<div class="community-detail-meta"><span class="community-category-badge">' + escapeHtml(post.category || '출석인사') + '</span><span>' + escapeHtml(post.userName || '') + '</span><span>' + escapeHtml(formatCommunityDate(post.created_at || post.createdAt)) + '</span></div>' +
           imageHtml +
           '<div class="community-engagement">' +
             '<button class="pixel-btn community-like-btn' + (post.likedByMe ? ' is-active' : '') + '" onclick="toggleCommunityLike(' + post.id + ')">♥ 공감 ' + (Number(post.likeCount) || 0) + '</button>' +
@@ -2882,9 +4324,11 @@
 
     function submitCommunityPost() {
       const titleEl = document.getElementById('communityTitle');
+      const categoryEl = document.getElementById('communityCategory');
       const contentEl = document.getElementById('communityContent');
-      if (!titleEl || !contentEl) return;
+      if (!titleEl || !contentEl || !categoryEl) return;
       const title = titleEl.value.trim();
+      const category = categoryEl.value;
       const content = contentEl.value.trim();
 
       if (!title) {
@@ -2900,7 +4344,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ title: title, content: content, imageData: communityImageData })
+        body: JSON.stringify({ title: title, category: category, content: content, imageData: communityImageData })
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) {
@@ -2954,12 +4398,19 @@
 
       if (lastRouletteReward) {
         var bonusText = lastRouletteReward.hpBonus > 0
-          ? ("내 고구마 전체 HP +" + lastRouletteReward.hpBonus)
+          ? ("내 고구마 전체 온도 +" + lastRouletteReward.hpBonus)
           : "이번에는 보너스가 없습니다.";
         resultEl.innerHTML = "<strong>" + lastRouletteReward.label + "</strong>" + bonusText;
       } else {
         resultEl.textContent = "아직 룰렛 결과가 없습니다.";
       }
+
+      updateRouletteDebug({
+        currentDeg: rouletteBaseRotationDeg,
+        winnerIndex: lastRouletteReward ? lastRouletteReward.segmentIndex : null,
+        landingIndex: lastRouletteReward ? getLandingIndexFromRotation(rouletteBaseRotationDeg) : null,
+        jitter: 0
+      });
     }
 
     function renderFieldView() {
@@ -2985,7 +4436,7 @@
           var topGoguma = data.slice().sort(function(a, b) { return b.hp - a.hp; })[0];
           summaryEl.innerHTML =
             '<div class="field-summary-item"><span class="field-summary-label">총 고구마</span><span class="field-summary-value">' + data.length + '개</span></div>' +
-            '<div class="field-summary-item"><span class="field-summary-label">평균 HP</span><span class="field-summary-value">' + avgHp + '</span></div>' +
+            '<div class="field-summary-item"><span class="field-summary-label">평균 온도</span><span class="field-summary-value">' + avgHp + '</span></div>' +
             '<div class="field-summary-item"><span class="field-summary-label">최고 성장</span><span class="field-summary-value">' + (topGoguma ? topGoguma.name : '-') + '</span></div>';
         }
       }
@@ -3023,7 +4474,7 @@
           stageWrap.className = 'field-stage-wrap';
 
           var img = document.createElement('img');
-          img.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+          img.src = getGogumaStageImage(g, stage);
           img.alt = g.name + ' 성장 상태';
           img.style.setProperty('--float-delay', (((Number(g.id) || 0) % 7) * 0.18) + 's');
 
@@ -3033,7 +4484,7 @@
 
           var meta = document.createElement('div');
           meta.className = 'field-card-meta';
-          meta.textContent = '성장 ' + stage + '단계 · HP ' + g.hp;
+          meta.textContent = '성장 ' + stage + '단계 · 온도 ' + g.hp;
 
           stageWrap.appendChild(img);
           card.appendChild(stageWrap);
@@ -3060,6 +4511,7 @@
       if (!event || event.target !== event.currentTarget) return;
       if (target === 'ranking') closeRanking();
       if (target === 'board') closeBoard();
+      if (target === 'history') closeHistoryModal();
     }
     window.handleModalBackdropClick = handleModalBackdropClick;
 
@@ -3088,8 +4540,9 @@
         if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
         setCurrentUser(result.user);
         data = (result.gogumas || []).map(function(g) {
-          return { id: g.id, name: g.name, hp: g.hp };
+          return normalizeGoguma(g);
         });
+        setMissionState(result.missions || null);
         currentViewMode = 'field';
         selectedIndex = data.length > 0 ? 0 : -1;
         document.getElementById("nameInputStep").classList.add("hidden");
@@ -3134,7 +4587,7 @@
         if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
         var g = result.goguma;
         if (g) {
-          data.push({ id: g.id, name: g.name, hp: g.hp });
+          data.push(normalizeGoguma(g));
           document.getElementById("nameInput").value = "";
           currentViewMode = 'detail';
           selectedIndex = data.length - 1;
@@ -3153,6 +4606,7 @@
       const stage = getStage(data[i].hp);
       updateBackgroundByStage(stage);
       render();
+      fetchGogumaHistory(data[i] && data[i].id);
     }
     window.selectGoguma = selectGoguma;
 
@@ -3160,6 +4614,10 @@
       if (selectedIndex < 0) return;
       playButtonEffect();
       var g = data[selectedIndex];
+      if (g && g.todayActions && g.todayActions[actionType]) {
+        setInlineNotice('이 행동은 오늘 이미 사용했습니다. 리셋 후 다시 시도해 주세요.', 'error');
+        return;
+      }
       fetchJson(API + '/api/goguma/grow', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3169,10 +4627,37 @@
         var result = res.data;
         if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
         if (result.hp != null) g.hp = result.hp;
+        if (result && result.actionScores && typeof result.actionScores === 'object') {
+          g.actionScores = result.actionScores;
+          updateDominantActionFromScores(g);
+        } else {
+          applyGrowActionScore(g, actionType);
+        }
+        if (typeof result.dominantAction === 'string' && result.dominantAction) {
+          g.dominantAction = result.dominantAction;
+        }
+        if (result && result.todayActions && typeof result.todayActions === 'object') {
+          g.todayActions = result.todayActions;
+        } else {
+          if (!g.todayActions || typeof g.todayActions !== 'object') g.todayActions = {};
+          g.todayActions[actionType] = true;
+        }
+        invalidateGogumaHistory(g.id);
+        fetchGogumaHistory(g.id);
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
         shootHearts();
         const stage = getStage(g.hp);
         updateBackgroundByStage(stage);
-        setInlineNotice(g.name + "에게 행동을 적용했습니다. 현재 HP " + g.hp + "입니다.", "success");
+        var totalGain = Number(result.totalGain);
+        var passiveBonus = Number(result.passiveBonus) || 0;
+        var gainText = Number.isFinite(totalGain)
+          ? ('+' + totalGain + (passiveBonus > 0 ? ' (패시브 +' + passiveBonus + ')' : ''))
+          : '';
+        setInlineNotice(g.name + "에게 행동을 적용했습니다. " + (gainText ? ('이번 증가 ' + gainText + ' · ') : '') + "현재 온도 " + g.hp + "입니다.", "success");
         if (g.hp >= 99) {
           triggerMaxLevelEffect();
         }
@@ -3313,6 +4798,7 @@
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        invalidateGogumaHistory(g.id);
         data.splice(i, 1);
         if (selectedIndex >= data.length) selectedIndex = data.length - 1;
         render();
@@ -3332,6 +4818,7 @@
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        invalidateGogumaHistory(g.id);
         data.splice(selectedIndex, 1);
         selectedIndex = data.length > 0 ? 0 : -1;
         render();
@@ -3421,50 +4908,119 @@
       if (!currentUser || !currentUser.canSpinRoulette || isRouletteSpinning) {
         return;
       }
-
-      var wheel = document.getElementById("rouletteWheel");
       var spinBtn = document.getElementById("spinRouletteBtn");
+      var statusEl = document.getElementById('rouletteStatus');
+      if (!rouletteWheelLoaded) {
+        if (statusEl) statusEl.textContent = '룰렛 이미지를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.';
+        return;
+      }
+
       isRouletteSpinning = true;
       if (spinBtn) spinBtn.disabled = true;
+      if (statusEl) statusEl.textContent = '룰렛 회전 중...';
 
-      fetchJson(API + '/api/reward/spin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
-      }).then(function(res) {
-        var result = res.data;
-        if (!res.ok || result.error) {
-          isRouletteSpinning = false;
-          alert(result.error || '룰렛 처리 중 오류가 발생했습니다.');
-          renderRoulette();
-          return;
-        }
+      var rng = getRouletteRng();
+      var plan = getRouletteSpinPlan(rng, rouletteBaseRotationDeg);
+      var startDeg = rouletteBaseRotationDeg;
+      var endDeg = startDeg + plan.deltaDeg;
+      var startTs = null;
 
-        var reward = result.reward || null;
-        var segmentIndex = reward && typeof reward.segmentIndex === 'number' ? reward.segmentIndex : 0;
-        var segmentAngle = 360 / 8;
-        var segmentCenter = segmentIndex * segmentAngle;
-        var settleAngle = (360 - segmentCenter) % 360;
-        var extraTurns = 360 * (4 + Math.floor(Math.random() * 2));
-        rouletteRotation += extraTurns + settleAngle;
+      updateRouletteDebug({
+        currentDeg: startDeg,
+        winnerIndex: plan.winnerIndex,
+        landingIndex: null,
+        targetAngle: plan.targetAngle
+      });
 
-        if (wheel) {
-          wheel.style.transform = 'rotate(' + rouletteRotation + 'deg)';
-        }
+      function finalizeSpin() {
+        rouletteBaseRotationDeg = endDeg;
+        var landingIndex = getLandingIndexFromRotation(endDeg);
+        var landingAngle = normalizeDeg(
+          rouletteEngine.pointerAngle - normalizeDeg(endDeg) - rouletteEngine.imageOffsetDeg
+        );
+        var anglePrize = getRoulettePrizeByFinalAngle(landingAngle);
+        var winner = ROULETTE_SEGMENTS[plan.winnerIndex] || ROULETTE_SEGMENTS[0];
+        var mismatch = landingIndex !== plan.winnerIndex;
 
-        var finalize = function() {
-          isRouletteSpinning = false;
-          lastRouletteReward = reward;
-          setCurrentUser(result.user || currentUser);
-          data = (result.gogumas || data).map(function(g) {
-            return { id: g.id, name: g.name, hp: g.hp };
+        if (mismatch) {
+          console.warn('[Roulette] landing mismatch', {
+            winnerIndex: plan.winnerIndex,
+            landingIndex: landingIndex,
+            landingPrize: anglePrize ? anglePrize.label : null,
+            imageOffsetDeg: rouletteEngine.imageOffsetDeg,
+            pointerAngle: rouletteEngine.pointerAngle,
+            endDeg: endDeg,
+            normalizedEndDeg: normalizeDeg(endDeg),
+            landingAngle: landingAngle,
+            targetAngle: plan.targetAngle
           });
-          render();
-          renderRoulette();
+        }
+        console.assert(!mismatch, '[Roulette] landing index mismatch');
+
+        updateRouletteDebug({
+          currentDeg: endDeg,
+          winnerIndex: plan.winnerIndex,
+          landingIndex: landingIndex,
+          targetAngle: plan.targetAngle
+        });
+
+        var hpBonus = Number(anglePrize.hpBonus) || 0;
+        if (hpBonus > 0) {
+          data.forEach(function(g) {
+            g.hp = Math.min(100, (Number(g.hp) || 0) + hpBonus);
+          });
+        }
+
+        if (currentUser) {
+          var isTesterUser = currentUser.name === '권진호';
+          if (isTesterUser) {
+            currentUser.canSpinRoulette = true;
+          } else {
+            currentUser.canSpinRoulette = false;
+            currentUser.nextRouletteAt = (Number(currentUser.loginDays) || 1) + 7;
+          }
+        }
+
+        lastRouletteReward = {
+          id: anglePrize.id,
+          label: anglePrize.label,
+          hpBonus: hpBonus,
+          segmentIndex: landingIndex
         };
 
-        setTimeout(finalize, 3200);
-      });
+        isRouletteSpinning = false;
+        if (typeof rouletteEngine.onSpinEnd === 'function') {
+          rouletteEngine.onSpinEnd(lastRouletteReward);
+        }
+        render();
+        renderRoulette();
+      }
+
+      function frame(ts) {
+        if (startTs == null) startTs = ts;
+        var elapsed = ts - startTs;
+        var t = Math.min(1, elapsed / plan.durationMs);
+        var eased = easeOutCubic(t);
+        var nowDeg = startDeg + (endDeg - startDeg) * eased;
+        setWheelRotation(nowDeg);
+
+        if (rouletteEngine.debug) {
+          updateRouletteDebug({
+            currentDeg: nowDeg,
+            winnerIndex: plan.winnerIndex,
+            landingIndex: getLandingIndexFromRotation(nowDeg),
+            targetAngle: plan.targetAngle
+          });
+        }
+
+        if (t < 1) {
+          requestAnimationFrame(frame);
+          return;
+        }
+        finalizeSpin();
+      }
+
+      requestAnimationFrame(frame);
     }
     window.spinRoulette = spinRoulette;
 
@@ -3486,6 +5042,10 @@
       var detailEl = document.getElementById("detailView");
       var fieldDetailEl = document.getElementById("fieldDetailView");
       var noHint = document.getElementById("noSelectHint");
+      updateHistoryModalHeading();
+      renderMissionPanel();
+      renderPassiveTip();
+      renderActionCooldownState();
 
       var isFieldOpen = currentViewMode === 'field';
       var listHtml = '<button type="button" class="goguma-chip ' + (isFieldOpen ? 'selected' : '') + '" onclick="openFieldView()">전체 고구마</button>';
@@ -3508,10 +5068,10 @@
             !document.getElementById('inlineNotice').classList.contains('success')) {
           setInlineNotice("전체 고구마의 성장 상태를 보고 있습니다. 이름 칩을 누르면 개별 카드로 전환됩니다.", "");
         }
+        updateGogumaSpeech();
       } else if (selectedIndex >= 0 && data[selectedIndex]) {
         if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
         var g = data[selectedIndex];
-        var lv = Math.min(99, Math.floor(g.hp));
         var stage = getStage(g.hp);
         detailEl.classList.remove("hidden");
         noHint.style.display = 'none';
@@ -3519,21 +5079,21 @@
         if (btnDel) btnDel.classList.remove("hidden");
         var btnShot = document.getElementById("btnScreenshot");
         if (btnShot) btnShot.classList.remove("hidden");
-        document.getElementById("statusName").textContent = g.name + ':L' + lv;
-        document.getElementById("statusStageText").textContent = '성장 ' + stage + '단계';
         document.getElementById("statusHpFill").style.width = g.hp + '%';
+        document.getElementById("statusHpValue").textContent = String(Math.round(g.hp));
         var nameplate = document.getElementById("gogumaNameplate");
         if (nameplate) {
           nameplate.textContent = g.name;
         }
         var stageImage = document.getElementById("gogumaStageImage");
         if (stageImage) {
-          stageImage.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+          stageImage.src = getGogumaStageImage(g, stage);
           stageImage.alt = g.name + ' 성장 단계';
         }
         updateBackgroundByStage(stage);
         var potScene = document.getElementById("potScene");
         if (potScene) {
+          applyPotSceneBackground(g.cardBgIndex);
           potScene.classList.remove("stage1", "stage2", "stage3", "stage4", "stage5");
           potScene.classList.remove("scale-sm", "scale-md", "scale-lg", "scale-xl");
           potScene.classList.add("stage" + stage);
@@ -3543,6 +5103,7 @@
             !document.getElementById('inlineNotice').classList.contains('success')) {
           setInlineNotice(g.name + "을(를) 선택했습니다. 아래 행동 카드로 바로 성장시킬 수 있습니다.", "");
         }
+        updateGogumaSpeech();
       } else {
         if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
         detailEl.classList.add("hidden");
@@ -3556,6 +5117,7 @@
             !document.getElementById('inlineNotice').classList.contains('success')) {
           setInlineNotice("고구마를 추가한 뒤 칩을 눌러 캐릭터를 선택해 주세요.", "");
         }
+        updateGogumaSpeech();
       }
     }
     function triggerMaxLevelEffect() {
@@ -3610,7 +5172,7 @@
 
         const avatar = document.createElement('img');
         avatar.className = 'ranking-stage';
-        avatar.src = STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+        avatar.src = getGogumaStageImage({ dominantAction: r.dominantAction || null }, stage);
         avatar.alt = '';
 
         main.appendChild(user);
@@ -3817,6 +5379,7 @@
     // 페이지 로드 시 세션 확인 → 재접속 시 자동 로그인
     (function init() {
       syncBgmButton();
+      setRouletteSeed(null);
       tryPlayBgm();
       ['pointerdown', 'keydown'].forEach(function(eventName) {
         window.addEventListener(eventName, tryPlayBgm, { once: true });
@@ -3825,6 +5388,17 @@
       if (communityImageInput) {
         communityImageInput.addEventListener('change', handleCommunityImageChange);
       }
+      loadCardBgPrefs();
+      initRouletteWheel();
+      bindCommunityCategoryFilterEvents();
+      setRouletteOnSpinEnd(function(winner) {
+        var resultEl = document.getElementById('rouletteResult');
+        if (!resultEl || !winner) return;
+        var bonusText = winner.hpBonus > 0
+          ? ('내 고구마 전체 온도 +' + winner.hpBonus)
+          : '이번에는 보너스가 없습니다.';
+        resultEl.innerHTML = '<strong>' + winner.label + '</strong>' + bonusText;
+      });
 
       function setWeatherVisual(kind, isDay) {
         var layer = document.getElementById('weatherLayer');
@@ -3927,12 +5501,16 @@
 
       initWeather();
       setInterval(initWeather, 15 * 60 * 1000);
+      startGogumaSpeechTimer();
+      actionUsageDayKey = getKstDateKeyNow();
+      startActionCooldownTimer();
 
       fetchJson(API + '/api/me', { credentials: 'include' }).then(function(res) {
         var result = res.data;
         if (res.ok && result && result.user && Array.isArray(result.gogumas)) {
           setCurrentUser(result.user);
-          data = result.gogumas.map(function(g) { return { id: g.id, name: g.name, hp: g.hp }; });
+          data = result.gogumas.map(function(g) { return normalizeGoguma(g); });
+          setMissionState(result.missions || null);
           currentViewMode = 'field';
           selectedIndex = data.length > 0 ? 0 : -1;
           document.getElementById("home").classList.add("hidden");
