@@ -14,6 +14,7 @@ db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
+    department TEXT NOT NULL DEFAULT '미지정',
     created_at TEXT DEFAULT (datetime('now'))
   );
   CREATE TABLE IF NOT EXISTS gogumas (
@@ -89,6 +90,9 @@ ensureColumn('user_activity', 'total_visit_days', 'INTEGER NOT NULL DEFAULT 1');
 ensureColumn('user_activity', 'rewarded_cycle', 'INTEGER NOT NULL DEFAULT 0');
 ensureColumn('posts', 'image_data', 'TEXT');
 ensureColumn('posts', 'category', "TEXT NOT NULL DEFAULT '출석인사'");
+ensureColumn('users', 'department', "TEXT NOT NULL DEFAULT '미지정'");
+ensureColumn('gogumas', 'stage2_action_lock', 'TEXT');
+ensureColumn('gogumas', 'stage3_action_lock', 'TEXT');
 
 db.exec(`
   UPDATE user_activity
@@ -108,37 +112,63 @@ const ACTION_PRIORITY = ['invite', 'meeting', 'contact', 'postWrite', 'bible', '
 const MISSION_KEYS = {
   daily: 'daily_core3'
 };
-const MISSION_REWARDS = { daily: 4 };
-const WEEKLY_MISSION_VARIANTS = [
+const MISSION_REWARDS = { daily: 2 };
+const WEEKLY_MISSION_SCHEDULE = [
   {
-    key: 'weekly_active5',
-    label: '주간 출석 미션',
-    description: '이번 주 5일 이상 행동하기',
-    type: 'activeDays',
-    target: 5,
-    rewardHp: 8
-  },
-  {
-    key: 'weekly_meeting2',
-    label: '주간 만남 미션',
-    description: '이번 주 만남 행동 2회 달성',
-    type: 'actionCount',
-    actionType: 'meeting',
-    target: 2,
-    rewardHp: 10
-  },
-  {
-    key: 'weekly_post3',
-    label: '주간 작성 미션',
-    description: '이번 주 게시판 작성 행동 3회 달성',
+    phase: 1,
+    key: 'weekly_w1_post3',
+    label: '주간 미션 (1주차)',
+    description: '게시판 작성 3회 달성',
     type: 'actionCount',
     actionType: 'postWrite',
     target: 3,
-    rewardHp: 8
+    rewardHp: 6
+  },
+  {
+    phase: 2,
+    key: 'weekly_w2_meeting2',
+    label: '주간 미션 (2주차)',
+    description: '만남 2회 달성',
+    type: 'actionCount',
+    actionType: 'meeting',
+    target: 2,
+    rewardHp: 6
+  },
+  {
+    phase: 3,
+    key: 'weekly_w3_meeting1_invite1',
+    label: '주간 미션 (3주차)',
+    description: '만남 1회 + 권유 1회 달성',
+    type: 'multiActionCount',
+    requirements: [
+      { actionType: 'meeting', target: 1 },
+      { actionType: 'invite', target: 1 }
+    ],
+    rewardHp: 6
+  },
+  {
+    phase: 4,
+    key: 'weekly_w4_invite2',
+    label: '주간 미션 (4주차)',
+    description: '권유 2회 달성',
+    type: 'actionCount',
+    actionType: 'invite',
+    target: 2,
+    rewardHp: 6
+  },
+  {
+    phase: 5,
+    key: 'weekly_w5_contact3',
+    label: '주간 미션 (5주차)',
+    description: '연락 3회 달성',
+    type: 'actionCount',
+    actionType: 'contact',
+    target: 3,
+    rewardHp: 6
   }
 ];
 
-const COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '전도인증', '묵상나눔'];
+const COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '기도부탁', '만남인증', '묵상나눔'];
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const INPUT_LIMITS = {
   userName: 20,
@@ -147,6 +177,7 @@ const INPUT_LIMITS = {
   postContent: 1000,
   comment: 300
 };
+const ALLOWED_DEPARTMENTS = ['언약부', '밀알부', '이레부'];
 const rateLimitStore = new Map();
 let lastRateLimitCleanupAt = 0;
 
@@ -228,14 +259,26 @@ function getWeekStartDate(baseDateText) {
   return d.toISOString().slice(0, 10);
 }
 
-function pickWeeklyMissionVariant(userId, weekStart) {
-  const source = String(userId) + '|' + String(weekStart);
-  let hash = 0;
-  for (let i = 0; i < source.length; i += 1) {
-    hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+function getWeeklyMissionPhase(weekStart) {
+  const currentWeekStart = new Date(weekStart + 'T00:00:00Z');
+  const firstDayOfMonth = new Date(Date.UTC(currentWeekStart.getUTCFullYear(), currentWeekStart.getUTCMonth(), 1));
+  const firstDayWeek = firstDayOfMonth.getUTCDay(); // 0=Sun, 1=Mon...
+  const addDaysToMonday = firstDayWeek === 0 ? 1 : (8 - firstDayWeek) % 7;
+  const firstMonday = new Date(firstDayOfMonth);
+  firstMonday.setUTCDate(firstDayOfMonth.getUTCDate() + addDaysToMonday);
+
+  if (currentWeekStart.getTime() < firstMonday.getTime()) {
+    return 1;
   }
-  const index = hash % WEEKLY_MISSION_VARIANTS.length;
-  return WEEKLY_MISSION_VARIANTS[index];
+
+  const diffWeeks = Math.floor((currentWeekStart.getTime() - firstMonday.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const phase = diffWeeks + 1;
+  return Math.min(WEEKLY_MISSION_SCHEDULE.length, Math.max(1, phase));
+}
+
+function pickWeeklyMissionVariant(weekStart) {
+  const phase = getWeeklyMissionPhase(weekStart);
+  return WEEKLY_MISSION_SCHEDULE.find((v) => v.phase === phase) || WEEKLY_MISSION_SCHEDULE[0];
 }
 
 function getMissionState(userId) {
@@ -264,21 +307,11 @@ function getMissionState(userId) {
       AND period_key = ?
   `).get(userId, MISSION_KEYS.daily, today);
 
-  const weeklyVariant = pickWeeklyMissionVariant(userId, weekStart);
+  const weeklyVariant = pickWeeklyMissionVariant(weekStart);
   let weeklyProgress = 0;
-  if (weeklyVariant.type === 'activeDays') {
-    const weeklyRow = db.prepare(`
-      SELECT COUNT(*) AS count
-      FROM (
-        SELECT substr(action_date, 1, 10) AS day
-        FROM actions
-        WHERE user_id = ?
-          AND substr(action_date, 1, 10) BETWEEN ? AND ?
-        GROUP BY day
-      ) d
-    `).get(userId, weekStart, weekEnd);
-    weeklyProgress = Number(weeklyRow && weeklyRow.count) || 0;
-  } else if (weeklyVariant.type === 'actionCount' && weeklyVariant.actionType) {
+  let weeklyTarget = Number(weeklyVariant.target) || 0;
+  let weeklyCompleted = false;
+  if (weeklyVariant.type === 'actionCount' && weeklyVariant.actionType) {
     const weeklyRow = db.prepare(`
       SELECT COUNT(*) AS count
       FROM actions
@@ -287,6 +320,30 @@ function getMissionState(userId) {
         AND substr(action_date, 1, 10) BETWEEN ? AND ?
     `).get(userId, weeklyVariant.actionType, weekStart, weekEnd);
     weeklyProgress = Number(weeklyRow && weeklyRow.count) || 0;
+    weeklyCompleted = weeklyProgress >= weeklyTarget;
+  } else if (weeklyVariant.type === 'multiActionCount' && Array.isArray(weeklyVariant.requirements)) {
+    weeklyTarget = weeklyVariant.requirements.reduce((sum, req) => sum + (Number(req.target) || 0), 0);
+    const actionCounts = {};
+    weeklyVariant.requirements.forEach((req) => {
+      const weeklyRow = db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM actions
+        WHERE user_id = ?
+          AND action_type = ?
+          AND substr(action_date, 1, 10) BETWEEN ? AND ?
+      `).get(userId, req.actionType, weekStart, weekEnd);
+      actionCounts[req.actionType] = Number(weeklyRow && weeklyRow.count) || 0;
+    });
+    weeklyProgress = weeklyVariant.requirements.reduce((sum, req) => {
+      const target = Number(req.target) || 0;
+      const count = Number(actionCounts[req.actionType]) || 0;
+      return sum + Math.min(count, target);
+    }, 0);
+    weeklyCompleted = weeklyVariant.requirements.every((req) => {
+      const target = Number(req.target) || 0;
+      const count = Number(actionCounts[req.actionType]) || 0;
+      return count >= target;
+    });
   }
 
   const weeklyClaimed = !!db.prepare(`
@@ -317,8 +374,8 @@ function getMissionState(userId) {
       rewardHp: weeklyVariant.rewardHp,
       weekStart,
       weekEnd,
-      progress: { current: weeklyProgress, total: weeklyVariant.target },
-      completed: weeklyProgress >= weeklyVariant.target,
+      progress: { current: weeklyProgress, total: weeklyTarget },
+      completed: weeklyCompleted,
       claimed: weeklyClaimed
     }
   };
@@ -437,16 +494,13 @@ function getDominantAction(scores) {
   return best > 0 ? winner : null;
 }
 
-function getPassiveBonus(userId, gogumaId, actionType) {
-  const scores = getGogumaActionScores(userId, gogumaId);
-  const dominantAction = getDominantAction(scores);
-  if (!dominantAction) {
-    return { bonus: 0, dominantAction: null };
-  }
-  return {
-    bonus: dominantAction === actionType ? 1 : 0,
-    dominantAction
-  };
+function getStageFromHp(hp) {
+  const value = Number(hp) || 0;
+  if (value < 20) return 1;
+  if (value < 40) return 2;
+  if (value < 60) return 3;
+  if (value < 80) return 4;
+  return 5;
 }
 
 function toGogumaPayload(row, userId) {
@@ -456,6 +510,8 @@ function toGogumaPayload(row, userId) {
     name: row.name,
     hp: row.hp,
     dominantAction: getDominantAction(scores),
+    stage2ActionLock: row.stage2_action_lock || null,
+    stage3ActionLock: row.stage3_action_lock || null,
     actionScores: scores,
     todayActions: getTodayActionFlags(userId, row.id)
   };
@@ -463,8 +519,24 @@ function toGogumaPayload(row, userId) {
 
 function getUserGogumas(userId) {
   const rows = db
-    .prepare('SELECT id, name, hp FROM gogumas WHERE user_id = ? ORDER BY id')
+    .prepare('SELECT id, name, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE user_id = ? ORDER BY id')
     .all(userId);
+  rows.forEach((row) => {
+    const stage = getStageFromHp(row.hp);
+    if (stage < 2) return;
+    if (row.stage2_action_lock && (stage < 3 || row.stage3_action_lock)) return;
+
+    const scores = getGogumaActionScores(userId, row.id);
+    const dominantAction = getDominantAction(scores);
+    if (!dominantAction) return;
+
+    const nextStage2Lock = row.stage2_action_lock || (stage >= 2 ? dominantAction : null);
+    const nextStage3Lock = row.stage3_action_lock || (stage >= 3 ? dominantAction : null);
+    db.prepare('UPDATE gogumas SET stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
+      .run(nextStage2Lock, nextStage3Lock, row.id);
+    row.stage2_action_lock = nextStage2Lock || row.stage2_action_lock;
+    row.stage3_action_lock = nextStage3Lock || row.stage3_action_lock;
+  });
   return rows.map((row) => toGogumaPayload(row, userId));
 }
 
@@ -546,6 +618,7 @@ function toUserPayload(user) {
   return {
     id: user.id,
     name: user.name,
+    department: user.department || '미지정',
     loginDays: rewardState.totalVisitDays,
     canSpinRoulette: rewardState.canSpinRoulette,
     nextRouletteAt: rewardState.nextRouletteAt
@@ -706,7 +779,7 @@ app.get('/api/me', (req, res) => {
   if (!req.session.userId) {
     return res.json({ user: null, gogumas: [] });
   }
-  const user = db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.session.userId);
+  const user = db.prepare('SELECT id, name, department FROM users WHERE id = ?').get(req.session.userId);
   if (!user) {
     req.session.userId = null;
     return res.json({ user: null, gogumas: [] });
@@ -724,12 +797,19 @@ app.post('/api/start', limitStart, (req, res) => {
   if (!userNameResult.ok) {
     return res.status(400).json({ error: userNameResult.error === '입력값을 확인해 주세요.' ? '이름을 입력해 주세요.' : userNameResult.error });
   }
+  const departmentRaw = typeof req.body.department === 'string' ? req.body.department.trim() : '';
+  if (!ALLOWED_DEPARTMENTS.includes(departmentRaw)) {
+    return res.status(400).json({ error: '부서를 선택해 주세요.' });
+  }
   const userName = userNameResult.value;
-  let user = db.prepare('SELECT id, name FROM users WHERE name = ?').get(userName);
+  let user = db.prepare('SELECT id, name, department FROM users WHERE name = ?').get(userName);
   if (!user) {
-    const stmt = db.prepare('INSERT INTO users (name) VALUES (?)');
-    stmt.run(userName);
-    user = db.prepare('SELECT id, name FROM users WHERE name = ?').get(userName);
+    const stmt = db.prepare('INSERT INTO users (name, department) VALUES (?, ?)');
+    stmt.run(userName, departmentRaw);
+    user = db.prepare('SELECT id, name, department FROM users WHERE name = ?').get(userName);
+  } else if (user.department !== departmentRaw) {
+    db.prepare('UPDATE users SET department = ? WHERE id = ?').run(departmentRaw, user.id);
+    user = db.prepare('SELECT id, name, department FROM users WHERE id = ?').get(user.id);
   }
   req.session.userId = user.id;
 
@@ -769,7 +849,7 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
   }
 
   const row = db
-    .prepare('SELECT id, hp FROM gogumas WHERE id = ? AND user_id = ?')
+    .prepare('SELECT id, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE id = ? AND user_id = ?')
     .get(id, req.session.userId);
 
   if (!row) {
@@ -779,24 +859,30 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
   // 테스터(권진호)는 하루 제한 없이 가능
   if (isTester(req.session.userId)) {
     const valTester = ACTION_VALUES[actionType];
-    const passive = getPassiveBonus(req.session.userId, id, actionType);
-    const totalGainTester = valTester + passive.bonus;
+    const totalGainTester = valTester;
     const newHpTester = Math.min(100, row.hp + totalGainTester);
     // 테스터는 1일 제한 없이 사용 가능하되, 전직 판정을 위해 행동 점수 로그는 적재한다.
     const actionDate = getTodayDate() + 'T' + Date.now();
     db.prepare(
       'INSERT INTO actions (user_id, goguma_id, action_type, action_date) VALUES (?, ?, ?, ?)'
     ).run(req.session.userId, id, actionType, actionDate);
-    db.prepare('UPDATE gogumas SET hp = ? WHERE id = ?').run(newHpTester, id);
     const scores = getGogumaActionScores(req.session.userId, id);
+    const dominantAction = getDominantAction(scores);
+    const prevStage = getStageFromHp(row.hp);
+    const nextStage = getStageFromHp(newHpTester);
+    const nextStage2Lock = row.stage2_action_lock || ((prevStage < 2 && nextStage >= 2) ? (dominantAction || actionType) : null);
+    const nextStage3Lock = row.stage3_action_lock || ((prevStage < 3 && nextStage >= 3) ? (dominantAction || actionType) : null);
+    db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
+      .run(newHpTester, nextStage2Lock, nextStage3Lock, id);
     return res.json({
       id,
       hp: newHpTester,
-      dominantAction: getDominantAction(scores),
+      dominantAction: dominantAction,
+      stage2ActionLock: nextStage2Lock || null,
+      stage3ActionLock: nextStage3Lock || null,
       actionScores: scores,
       todayActions: getTodayActionFlags(req.session.userId, id),
       baseGain: valTester,
-      passiveBonus: passive.bonus,
       totalGain: totalGainTester,
       missions: getMissionState(req.session.userId)
     });
@@ -817,8 +903,7 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
   }
 
   const val = ACTION_VALUES[actionType];
-  const passive = getPassiveBonus(req.session.userId, id, actionType);
-  const totalGain = val + passive.bonus;
+  const totalGain = val;
   const newHp = Math.min(100, row.hp + totalGain);
 
   const insertAction = db.prepare(
@@ -833,16 +918,23 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
       .json({ error: '이 버튼은 오늘 이미 사용했습니다. 내일 다시 눌러 주세요.' });
   }
 
-  db.prepare('UPDATE gogumas SET hp = ? WHERE id = ?').run(newHp, id);
   const scores = getGogumaActionScores(req.session.userId, id);
+  const dominantAction = getDominantAction(scores);
+  const prevStage = getStageFromHp(row.hp);
+  const nextStage = getStageFromHp(newHp);
+  const nextStage2Lock = row.stage2_action_lock || ((prevStage < 2 && nextStage >= 2) ? (dominantAction || actionType) : null);
+  const nextStage3Lock = row.stage3_action_lock || ((prevStage < 3 && nextStage >= 3) ? (dominantAction || actionType) : null);
+  db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
+    .run(newHp, nextStage2Lock, nextStage3Lock, id);
   res.json({
     id,
     hp: newHp,
-    dominantAction: getDominantAction(scores),
+    dominantAction: dominantAction,
+    stage2ActionLock: nextStage2Lock || null,
+    stage3ActionLock: nextStage3Lock || null,
     actionScores: scores,
     todayActions: getTodayActionFlags(req.session.userId, id),
     baseGain: val,
-    passiveBonus: passive.bonus,
     totalGain,
     missions: getMissionState(req.session.userId)
   });
@@ -899,7 +991,7 @@ app.post('/api/missions/:key/claim', limitWrite, (req, res) => {
     return res.status(400).json({ error: '이미 보상을 받았습니다.' });
   }
 
-  const user = db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.session.userId);
+  const user = db.prepare('SELECT id, name, department FROM users WHERE id = ?').get(req.session.userId);
   const gogumas = getUserGogumas(req.session.userId);
   res.json({
     ok: true,
@@ -969,7 +1061,7 @@ app.post('/api/reward/spin', limitWrite, (req, res) => {
     return res.status(401).json({ error: '로그인이 필요합니다.' });
   }
 
-  const user = db.prepare('SELECT id, name FROM users WHERE id = ?').get(req.session.userId);
+  const user = db.prepare('SELECT id, name, department FROM users WHERE id = ?').get(req.session.userId);
   if (!user) {
     req.session.userId = null;
     return res.status(401).json({ error: '로그인이 필요합니다.' });
@@ -988,11 +1080,11 @@ app.post('/api/reward/spin', limitWrite, (req, res) => {
   }
 
   const segments = [
-    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 0 },
-    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 1 },
+    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 0 },
+    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 1 },
     { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 2 },
-    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 3 },
-    { key: 'miss', label: '꽝', hpBonus: 0, segmentIndex: 4 },
+    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 3 },
+    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 4 },
     { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 5 },
     { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 6 },
     { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 7 }
@@ -1023,29 +1115,17 @@ app.post('/api/reward/spin', limitWrite, (req, res) => {
 // 랭킹 조회
 app.get('/api/ranking', (req, res) => {
   const rows = db.prepare(`
-    SELECT users.name as userName,
-           gogumas.id as gogumaId,
-           gogumas.user_id as userId,
-           gogumas.name as gogumaName,
-           gogumas.hp as hp
+    SELECT users.department AS department,
+           ROUND(AVG(gogumas.hp), 1) AS avgHp,
+           COUNT(gogumas.id) AS gogumaCount,
+           COUNT(DISTINCT users.id) AS userCount
     FROM gogumas
     JOIN users ON gogumas.user_id = users.id
-    ORDER BY gogumas.hp DESC,
-             gogumas.name ASC
-    LIMIT 50
+    WHERE users.department IN ('언약부', '밀알부', '이레부')
+    GROUP BY users.department
+    ORDER BY avgHp DESC, users.department ASC
   `).all();
-
-  const ranking = rows.map((row) => {
-    const scores = getGogumaActionScores(row.userId, row.gogumaId);
-    return {
-      userName: row.userName,
-      gogumaName: row.gogumaName,
-      hp: row.hp,
-      dominantAction: getDominantAction(scores)
-    };
-  });
-
-  res.json(ranking);
+  res.json(rows);
 });
 
 // 게시글 목록

@@ -638,8 +638,8 @@
       position: absolute;
       left: 0;
       bottom: 0;
-      width: 44px;
-      height: 44px;
+      width: 88px;
+      height: 88px;
       object-fit: contain;
       image-rendering: pixelated;
       opacity: 1;
@@ -2379,10 +2379,6 @@
       font-size: 9px;
       line-height: 1;
     }
-    .asset-btn.is-passive {
-      transform: translateY(-2px);
-      filter: drop-shadow(0 0 6px rgba(255, 193, 7, 0.5));
-    }
     .asset-btn img {
       width: 100%;
       height: 86px;
@@ -2525,6 +2521,25 @@
     .name-input-wrap .pixel-btn {
       margin-top: 8px;
     }
+    .dept-select {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      max-width: 280px;
+      margin: 0 auto 8px;
+    }
+    .dept-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 12px;
+      padding: 8px 6px;
+      border: 2px solid #000;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+    .dept-btn.active {
+      background: #ffecb3;
+      box-shadow: inset 0 -2px 0 #c49a00;
+    }
   </style>
 </head>
 <body data-stage="2">
@@ -2572,8 +2587,13 @@
   <!-- 이름 입력 모달 (시작하기 클릭 시 화면 가운데 표시) -->
   <div id="nameInputStep" class="name-input-overlay hidden">
     <div class="name-input-wrap">
-      <h3>자신의 이름을 입력하세요</h3>
+      <h3>이름과 부서를 입력하세요</h3>
       <input type="text" id="userNameInput" placeholder="이름" maxlength="20" onkeypress="if(event.key==='Enter')submitUserName()">
+      <div id="departmentSelect" class="dept-select">
+        <button type="button" class="dept-btn" data-department="언약부" onclick="selectDepartment('언약부')">언약부</button>
+        <button type="button" class="dept-btn" data-department="밀알부" onclick="selectDepartment('밀알부')">밀알부</button>
+        <button type="button" class="dept-btn" data-department="이레부" onclick="selectDepartment('이레부')">이레부</button>
+      </div>
       <button class="pixel-btn" onclick="submitUserName()">확인</button>
     </div>
   </div>
@@ -2604,7 +2624,7 @@
     <div id="rankingModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'ranking')">
       <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
         <div class="modal-head-row">
-          <h3 class="modal-heading">전체 리더보드</h3>
+          <h3 class="modal-heading">부서별 평균 온도</h3>
           <button class="pixel-btn modal-close" onclick="closeRanking()">닫기</button>
         </div>
         <ol id="rankingList" class="list-panel"></ol>
@@ -2650,6 +2670,39 @@
         <div id="historyModalContent" class="history-empty">고구마를 선택하면 히스토리를 확인할 수 있습니다.</div>
       </div>
     </div>
+    <div id="upgradeModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'upgrade')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 id="upgradeModalHeading" class="modal-heading">업그레이드!</h3>
+          <button class="pixel-btn modal-close" onclick="closeUpgradeModal()">닫기</button>
+        </div>
+        <div style="display:flex;justify-content:center;">
+          <img id="upgradeModalImage" src="game_images/upgrade/upgrade1.gif" alt="업그레이드 이미지" style="width:100%;max-width:280px;image-rendering:pixelated;">
+        </div>
+      </div>
+    </div>
+    <div id="ddayModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'dday')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 class="modal-heading">집회 일정</h3>
+          <button class="pixel-btn modal-close" onclick="closeDdayModal()">닫기</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:10px;border:2px solid #000;border-radius:12px;background:#fff7dd;">
+            <strong style="display:block;font-size:18px;">3월 30일 청년회 집회</strong>
+            <span id="ddayMainValue" style="display:block;margin-top:4px;color:#d84315;font-size:18px;">D-Day</span>
+          </div>
+          <div style="padding:10px;border:2px solid #000;border-radius:12px;background:#fff;">
+            <div>3월 15일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday15" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+            <div style="margin-top:8px;">3월 22일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday22" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+            <div style="margin-top:8px;">3월 29일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday29" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="goguma-list-bar">
       <div class="goguma-list" id="gogumaList"></div>
     </div>
@@ -2690,8 +2743,8 @@
             </div>
           </div>
         </div>
-        <img class="stage-tool left" src="game_images/11.png" alt="">
-        <img class="stage-tool right stage-tool-history" src="game_images/12.png" alt="성장 히스토리 보기" role="button" tabindex="0" onclick="openSelectedHistory()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSelectedHistory();}">
+        <img class="stage-tool left stage-tool-history" src="game_images/11.png" alt="성장 히스토리 보기" role="button" tabindex="0" onclick="openSelectedHistory()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSelectedHistory();}">
+        <img class="stage-tool right stage-tool-history" src="game_images/12.png" alt="집회 일정 보기" role="button" tabindex="0" onclick="openDdayModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDdayModal();}">
       </div>
       <div class="action-panel">
         <p class="action-panel-title">오늘의 미션</p>
@@ -2704,11 +2757,10 @@
           <button class="asset-btn" data-action="prayer" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
           <button class="asset-btn" data-action="contact" onclick="grow('contact')"><img src="game_images/8.png" alt="연락 (+3)"><span>연락 +3</span></button>
           <button class="asset-btn" data-action="meeting" onclick="grow('meeting')"><img src="game_images/9.png" alt="만남권유 (+5)"><span>만남 +5</span></button>
-          <button class="asset-btn" data-action="invite" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>초대 +8</span></button>
+          <button class="asset-btn" data-action="invite" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>집회권유 +8</span></button>
         </div>
         <div class="action-tips">
           <div class="action-tip">행동 카드는 하루에 1번씩만 사용할 수 있습니다.</div>
-          <div id="passiveTip" class="action-tip">전직 패시브가 아직 없습니다. 행동을 누적해 전직을 정해 보세요.</div>
           <div id="actionResetTimer" class="action-tip">다음 리셋(KST)까지 --:--:--</div>
         </div>
         <div id="missionPanel" class="mission-panel">
@@ -2762,6 +2814,18 @@
       <div id="rouletteResult" class="roulette-result" style="margin-top:16px;">아직 룰렛 결과가 없습니다.</div>
     </div>
   </div>
+  <div id="rouletteRewardModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'rouletteReward')">
+    <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head-row">
+        <h3 class="modal-heading">룰렛 결과</h3>
+        <button class="pixel-btn modal-close" onclick="closeRouletteRewardModal()">닫기</button>
+      </div>
+      <div style="text-align:center;display:flex;flex-direction:column;gap:10px;">
+        <strong id="rouletteRewardLabel" style="font-size:18px;"></strong>
+        <p id="rouletteRewardDesc" style="margin:0;font-size:13px;color:#4e342e;"></p>
+      </div>
+    </div>
+  </div>
 
   <div id="community" class="screen community-screen hidden">
     <div class="community-shell">
@@ -2787,7 +2851,8 @@
               <select id="communityCategory" class="community-select">
                 <option value="출석인사">출석인사</option>
                 <option value="간식당첨">간식당첨</option>
-                <option value="전도인증">전도인증</option>
+                <option value="기도부탁">기도부탁</option>
+                <option value="만남인증">만남인증</option>
                 <option value="묵상나눔">묵상나눔</option>
               </select>
               <textarea id="communityContent" class="community-textarea" maxlength="1000" placeholder="오늘의 이야기를 적어 주세요."></textarea>
@@ -2819,6 +2884,7 @@
     var data = [];
     var selectedIndex = -1;
     var currentUser = null;
+    var selectedDepartment = '';
     var currentViewMode = 'field';
     var fieldSortMode = 'created';
     var bgmEnabled = true;
@@ -2910,13 +2976,13 @@
     // 이후 시계 방향 배치
     var ROULETTE_SEGMENTS = [
       { id: 'voucher_1000', label: '벳세다 상품권 1000원', weight: 1, hpBonus: 0 },
-      { id: 'miss_a', label: '꽝', weight: 1, hpBonus: 0 },
+      { id: 'miss_a', label: '마이쮸', weight: 1, hpBonus: 0 },
       { id: 'jelly_a', label: '젤리', weight: 1, hpBonus: 0 },
       { id: 'jelly_b', label: '젤리', weight: 1, hpBonus: 0 },
       { id: 'all_plus_5_a', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
       { id: 'all_plus_5_b', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
       { id: 'jelly_c', label: '젤리', weight: 1, hpBonus: 0 },
-      { id: 'miss_b', label: '꽝', weight: 1, hpBonus: 0 }
+      { id: 'miss_b', label: '마이쮸', weight: 1, hpBonus: 0 }
     ];
     var rouletteEngine = {
       pointerAngle: 0,
@@ -2928,13 +2994,13 @@
       debug: true,
       onSpinEnd: null
     };
-    var COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '전도인증', '묵상나눔'];
+    var COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '기도부탁', '만남인증', '묵상나눔'];
     var GOGUMA_SPEECH_LINES = [
       '{name}를 위해 기도하고 있어요!',
       '따뜻한 마음으로 함께 전해요!',
       '기도하면 제 온도가 올라가요!',
       '오늘도 묵상을 나눠 볼까요?',
-      '전도인증도 기대하고 있어요!',
+      '기도부탁도 언제든 나눠 주세요!',
       '저를 눌러 주면 더 신나요!',
       '{name}가 연락을 기다려요!',
       '작은 순종이 큰 열매가 돼요!',
@@ -3010,7 +3076,7 @@
       var rouletteBtn = document.getElementById("btnRoulette");
 
       if (userNameEl) {
-        userNameEl.textContent = currentUser ? (currentUser.name + "님") : "";
+        userNameEl.textContent = currentUser ? (currentUser.name + "님" + (currentUser.department ? (' · ' + currentUser.department) : '')) : "";
       }
 
       var loginDays = currentUser && currentUser.loginDays ? currentUser.loginDays : 1;
@@ -3071,7 +3137,7 @@
       return required.map(function(actionKey) {
         var done = completedSet.has(actionKey);
         var label = MISSION_ACTION_LABELS[actionKey] || actionKey;
-        return '<span class="mission-chip ' + (done ? 'done' : '') + '">' + (done ? '완료' : '대기') + ' ' + label + '</span>';
+        return '<span class="mission-chip ' + (done ? 'done' : '') + '">' + (done ? '완료' : '1회') + ' ' + label + '</span>';
       }).join('');
     }
 
@@ -3241,30 +3307,7 @@
     function renderPassiveTip() {
       var tip = document.getElementById('passiveTip');
       if (!tip) return;
-
-      var buttons = document.querySelectorAll('.action-buttons .asset-btn[data-action]');
-      buttons.forEach(function(btn) {
-        btn.classList.remove('is-passive');
-      });
-
-      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
-        tip.textContent = '고구마를 선택하면 전직 패시브를 확인할 수 있습니다.';
-        return;
-      }
-
-      var g = data[selectedIndex];
-      var dominant = g && g.dominantAction ? String(g.dominantAction) : '';
-      if (!dominant) {
-        tip.textContent = '전직 패시브가 아직 없습니다. 행동을 누적해 전직을 정해 보세요.';
-        return;
-      }
-
-      var label = getActionLabel(dominant);
-      tip.textContent = '전직 패시브: ' + label + ' 행동 시 추가 +1';
-      var activeBtn = document.querySelector('.action-buttons .asset-btn[data-action="' + dominant + '"]');
-      if (activeBtn) {
-        activeBtn.classList.add('is-passive');
-      }
+      tip.textContent = '';
     }
 
     function renderHistoryContentForElement(contentEl, noSelectionMessage) {
@@ -3649,6 +3692,8 @@
         name: g.name,
         hp: g.hp,
         dominantAction: g && g.dominantAction ? String(g.dominantAction) : null,
+        stage2ActionLock: g && g.stage2ActionLock ? String(g.stage2ActionLock) : null,
+        stage3ActionLock: g && g.stage3ActionLock ? String(g.stage3ActionLock) : null,
         actionScores: g && g.actionScores && typeof g.actionScores === 'object' ? g.actionScores : {},
         todayActions: g && g.todayActions && typeof g.todayActions === 'object' ? g.todayActions : {},
         cardBgIndex: cardBgIndex
@@ -3678,12 +3723,18 @@
 
     function getGogumaStageImage(g, stage) {
       if (stage === 2) {
+        if (g && g.stage2ActionLock && SPROUT_TRANSFORM_ASSETS[g.stage2ActionLock]) {
+          return SPROUT_TRANSFORM_ASSETS[g.stage2ActionLock];
+        }
         if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS[g.dominantAction]) {
           return SPROUT_TRANSFORM_ASSETS[g.dominantAction];
         }
         return SPROUT_TRANSFORM_ASSETS.bible;
       }
       if (stage === 3) {
+        if (g && g.stage3ActionLock && SPROUT_TRANSFORM_ASSETS_2[g.stage3ActionLock]) {
+          return SPROUT_TRANSFORM_ASSETS_2[g.stage3ActionLock];
+        }
         if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS_2[g.dominantAction]) {
           return SPROUT_TRANSFORM_ASSETS_2[g.dominantAction];
         }
@@ -4399,7 +4450,7 @@
       if (lastRouletteReward) {
         var bonusText = lastRouletteReward.hpBonus > 0
           ? ("내 고구마 전체 온도 +" + lastRouletteReward.hpBonus)
-          : "이번에는 보너스가 없습니다.";
+          : "";
         resultEl.innerHTML = "<strong>" + lastRouletteReward.label + "</strong>" + bonusText;
       } else {
         resultEl.textContent = "아직 룰렛 결과가 없습니다.";
@@ -4512,8 +4563,98 @@
       if (target === 'ranking') closeRanking();
       if (target === 'board') closeBoard();
       if (target === 'history') closeHistoryModal();
+      if (target === 'rouletteReward') closeRouletteRewardModal();
+      if (target === 'upgrade') closeUpgradeModal();
+      if (target === 'dday') closeDdayModal();
     }
     window.handleModalBackdropClick = handleModalBackdropClick;
+
+    function updateDdayValue() {
+      var ddayEl = document.getElementById('ddayMainValue');
+      var prayerDday15 = document.getElementById('prayerMeetingDday15');
+      var prayerDday22 = document.getElementById('prayerMeetingDday22');
+      var prayerDday29 = document.getElementById('prayerMeetingDday29');
+      if (!ddayEl) return;
+      var now = new Date();
+      var year = now.getFullYear();
+      var target = new Date(year, 2, 30); // 3월 30일
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+      var diff = Math.round((targetDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (diff > 0) {
+        ddayEl.textContent = 'D-' + diff;
+      } else if (diff === 0) {
+        ddayEl.textContent = 'D-Day';
+      } else {
+        ddayEl.textContent = 'D+' + Math.abs(diff);
+      }
+
+      function setMeetingDday(day, el) {
+        if (!el) return;
+        var meetingDate = new Date(year, 2, day);
+        var todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var diffDays = Math.round((meetingDate.getTime() - todayDate.getTime()) / (24 * 60 * 60 * 1000));
+        el.textContent = diffDays > 0 ? ('D-' + diffDays) : (diffDays === 0 ? 'D-Day' : ('D+' + Math.abs(diffDays)));
+      }
+      setMeetingDday(15, prayerDday15);
+      setMeetingDday(22, prayerDday22);
+      setMeetingDday(29, prayerDday29);
+    }
+
+    function openDdayModal() {
+      var modal = document.getElementById('ddayModal');
+      if (!modal) return;
+      updateDdayValue();
+      modal.classList.remove('hidden');
+    }
+    window.openDdayModal = openDdayModal;
+
+    function closeDdayModal() {
+      var modal = document.getElementById('ddayModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeDdayModal = closeDdayModal;
+
+    function openUpgradeModal(imageSrc, headingText) {
+      var modal = document.getElementById('upgradeModal');
+      var imageEl = document.getElementById('upgradeModalImage');
+      var headingEl = document.getElementById('upgradeModalHeading');
+      if (!modal) return;
+      if (imageEl && imageSrc) imageEl.src = imageSrc;
+      if (headingEl) headingEl.textContent = headingText || '업그레이드!';
+      modal.classList.remove('hidden');
+    }
+    window.openUpgradeModal = openUpgradeModal;
+
+    function closeUpgradeModal() {
+      var modal = document.getElementById('upgradeModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeUpgradeModal = closeUpgradeModal;
+
+    function openRouletteRewardModal(winner) {
+      var modal = document.getElementById('rouletteRewardModal');
+      var labelEl = document.getElementById('rouletteRewardLabel');
+      var descEl = document.getElementById('rouletteRewardDesc');
+      if (!modal || !winner) return;
+      if (labelEl) labelEl.textContent = winner.label || '결과';
+      if (descEl) {
+        descEl.textContent = (Number(winner.hpBonus) || 0) > 0
+          ? ('내 고구마 전체 온도 +' + Number(winner.hpBonus))
+          : '';
+      }
+      modal.classList.remove('hidden');
+    }
+    window.openRouletteRewardModal = openRouletteRewardModal;
+
+    function closeRouletteRewardModal() {
+      var modal = document.getElementById('rouletteRewardModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeRouletteRewardModal = closeRouletteRewardModal;
 
     window.toggleHelp = function() {
       var el = document.getElementById("helpBubble");
@@ -4523,17 +4664,33 @@
     window.showNameInput = function() {
       var step = document.getElementById("nameInputStep");
       var input = document.getElementById("userNameInput");
+      selectedDepartment = '';
       if (step) step.classList.remove("hidden");
+      var deptButtons = document.querySelectorAll('#departmentSelect .dept-btn');
+      deptButtons.forEach(function(btn) { btn.classList.remove('active'); });
       if (input) { input.value = ""; input.focus(); }
+    };
+
+    window.selectDepartment = function(department) {
+      selectedDepartment = department || '';
+      var deptButtons = document.querySelectorAll('#departmentSelect .dept-btn');
+      deptButtons.forEach(function(btn) {
+        if (btn.getAttribute('data-department') === selectedDepartment) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
     };
 
     window.submitUserName = function() {
       var userName = document.getElementById("userNameInput").value.trim();
       if (!userName) { alert("이름을 입력해 주세요."); return; }
+      if (!selectedDepartment) { alert("부서를 선택해 주세요."); return; }
       fetchJson(API + '/api/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userName: userName }),
+        body: JSON.stringify({ userName: userName, department: selectedDepartment }),
         credentials: 'include'
       }).then(function(res) {
         var result = res.data;
@@ -4614,6 +4771,7 @@
       if (selectedIndex < 0) return;
       playButtonEffect();
       var g = data[selectedIndex];
+      var prevStage = getStage(Number(g.hp) || 0);
       if (g && g.todayActions && g.todayActions[actionType]) {
         setInlineNotice('이 행동은 오늘 이미 사용했습니다. 리셋 후 다시 시도해 주세요.', 'error');
         return;
@@ -4636,6 +4794,12 @@
         if (typeof result.dominantAction === 'string' && result.dominantAction) {
           g.dominantAction = result.dominantAction;
         }
+        if (typeof result.stage2ActionLock === 'string' && result.stage2ActionLock) {
+          g.stage2ActionLock = result.stage2ActionLock;
+        }
+        if (typeof result.stage3ActionLock === 'string' && result.stage3ActionLock) {
+          g.stage3ActionLock = result.stage3ActionLock;
+        }
         if (result && result.todayActions && typeof result.todayActions === 'object') {
           g.todayActions = result.todayActions;
         } else {
@@ -4652,10 +4816,14 @@
         shootHearts();
         const stage = getStage(g.hp);
         updateBackgroundByStage(stage);
+        if (prevStage === 1 && stage === 2) {
+          openUpgradeModal('game_images/upgrade/upgrade1.gif', '업그레이드!');
+        } else if (prevStage === 2 && stage === 3) {
+          openUpgradeModal('game_images/upgrade/upgrade2.gif', '업그레이드!');
+        }
         var totalGain = Number(result.totalGain);
-        var passiveBonus = Number(result.passiveBonus) || 0;
         var gainText = Number.isFinite(totalGain)
-          ? ('+' + totalGain + (passiveBonus > 0 ? ' (패시브 +' + passiveBonus + ')' : ''))
+          ? ('+' + totalGain)
           : '';
         setInlineNotice(g.name + "에게 행동을 적용했습니다. " + (gainText ? ('이번 증가 ' + gainText + ' · ') : '') + "현재 온도 " + g.hp + "입니다.", "success");
         if (g.hp >= 99) {
@@ -4673,7 +4841,7 @@
       for (var i = 0; i < 5; i++) {
         var heart = document.createElement("img");
         heart.className = "heart-burst";
-        heart.src = "game_images/13.png";
+        heart.src = "game_images/heart.gif";
         heart.alt = "";
         heart.style.animationDelay = (i * 60) + "ms";
         container.appendChild(heart);
@@ -4879,6 +5047,7 @@
     window.openRoulette = openRoulette;
 
     function closeRoulette() {
+      closeRouletteRewardModal();
       document.getElementById("roulette").classList.add("hidden");
       if (!document.getElementById("home").classList.contains("hidden")) return;
       document.getElementById("game").classList.remove("hidden");
@@ -5141,13 +5310,12 @@
       if (!Array.isArray(data) || data.length === 0) {
         const empty = document.createElement('li');
         empty.className = 'empty-state';
-        empty.textContent = '아직 등록된 고구마가 없습니다.';
+        empty.textContent = '아직 집계할 데이터가 없습니다.';
         list.appendChild(empty);
         return;
       }
 
       data.forEach((r, i) => {
-        const stage = getStage(Number(r.hp) || 0);
         const li = document.createElement('li');
         li.className = 'ranking-item' + (i === 0 ? ' is-top' : '');
 
@@ -5160,27 +5328,21 @@
 
         const user = document.createElement('span');
         user.className = 'ranking-user';
-        user.textContent = r.userName || '익명';
+        user.textContent = r.department || '미지정부서';
 
         const meta = document.createElement('span');
         meta.className = 'ranking-meta';
-        meta.textContent = (r.gogumaName || '고구마') + ' · 성장 ' + stage + '단계';
+        meta.textContent = '참여 인원 ' + (Number(r.userCount) || 0) + '명 · 고구마 ' + (Number(r.gogumaCount) || 0) + '개';
 
         const hp = document.createElement('span');
         hp.className = 'ranking-hp';
-        hp.textContent = 'Lv.' + (Math.min(99, Math.floor(Number(r.hp) || 0)));
-
-        const avatar = document.createElement('img');
-        avatar.className = 'ranking-stage';
-        avatar.src = getGogumaStageImage({ dominantAction: r.dominantAction || null }, stage);
-        avatar.alt = '';
+        hp.textContent = '평균 ' + (Number(r.avgHp) || 0).toFixed(1) + '°';
 
         main.appendChild(user);
         main.appendChild(meta);
         li.appendChild(rank);
         li.appendChild(main);
         li.appendChild(hp);
-        li.appendChild(avatar);
         list.appendChild(li);
       });
     }
@@ -5396,8 +5558,9 @@
         if (!resultEl || !winner) return;
         var bonusText = winner.hpBonus > 0
           ? ('내 고구마 전체 온도 +' + winner.hpBonus)
-          : '이번에는 보너스가 없습니다.';
+          : '';
         resultEl.innerHTML = '<strong>' + winner.label + '</strong>' + bonusText;
+        openRouletteRewardModal(winner);
       });
 
       function setWeatherVisual(kind, isDay) {
