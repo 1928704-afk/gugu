@@ -21,6 +21,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
+    relation TEXT,
+    age INTEGER,
     hp INTEGER DEFAULT 10,
     created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (user_id) REFERENCES users(id)
@@ -93,6 +95,8 @@ ensureColumn('posts', 'category', "TEXT NOT NULL DEFAULT '출석인사'");
 ensureColumn('users', 'department', "TEXT NOT NULL DEFAULT '미지정'");
 ensureColumn('gogumas', 'stage2_action_lock', 'TEXT');
 ensureColumn('gogumas', 'stage3_action_lock', 'TEXT');
+ensureColumn('gogumas', 'relation', 'TEXT');
+ensureColumn('gogumas', 'age', 'INTEGER');
 
 db.exec(`
   UPDATE user_activity
@@ -104,11 +108,10 @@ const ACTION_VALUES = {
   postWrite: 1, // 게시판 작성
   bible: 1,   // 말씀읽기
   prayer: 1,  // 기도(부탁)하기
-  contact: 3, // 연락하기
-  meeting: 5, // 만나기
+  contact: 2, // 연락&만남
   invite: 8   // 권유하기
 };
-const ACTION_PRIORITY = ['invite', 'meeting', 'contact', 'postWrite', 'bible', 'prayer'];
+const ACTION_PRIORITY = ['invite', 'contact', 'postWrite', 'bible', 'prayer'];
 const MISSION_KEYS = {
   daily: 'daily_core3'
 };
@@ -128,9 +131,9 @@ const WEEKLY_MISSION_SCHEDULE = [
     phase: 2,
     key: 'weekly_w2_meeting2',
     label: '주간 미션 (2주차)',
-    description: '만남 2회 달성',
+    description: '연락&만남 2회 달성',
     type: 'actionCount',
-    actionType: 'meeting',
+    actionType: 'contact',
     target: 2,
     rewardHp: 6
   },
@@ -138,10 +141,10 @@ const WEEKLY_MISSION_SCHEDULE = [
     phase: 3,
     key: 'weekly_w3_meeting1_invite1',
     label: '주간 미션 (3주차)',
-    description: '만남 1회 + 권유 1회 달성',
+    description: '연락&만남 1회 + 권유 1회 달성',
     type: 'multiActionCount',
     requirements: [
-      { actionType: 'meeting', target: 1 },
+      { actionType: 'contact', target: 1 },
       { actionType: 'invite', target: 1 }
     ],
     rewardHp: 6
@@ -173,6 +176,7 @@ const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 const INPUT_LIMITS = {
   userName: 20,
   gogumaName: 20,
+  relation: 30,
   postTitle: 100,
   postContent: 1000,
   comment: 300
@@ -508,6 +512,8 @@ function toGogumaPayload(row, userId) {
   return {
     id: row.id,
     name: row.name,
+    relation: row.relation || '',
+    age: row.age != null ? Number(row.age) : null,
     hp: row.hp,
     dominantAction: getDominantAction(scores),
     stage2ActionLock: row.stage2_action_lock || null,
@@ -519,7 +525,7 @@ function toGogumaPayload(row, userId) {
 
 function getUserGogumas(userId) {
   const rows = db
-    .prepare('SELECT id, name, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE user_id = ? ORDER BY id')
+    .prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE user_id = ? ORDER BY id')
     .all(userId);
   rows.forEach((row) => {
     const stage = getStageFromHp(row.hp);
@@ -823,15 +829,25 @@ app.post('/api/start', limitStart, (req, res) => {
 app.post('/api/goguma/add', limitWrite, (req, res) => {
   if (!req.session.userId) return res.status(401).json({ error: '로그인이 필요합니다.' });
   const nameResult = validateDisplayName(req.body.name, INPUT_LIMITS.gogumaName);
+  const relationResult = validateDisplayName(req.body.relation, INPUT_LIMITS.relation);
+  const ageNum = parseInt(req.body.age, 10);
   if (!nameResult.ok) {
     return res.status(400).json({ error: nameResult.error === '입력값을 확인해 주세요.' ? '고구마 이름을 입력해 주세요.' : nameResult.error });
   }
+  if (!relationResult.ok) {
+    return res.status(400).json({ error: relationResult.error === '입력값을 확인해 주세요.' ? '관계를 입력해 주세요.' : relationResult.error });
+  }
+  if (!Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) {
+    return res.status(400).json({ error: '나이는 1~120 사이 숫자로 입력해 주세요.' });
+  }
   const name = nameResult.value;
+  const relation = relationResult.value;
+  const age = ageNum;
   const count = db.prepare('SELECT COUNT(*) as c FROM gogumas WHERE user_id = ?').get(req.session.userId).c;
   if (count >= 10) return res.status(400).json({ error: '최대 10명까지 가능합니다.' });
-  const stmt = db.prepare('INSERT INTO gogumas (user_id, name, hp) VALUES (?, ?, 10)');
-  const info = stmt.run(req.session.userId, name);
-  const row = db.prepare('SELECT id, name, hp FROM gogumas WHERE id = ?').get(info.lastInsertRowid);
+  const stmt = db.prepare('INSERT INTO gogumas (user_id, name, relation, age, hp) VALUES (?, ?, ?, ?, 10)');
+  const info = stmt.run(req.session.userId, name, relation, age);
+  const row = db.prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE id = ?').get(info.lastInsertRowid);
   res.json({ goguma: toGogumaPayload(row, req.session.userId) });
 });
 

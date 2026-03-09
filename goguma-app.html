@@ -349,6 +349,7 @@
       background: #FFD700;
       color: #000;
       border: 3px solid #000;
+      border-radius: 14px;
       padding: 8px 16px;
       font-size: 12px;
       cursor: pointer;
@@ -2335,11 +2336,14 @@
     }
     .action-buttons {
       display: grid;
-      grid-template-columns: repeat(6, minmax(0, 1fr));
-      gap: 2px;
+      grid-template-columns: repeat(5, minmax(64px, 1fr));
+      gap: 10px;
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       margin: 0 auto;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
     }
     .asset-btn {
       position: relative;
@@ -2381,14 +2385,14 @@
     }
     .asset-btn img {
       width: 100%;
-      height: 86px;
+      height: 80px;
       object-fit: contain;
       image-rendering: pixelated;
       filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.22));
     }
     .asset-btn span {
-      margin-top: 4px;
-      font-size: 10px;
+      margin-top: 6px;
+      font-size: 11px;
       line-height: 1.2;
       color: #3f2915;
       text-align: center;
@@ -2463,6 +2467,10 @@
       }
       .action-tips {
         grid-template-columns: 1fr;
+      }
+      .action-buttons { gap: 8px; }
+      .asset-btn img {
+        height: 72px;
       }
       .ranking-hp {
         font-size: 11px;
@@ -2571,7 +2579,7 @@
       <ul>
         <li>고구마 키우기 게임</li>
         <li>1 자신의 고구마의 이름을 작성해서 추가한다.</li>
-        <li>2 말씀읽기, 기도(부탁)하기, 연락하기, 만나기, 권유하기</li>
+        <li>2 말씀읽기, 기도(부탁)하기, 연락&만남, 권유하기</li>
         <li>3 버튼을 눌러 고구마를 키운다!</li>
       </ul>
     </div>
@@ -2617,8 +2625,7 @@
         </div>
       </div>
       <div class="input-row">
-        <input id="nameInput" placeholder="고구마 이름" style="flex:1;" onkeypress="if(event.key==='Enter')add()">
-        <button class="add-btn" onclick="add()">추가</button>
+        <button class="add-btn" style="width:100%;" onclick="openAddGogumaModal()">고구마 추가하기</button>
       </div>
     </div>
     <div id="rankingModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'ranking')">
@@ -2678,6 +2685,20 @@
         </div>
         <div style="display:flex;justify-content:center;">
           <img id="upgradeModalImage" src="game_images/upgrade/upgrade1.gif" alt="업그레이드 이미지" style="width:100%;max-width:280px;image-rendering:pixelated;">
+        </div>
+      </div>
+    </div>
+    <div id="addGogumaModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'addGoguma')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 class="modal-heading">고구마 추가</h3>
+          <button class="pixel-btn modal-close" onclick="closeAddGogumaModal()">닫기</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="addGogumaName" type="text" maxlength="20" placeholder="고구마 이름" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <input id="addGogumaRelation" type="text" maxlength="30" placeholder="관계" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <input id="addGogumaAge" type="number" min="1" max="120" placeholder="나이" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <button class="pixel-btn" onclick="submitAddGoguma()">저장</button>
         </div>
       </div>
     </div>
@@ -2755,8 +2776,7 @@
           </button>
           <button class="asset-btn" data-action="bible" onclick="grow('bible')"><img src="game_images/6.png" alt="말씀읽기 (+1)"><span>말씀 +1</span></button>
           <button class="asset-btn" data-action="prayer" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
-          <button class="asset-btn" data-action="contact" onclick="grow('contact')"><img src="game_images/8.png" alt="연락 (+3)"><span>연락 +3</span></button>
-          <button class="asset-btn" data-action="meeting" onclick="grow('meeting')"><img src="game_images/9.png" alt="만남권유 (+5)"><span>만남 +5</span></button>
+          <button class="asset-btn" data-action="contact" onclick="grow('contact')"><img src="game_images/28.png" alt="연락&만남 (+2)"><span>연락&만남 +2</span></button>
           <button class="asset-btn" data-action="invite" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>집회권유 +8</span></button>
         </div>
         <div class="action-tips">
@@ -2942,23 +2962,21 @@
       postWrite: 1,
       bible: 1,
       prayer: 1,
-      contact: 3,
-      meeting: 5,
+      contact: 2,
       invite: 8
     };
-    var ACTION_PRIORITY_CLIENT = ['invite', 'meeting', 'contact', 'postWrite', 'bible', 'prayer'];
+    var ACTION_PRIORITY_CLIENT = ['invite', 'contact', 'postWrite', 'bible', 'prayer'];
     var ACTION_LABELS_CLIENT = {
       postWrite: '게시판 작성',
       bible: '말씀',
       prayer: '기도',
-      contact: '연락',
-      meeting: '만남',
+      contact: '연락&만남',
       invite: '초대'
     };
     var MISSION_ACTION_LABELS = {
       bible: '말씀',
       prayer: '기도',
-      contact: '연락'
+      contact: '연락&만남'
     };
     var GOGUMA_CARD_BACKGROUNDS = [
       'game_images/Backgrounds/backgroundForest.png',
@@ -4565,9 +4583,31 @@
       if (target === 'history') closeHistoryModal();
       if (target === 'rouletteReward') closeRouletteRewardModal();
       if (target === 'upgrade') closeUpgradeModal();
+      if (target === 'addGoguma') closeAddGogumaModal();
       if (target === 'dday') closeDdayModal();
     }
     window.handleModalBackdropClick = handleModalBackdropClick;
+
+    function openAddGogumaModal() {
+      var modal = document.getElementById('addGogumaModal');
+      var nameEl = document.getElementById('addGogumaName');
+      var relationEl = document.getElementById('addGogumaRelation');
+      var ageEl = document.getElementById('addGogumaAge');
+      if (!modal) return;
+      if (nameEl) nameEl.value = '';
+      if (relationEl) relationEl.value = '';
+      if (ageEl) ageEl.value = '';
+      modal.classList.remove('hidden');
+      if (nameEl) nameEl.focus();
+    }
+    window.openAddGogumaModal = openAddGogumaModal;
+
+    function closeAddGogumaModal() {
+      var modal = document.getElementById('addGogumaModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeAddGogumaModal = closeAddGogumaModal;
 
     function updateDdayValue() {
       var ddayEl = document.getElementById('ddayMainValue');
@@ -4731,13 +4771,20 @@
     window.backHome = backHome;
 
     function add() {
-      var name = document.getElementById("nameInput").value.trim();
+      var nameEl = document.getElementById('addGogumaName');
+      var relationEl = document.getElementById('addGogumaRelation');
+      var ageEl = document.getElementById('addGogumaAge');
+      var name = nameEl ? nameEl.value.trim() : '';
+      var relation = relationEl ? relationEl.value.trim() : '';
+      var age = ageEl ? ageEl.value.trim() : '';
       if (!name) { setInlineNotice("고구마 이름을 입력해 주세요.", "error"); return; }
+      if (!relation) { setInlineNotice("관계를 입력해 주세요.", "error"); return; }
+      if (!age) { setInlineNotice("나이를 입력해 주세요.", "error"); return; }
       if (data.length >= MAX) { setInlineNotice("최대 10명까지 가능합니다.", "error"); return; }
       fetchJson(API + '/api/goguma/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name }),
+        body: JSON.stringify({ name: name, relation: relation, age: age }),
         credentials: 'include'
       }).then(function(res) {
         var result = res.data;
@@ -4745,7 +4792,7 @@
         var g = result.goguma;
         if (g) {
           data.push(normalizeGoguma(g));
-          document.getElementById("nameInput").value = "";
+          closeAddGogumaModal();
           currentViewMode = 'detail';
           selectedIndex = data.length - 1;
           const stage = getStage(g.hp);
@@ -4756,6 +4803,7 @@
       });
     }
     window.add = add;
+    window.submitAddGoguma = add;
 
     function selectGoguma(i) {
       selectedIndex = i;
