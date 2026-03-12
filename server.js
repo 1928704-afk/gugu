@@ -593,8 +593,6 @@ function applyInactivityPenalty(userId) {
     return;
   }
 
-  const penalty = 5 * days;
-  db.prepare('UPDATE gogumas SET hp = MAX(0, hp - ?) WHERE user_id = ?').run(penalty, userId);
   db.prepare(
     'UPDATE user_activity SET last_visit_date = ?, total_visit_days = COALESCE(total_visit_days, 1) + 1 WHERE user_id = ?'
   ).run(today, userId);
