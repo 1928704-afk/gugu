@@ -95,6 +95,7 @@ ensureColumn('posts', 'category', "TEXT NOT NULL DEFAULT '출석인사'");
 ensureColumn('users', 'department', "TEXT NOT NULL DEFAULT '미지정'");
 ensureColumn('gogumas', 'stage2_action_lock', 'TEXT');
 ensureColumn('gogumas', 'stage3_action_lock', 'TEXT');
+ensureColumn('gogumas', 'stage4_action_lock', 'TEXT');
 ensureColumn('gogumas', 'relation', 'TEXT');
 ensureColumn('gogumas', 'age', 'INTEGER');
 
@@ -112,6 +113,14 @@ const ACTION_VALUES = {
   invite: 8   // 권유하기
 };
 const ACTION_PRIORITY = ['invite', 'contact', 'postWrite', 'bible', 'prayer'];
+const STAGE4_ACTION_CATEGORY_ALIASES = {
+  bible: 'bible',
+  prayer: 'prayer',
+  contact: 'contact',
+  invite: 'meeting',
+  postWrite: 'bible'
+};
+const STAGE4_CATEGORY_PRIORITY = ['meeting', 'contact', 'bible', 'prayer'];
 const MISSION_KEYS = {
   daily: 'daily_core3'
 };
@@ -498,6 +507,38 @@ function getDominantAction(scores) {
   return best > 0 ? winner : null;
 }
 
+function getStage4ComboKey(scores) {
+  const categoryScores = {
+    bible: 0,
+    prayer: 0,
+    contact: 0,
+    meeting: 0
+  };
+
+  Object.keys(STAGE4_ACTION_CATEGORY_ALIASES).forEach((actionType) => {
+    const category = STAGE4_ACTION_CATEGORY_ALIASES[actionType];
+    categoryScores[category] += Number(scores[actionType]) || 0;
+  });
+
+  const ranked = STAGE4_CATEGORY_PRIORITY
+    .map((category, index) => ({
+      category,
+      score: categoryScores[category] || 0,
+      index
+    }))
+    .filter((item) => item.score > 0)
+    .sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.index - b.index;
+    });
+
+  if (ranked.length < 2) {
+    return null;
+  }
+
+  return `${ranked[0].category}:${ranked[1].category}`;
+}
+
 function getStageFromHp(hp) {
   const value = Number(hp) || 0;
   if (value < 20) return 1;
@@ -518,6 +559,7 @@ function toGogumaPayload(row, userId) {
     dominantAction: getDominantAction(scores),
     stage2ActionLock: row.stage2_action_lock || null,
     stage3ActionLock: row.stage3_action_lock || null,
+    stage4ActionLock: row.stage4_action_lock || null,
     actionScores: scores,
     todayActions: getTodayActionFlags(userId, row.id)
   };
@@ -525,23 +567,29 @@ function toGogumaPayload(row, userId) {
 
 function getUserGogumas(userId) {
   const rows = db
-    .prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE user_id = ? ORDER BY id')
+    .prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock, stage4_action_lock FROM gogumas WHERE user_id = ? ORDER BY id')
     .all(userId);
   rows.forEach((row) => {
     const stage = getStageFromHp(row.hp);
     if (stage < 2) return;
-    if (row.stage2_action_lock && (stage < 3 || row.stage3_action_lock)) return;
+    const needsStage2Lock = stage >= 2 && !row.stage2_action_lock;
+    const needsStage3Lock = stage >= 3 && !row.stage3_action_lock;
+    const needsStage4Lock = stage >= 4 && !row.stage4_action_lock;
+    if (!needsStage2Lock && !needsStage3Lock && !needsStage4Lock) return;
 
     const scores = getGogumaActionScores(userId, row.id);
     const dominantAction = getDominantAction(scores);
-    if (!dominantAction) return;
+    const stage4ComboKey = getStage4ComboKey(scores);
+    if (!dominantAction && !stage4ComboKey) return;
 
     const nextStage2Lock = row.stage2_action_lock || (stage >= 2 ? dominantAction : null);
     const nextStage3Lock = row.stage3_action_lock || (stage >= 3 ? dominantAction : null);
-    db.prepare('UPDATE gogumas SET stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
-      .run(nextStage2Lock, nextStage3Lock, row.id);
+    const nextStage4Lock = row.stage4_action_lock || (stage >= 4 ? stage4ComboKey : null);
+    db.prepare('UPDATE gogumas SET stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock), stage4_action_lock = COALESCE(?, stage4_action_lock) WHERE id = ?')
+      .run(nextStage2Lock, nextStage3Lock, nextStage4Lock, row.id);
     row.stage2_action_lock = nextStage2Lock || row.stage2_action_lock;
     row.stage3_action_lock = nextStage3Lock || row.stage3_action_lock;
+    row.stage4_action_lock = nextStage4Lock || row.stage4_action_lock;
   });
   return rows.map((row) => toGogumaPayload(row, userId));
 }
@@ -849,7 +897,7 @@ app.post('/api/goguma/add', limitWrite, (req, res) => {
   if (count >= 10) return res.status(400).json({ error: '최대 10명까지 가능합니다.' });
   const stmt = db.prepare('INSERT INTO gogumas (user_id, name, relation, age, hp) VALUES (?, ?, ?, ?, 10)');
   const info = stmt.run(req.session.userId, name, relation, age);
-  const row = db.prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE id = ?').get(info.lastInsertRowid);
+  const row = db.prepare('SELECT id, name, relation, age, hp, stage2_action_lock, stage3_action_lock, stage4_action_lock FROM gogumas WHERE id = ?').get(info.lastInsertRowid);
   res.json({ goguma: toGogumaPayload(row, req.session.userId) });
 });
 
@@ -867,7 +915,7 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
   }
 
   const row = db
-    .prepare('SELECT id, hp, stage2_action_lock, stage3_action_lock FROM gogumas WHERE id = ? AND user_id = ?')
+    .prepare('SELECT id, hp, stage2_action_lock, stage3_action_lock, stage4_action_lock FROM gogumas WHERE id = ? AND user_id = ?')
     .get(id, req.session.userId);
 
   if (!row) {
@@ -886,18 +934,21 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
     ).run(req.session.userId, id, actionType, actionDate);
     const scores = getGogumaActionScores(req.session.userId, id);
     const dominantAction = getDominantAction(scores);
+    const stage4ComboKey = getStage4ComboKey(scores);
     const prevStage = getStageFromHp(row.hp);
     const nextStage = getStageFromHp(newHpTester);
     const nextStage2Lock = row.stage2_action_lock || ((prevStage < 2 && nextStage >= 2) ? (dominantAction || actionType) : null);
     const nextStage3Lock = row.stage3_action_lock || ((prevStage < 3 && nextStage >= 3) ? (dominantAction || actionType) : null);
-    db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
-      .run(newHpTester, nextStage2Lock, nextStage3Lock, id);
+    const nextStage4Lock = row.stage4_action_lock || ((prevStage < 4 && nextStage >= 4) ? stage4ComboKey : null);
+    db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock), stage4_action_lock = COALESCE(?, stage4_action_lock) WHERE id = ?')
+      .run(newHpTester, nextStage2Lock, nextStage3Lock, nextStage4Lock, id);
     return res.json({
       id,
       hp: newHpTester,
       dominantAction: dominantAction,
       stage2ActionLock: nextStage2Lock || null,
       stage3ActionLock: nextStage3Lock || null,
+      stage4ActionLock: nextStage4Lock || null,
       actionScores: scores,
       todayActions: getTodayActionFlags(req.session.userId, id),
       baseGain: valTester,
@@ -938,18 +989,21 @@ app.post('/api/goguma/grow', limitGrow, (req, res) => {
 
   const scores = getGogumaActionScores(req.session.userId, id);
   const dominantAction = getDominantAction(scores);
+  const stage4ComboKey = getStage4ComboKey(scores);
   const prevStage = getStageFromHp(row.hp);
   const nextStage = getStageFromHp(newHp);
   const nextStage2Lock = row.stage2_action_lock || ((prevStage < 2 && nextStage >= 2) ? (dominantAction || actionType) : null);
   const nextStage3Lock = row.stage3_action_lock || ((prevStage < 3 && nextStage >= 3) ? (dominantAction || actionType) : null);
-  db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock) WHERE id = ?')
-    .run(newHp, nextStage2Lock, nextStage3Lock, id);
+  const nextStage4Lock = row.stage4_action_lock || ((prevStage < 4 && nextStage >= 4) ? stage4ComboKey : null);
+  db.prepare('UPDATE gogumas SET hp = ?, stage2_action_lock = COALESCE(?, stage2_action_lock), stage3_action_lock = COALESCE(?, stage3_action_lock), stage4_action_lock = COALESCE(?, stage4_action_lock) WHERE id = ?')
+    .run(newHp, nextStage2Lock, nextStage3Lock, nextStage4Lock, id);
   res.json({
     id,
     hp: newHp,
     dominantAction: dominantAction,
     stage2ActionLock: nextStage2Lock || null,
     stage3ActionLock: nextStage3Lock || null,
+    stage4ActionLock: nextStage4Lock || null,
     actionScores: scores,
     todayActions: getTodayActionFlags(req.session.userId, id),
     baseGain: val,
