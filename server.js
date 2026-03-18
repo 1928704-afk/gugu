@@ -607,13 +607,17 @@ function getRewardState(userId) {
   const rewardedCycle = activity && activity.rewarded_cycle ? Number(activity.rewarded_cycle) : 0;
   const currentCycle = Math.floor(totalVisitDays / 7);
   const tester = isTester(userId);
+  const canSpinRoulette = tester ? true : currentCycle > rewardedCycle;
+  const nextRewardCycle = canSpinRoulette
+    ? Math.max(1, currentCycle)
+    : Math.max(1, rewardedCycle + 1);
 
   return {
     totalVisitDays,
     rewardedCycle,
     currentCycle,
-    canSpinRoulette: tester ? true : currentCycle > rewardedCycle,
-    nextRouletteAt: Math.ceil(totalVisitDays / 7) * 7 || 7
+    canSpinRoulette,
+    nextRouletteAt: nextRewardCycle * 7
   };
 }
 
@@ -1094,14 +1098,14 @@ app.post('/api/reward/spin', limitWrite, (req, res) => {
   }
 
   const segments = [
-    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 0 },
-    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 1 },
-    { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 2 },
-    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 3 },
-    { key: 'miss', label: '마이쮸', hpBonus: 0, segmentIndex: 4 },
-    { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 5 },
-    { key: 'chupachups', label: '츄팝츄스', hpBonus: 3, segmentIndex: 6 },
-    { key: 'miyjju', label: '마이쮸', hpBonus: 2, segmentIndex: 7 }
+    { key: 'voucher_1000', label: '벳세다 상품권 1000원', hpBonus: 0, segmentIndex: 0 },
+    { key: 'miss_a', label: '마이쮸', hpBonus: 0, segmentIndex: 1 },
+    { key: 'jelly_a', label: '젤리', hpBonus: 0, segmentIndex: 2 },
+    { key: 'jelly_b', label: '젤리', hpBonus: 0, segmentIndex: 3 },
+    { key: 'all_plus_5_a', label: '전체온도 +5도', hpBonus: 5, segmentIndex: 4 },
+    { key: 'all_plus_5_b', label: '전체온도 +5도', hpBonus: 5, segmentIndex: 5 },
+    { key: 'jelly_c', label: '젤리', hpBonus: 0, segmentIndex: 6 },
+    { key: 'miss_b', label: '마이쮸', hpBonus: 0, segmentIndex: 7 }
   ];
 
   const reward = segments[Math.floor(Math.random() * segments.length)];

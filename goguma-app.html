@@ -3578,12 +3578,14 @@
     }
     window.getRoulettePrizeByFinalAngle = getRoulettePrizeByFinalAngle;
 
-    function getRouletteSpinPlan(rng, currentRotationDeg) {
+    function getRouletteSpinPlan(rng, currentRotationDeg, forcedWinnerIndex) {
       var sectors = ROULETTE_SEGMENTS.length; // 8칸
       var sectorAngle = 360 / sectors; // 45도
 
-      // 1) 먼저 당첨 칸을 랜덤 선정
-      var winnerIndex = Math.floor(rng() * sectors);
+      // 1) 서버에서 당첨 칸을 내려주면 그 결과를 사용하고, 아니면 로컬 랜덤을 사용한다.
+      var winnerIndex = Number.isInteger(forcedWinnerIndex)
+        ? ((forcedWinnerIndex % sectors) + sectors) % sectors
+        : Math.floor(rng() * sectors);
       // 2) 최소 5바퀴 이상 회전
       var minRotation = 360 * 5;
       // 3) 당첨 칸 중앙 각도
@@ -3862,7 +3864,26 @@
 
     function formatCommunityDate(text) {
       if (!text) return '';
-      return String(text).replace('T', ' ').slice(0, 16);
+      var raw = String(text).trim();
+      var normalized = raw.indexOf('T') >= 0
+        ? raw
+        : raw.replace(' ', 'T');
+      // SQLite `datetime('now')` is stored in UTC, so plain timestamps need an explicit UTC marker.
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+        normalized += 'Z';
+      }
+
+      var parsed = new Date(normalized);
+      if (!Number.isNaN(parsed.getTime())) {
+        var year = parsed.getFullYear();
+        var month = String(parsed.getMonth() + 1).padStart(2, '0');
+        var day = String(parsed.getDate()).padStart(2, '0');
+        var hours = String(parsed.getHours()).padStart(2, '0');
+        var minutes = String(parsed.getMinutes()).padStart(2, '0');
+        return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+      }
+
+      return raw.replace('T', ' ').slice(0, 16);
     }
 
     function resetCommunityComposer() {
@@ -5135,109 +5156,119 @@
       isRouletteSpinning = true;
       if (spinBtn) spinBtn.disabled = true;
       if (statusEl) statusEl.textContent = '룰렛 회전 중...';
-
-      var rng = getRouletteRng();
-      var plan = getRouletteSpinPlan(rng, rouletteBaseRotationDeg);
-      var startDeg = rouletteBaseRotationDeg;
-      var endDeg = startDeg + plan.deltaDeg;
-      var startTs = null;
-
-      updateRouletteDebug({
-        currentDeg: startDeg,
-        winnerIndex: plan.winnerIndex,
-        landingIndex: null,
-        targetAngle: plan.targetAngle
-      });
-
-      function finalizeSpin() {
-        rouletteBaseRotationDeg = endDeg;
-        var landingIndex = getLandingIndexFromRotation(endDeg);
-        var landingAngle = normalizeDeg(
-          rouletteEngine.pointerAngle - normalizeDeg(endDeg) - rouletteEngine.imageOffsetDeg
-        );
-        var anglePrize = getRoulettePrizeByFinalAngle(landingAngle);
-        var winner = ROULETTE_SEGMENTS[plan.winnerIndex] || ROULETTE_SEGMENTS[0];
-        var mismatch = landingIndex !== plan.winnerIndex;
-
-        if (mismatch) {
-          console.warn('[Roulette] landing mismatch', {
-            winnerIndex: plan.winnerIndex,
-            landingIndex: landingIndex,
-            landingPrize: anglePrize ? anglePrize.label : null,
-            imageOffsetDeg: rouletteEngine.imageOffsetDeg,
-            pointerAngle: rouletteEngine.pointerAngle,
-            endDeg: endDeg,
-            normalizedEndDeg: normalizeDeg(endDeg),
-            landingAngle: landingAngle,
-            targetAngle: plan.targetAngle
-          });
+      fetchJson(API + '/api/reward/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data || {};
+        if (!res.ok || result.error) {
+          isRouletteSpinning = false;
+          if (statusEl) statusEl.textContent = result.error || '룰렛 결과를 불러오지 못했습니다.';
+          if (spinBtn) spinBtn.disabled = false;
+          renderRoulette();
+          return;
         }
-        console.assert(!mismatch, '[Roulette] landing index mismatch');
+
+        var serverReward = result.reward || {};
+        var forcedWinnerIndex = Number(serverReward.segmentIndex);
+        var rng = getRouletteRng();
+        var plan = getRouletteSpinPlan(
+          rng,
+          rouletteBaseRotationDeg,
+          Number.isFinite(forcedWinnerIndex) ? forcedWinnerIndex : null
+        );
+        var startDeg = rouletteBaseRotationDeg;
+        var endDeg = startDeg + plan.deltaDeg;
+        var startTs = null;
 
         updateRouletteDebug({
-          currentDeg: endDeg,
+          currentDeg: startDeg,
           winnerIndex: plan.winnerIndex,
-          landingIndex: landingIndex,
+          landingIndex: null,
           targetAngle: plan.targetAngle
         });
 
-        var hpBonus = Number(anglePrize.hpBonus) || 0;
-        if (hpBonus > 0) {
-          data.forEach(function(g) {
-            g.hp = Math.min(100, (Number(g.hp) || 0) + hpBonus);
-          });
-        }
+        function finalizeSpin() {
+          rouletteBaseRotationDeg = endDeg;
+          var landingIndex = getLandingIndexFromRotation(endDeg);
+          var mismatch = landingIndex !== plan.winnerIndex;
 
-        if (currentUser) {
-          var isTesterUser = currentUser.name === '권진호';
-          if (isTesterUser) {
-            currentUser.canSpinRoulette = true;
-          } else {
-            currentUser.canSpinRoulette = false;
-            currentUser.nextRouletteAt = (Number(currentUser.loginDays) || 1) + 7;
+          if (mismatch) {
+            console.warn('[Roulette] landing mismatch', {
+              winnerIndex: plan.winnerIndex,
+              landingIndex: landingIndex,
+              rewardSegmentIndex: forcedWinnerIndex,
+              targetAngle: plan.targetAngle
+            });
           }
-        }
+          console.assert(!mismatch, '[Roulette] landing index mismatch');
 
-        lastRouletteReward = {
-          id: anglePrize.id,
-          label: anglePrize.label,
-          hpBonus: hpBonus,
-          segmentIndex: landingIndex
-        };
-
-        isRouletteSpinning = false;
-        if (typeof rouletteEngine.onSpinEnd === 'function') {
-          rouletteEngine.onSpinEnd(lastRouletteReward);
-        }
-        render();
-        renderRoulette();
-      }
-
-      function frame(ts) {
-        if (startTs == null) startTs = ts;
-        var elapsed = ts - startTs;
-        var t = Math.min(1, elapsed / plan.durationMs);
-        var eased = easeOutCubic(t);
-        var nowDeg = startDeg + (endDeg - startDeg) * eased;
-        setWheelRotation(nowDeg);
-
-        if (rouletteEngine.debug) {
           updateRouletteDebug({
-            currentDeg: nowDeg,
+            currentDeg: endDeg,
             winnerIndex: plan.winnerIndex,
-            landingIndex: getLandingIndexFromRotation(nowDeg),
+            landingIndex: landingIndex,
             targetAngle: plan.targetAngle
           });
+
+          if (result.user) {
+            setCurrentUser(result.user);
+          }
+          if (Array.isArray(result.gogumas)) {
+            data = result.gogumas.map(function(g) {
+              return normalizeGoguma(g);
+            });
+            if (selectedIndex >= data.length) {
+              selectedIndex = data.length - 1;
+            }
+          }
+
+          lastRouletteReward = {
+            id: serverReward.key || serverReward.id || '',
+            label: serverReward.label || '',
+            hpBonus: Number(serverReward.hpBonus) || 0,
+            segmentIndex: landingIndex
+          };
+
+          isRouletteSpinning = false;
+          if (typeof rouletteEngine.onSpinEnd === 'function') {
+            rouletteEngine.onSpinEnd(lastRouletteReward);
+          }
+          render();
+          renderRoulette();
         }
 
-        if (t < 1) {
-          requestAnimationFrame(frame);
-          return;
-        }
-        finalizeSpin();
-      }
+        function frame(ts) {
+          if (startTs == null) startTs = ts;
+          var elapsed = ts - startTs;
+          var t = Math.min(1, elapsed / plan.durationMs);
+          var eased = easeOutCubic(t);
+          var nowDeg = startDeg + (endDeg - startDeg) * eased;
+          setWheelRotation(nowDeg);
 
-      requestAnimationFrame(frame);
+          if (rouletteEngine.debug) {
+            updateRouletteDebug({
+              currentDeg: nowDeg,
+              winnerIndex: plan.winnerIndex,
+              landingIndex: getLandingIndexFromRotation(nowDeg),
+              targetAngle: plan.targetAngle
+            });
+          }
+
+          if (t < 1) {
+            requestAnimationFrame(frame);
+            return;
+          }
+          finalizeSpin();
+        }
+
+        requestAnimationFrame(frame);
+      }).catch(function() {
+        isRouletteSpinning = false;
+        if (statusEl) statusEl.textContent = '룰렛 처리 중 오류가 발생했습니다.';
+        if (spinBtn) spinBtn.disabled = false;
+        renderRoulette();
+      });
     }
     window.spinRoulette = spinRoulette;
 
