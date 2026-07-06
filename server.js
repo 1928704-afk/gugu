@@ -774,7 +774,7 @@ function getPostDetail(postId, viewerUserId) {
 // 세션 (파일 저장 → 재접속·서버 재시작 후에도 유지)
 app.use(session({
   store: new FileStore({ path: path.join(__dirname, 'sessions') }),
-  secret: 'goguma-secret-key-change-in-production',
+  secret: process.env.SESSION_SECRET || 'goguma-secret-key-change-in-production',
   resave: false,
   saveUninitialized: false,
   cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }

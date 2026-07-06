@@ -1,0 +1,19 @@
+node_modules/
+.DS_Store
+.env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime data
+goguma.db
+goguma.db-*
+sessions/
+
+# macOS Unicode-normalized duplicate asset names
+game_images/sprout_charactors2/01_성경2.png
+game_images/sprout_charactors2/02_기도2.png
+game_images/sprout_charactors2/03_연락2.png
+game_images/sprout_charactors2/04_만남2.png
+game_images/sprout_charactors2/05_초대2.png

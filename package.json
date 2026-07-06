@@ -1,10 +1,22 @@
 {
   "name": "goguma-evangelism",
   "version": "1.0.0",
-  "description": "고구마 전도 - DB 및 세션 기반",
+  "description": "Gamified evangelism habit tracker with Express, SQLite, missions, community, and pixel-art UI.",
   "main": "server.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1928704-afk/gugu.git"
+  },
+  "keywords": [
+    "express",
+    "sqlite",
+    "game",
+    "gamification",
+    "vanilla-javascript"
+  ],
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",
