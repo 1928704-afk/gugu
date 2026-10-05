@@ -47,18 +47,9 @@ public class GogumaService {
         return new GogumaResponse(saved, getActionScores(saved.getId()), getTodayActions(userId, saved.getId()));
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<GogumaResponse> getMyGogumas(Long userId) {
         List<Goguma> list = gogumaRepository.findByUserIdOrderByIdAsc(userId);
-        if (list.isEmpty()) {
-            User user = userRepository.findById(userId).orElse(null);
-            if (user != null) {
-                Goguma defaultGoguma = gogumaRepository.save(
-                        Goguma.builder().user(user).name("새싹고구마").relation("나").age(1).build()
-                );
-                return List.of(new GogumaResponse(defaultGoguma, getActionScores(defaultGoguma.getId()), getTodayActions(userId, defaultGoguma.getId())));
-            }
-        }
         return list.stream()
                 .map(g -> new GogumaResponse(g, getActionScores(g.getId()), getTodayActions(userId, g.getId())))
                 .toList();

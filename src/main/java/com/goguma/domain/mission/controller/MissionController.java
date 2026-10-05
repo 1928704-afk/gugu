@@ -1,10 +1,12 @@
 package com.goguma.domain.mission.controller;
 
 import com.goguma.domain.community.repository.PostRepository;
+import com.goguma.domain.goguma.dto.GogumaResponse;
 import com.goguma.domain.goguma.entity.Goguma;
 import com.goguma.domain.goguma.entity.GogumaAction;
 import com.goguma.domain.goguma.repository.GogumaActionRepository;
 import com.goguma.domain.goguma.repository.GogumaRepository;
+import com.goguma.domain.goguma.service.GogumaService;
 import com.goguma.domain.mission.entity.MissionReward;
 import com.goguma.domain.mission.repository.MissionRewardRepository;
 import com.goguma.domain.user.controller.UserController;
@@ -29,6 +31,7 @@ public class MissionController {
     private final MissionRewardRepository missionRewardRepository;
     private final PostRepository postRepository;
     private final UserRepository userRepository;
+    private final GogumaService gogumaService;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> getMissions(
@@ -122,6 +125,8 @@ public class MissionController {
                 ? today.with(DayOfWeek.MONDAY).toString()
                 : today.toString();
 
+        List<GogumaResponse> updatedGogumas = Collections.emptyList();
+
         if (user != null) {
             boolean alreadyClaimed = missionRewardRepository.existsByUserIdAndMissionKeyAndPeriodKey(user.getId(), key, periodKey);
             if (!alreadyClaimed) {
@@ -133,14 +138,19 @@ public class MissionController {
                         .build());
 
                 List<Goguma> gogumas = gogumaRepository.findByUserIdOrderByIdAsc(user.getId());
-                if (!gogumas.isEmpty()) {
-                    Goguma g = gogumas.get(0);
+                for (Goguma g : gogumas) {
                     g.addHp(rewardHp);
                     gogumaRepository.save(g);
                 }
             }
+            updatedGogumas = gogumaService.getMyGogumas(user.getId());
         }
-        return ResponseEntity.ok(Map.of("ok", true, "rewardHp", rewardHp));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("ok", true);
+        response.put("rewardHp", rewardHp);
+        response.put("gogumas", updatedGogumas);
+        return ResponseEntity.ok(response);
     }
 
     private User resolveUser(String userName, Long paramUserId, HttpSession session) {

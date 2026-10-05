@@ -3342,17 +3342,25 @@
         if (result.user) {
           setCurrentUser(result.user);
         }
-        if (Array.isArray(result.gogumas)) {
+        var gain = Number(result.rewardHp) || 2;
+        if (Array.isArray(result.gogumas) && result.gogumas.length > 0) {
           data = result.gogumas.map(function(g) { return normalizeGoguma(g); });
           if (selectedIndex >= data.length) selectedIndex = data.length - 1;
+        } else {
+          data.forEach(function(g) {
+            g.hp = Math.min(100, (Number(g.hp) || 0) + gain);
+          });
         }
+        showHpFloatingText('+' + gain + ' HP ✨', window.innerWidth / 2, window.innerHeight * 0.45);
+        shootHearts();
+
         if (result.missions) {
           setMissionState(result.missions);
         } else {
           fetchMissions();
         }
 
-        setInlineNotice('미션 보상을 받았습니다. 전체 온도 +' + (Number(result.rewardHp) || 0) + ' 적용!', 'success');
+        setInlineNotice('미션 보상을 받았습니다. 전체 온도 +' + gain + '도 적용!', 'success');
         render();
       }).finally(function() {
         missionClaimLoading = '';
