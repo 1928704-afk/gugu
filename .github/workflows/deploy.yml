@@ -10,18 +10,26 @@ jobs:
 
     steps:
     - name: Checkout Repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Deploy to EC2 via SSH
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@v1.2.0
       with:
         host: ${{ secrets.EC2_HOST }}
         username: ${{ secrets.EC2_USERNAME }}
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          cd ~/goguma-backend || git clone https://github.com/1928704-afk/gugu.git ~/goguma-backend
+          set -e
+          echo "=== 1. Checking repository directory ==="
+          if [ ! -d ~/goguma-backend ]; then
+            git clone https://github.com/1928704-afk/gugu.git ~/goguma-backend
+          fi
           cd ~/goguma-backend
-          git pull origin main
+          echo "=== 2. Pulling latest code ==="
+          git fetch origin main
+          git reset --hard origin/main
+          echo "=== 3. Running Docker Compose ==="
           docker compose down || true
           docker compose up -d --build
-          docker image prune -f
+          echo "=== 4. Deployment Complete! ==="
+          docker ps
