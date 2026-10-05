@@ -1,0 +1,5834 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>고구마 전도</title>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <style>
+    @font-face {
+      font-family: 'NeoDunggeunmo';
+      src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.3/NeoDunggeunmo.woff') format('woff');
+      font-weight: normal;
+      font-display: swap;
+    }
+
+    :root {
+      --sky-glow: rgba(135, 206, 235, 0.62);
+      --panel-bg: rgba(255, 248, 233, 0.9);
+      --panel-border: #2b1808;
+      --shadow: 6px 6px 0 rgba(43, 24, 8, 0.95);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      overflow-x: hidden;
+      background: #000;
+      color: #1d1208;
+    }
+
+    /* 픽셀 배경 */
+    .pixel-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      min-height: 100vh;
+      min-height: 100dvh;
+      background: #000 url('game_images/1.png') center top / auto 100% no-repeat;
+    }
+    .pixel-sky {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 55%;
+      background: transparent;
+      image-rendering: pixelated;
+      overflow: hidden;
+    }
+
+    /* 날씨 레이어 (하늘 위 오브젝트) */
+    .weather-layer {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .weather-sun, .weather-moon {
+      position: absolute;
+      top: 28px;
+      left: 32px;
+      width: 44px;
+      height: 44px;
+      border: 3px solid #000;
+      border-radius: 50%;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .weather-sun {
+      background: #FFD700;
+    }
+    .weather-sun::before, .weather-sun::after {
+      content: '';
+      position: absolute;
+      inset: -10px;
+      background:
+        radial-gradient(circle at 50% 0%, #000 0 2px, transparent 3px),
+        radial-gradient(circle at 100% 50%, #000 0 2px, transparent 3px),
+        radial-gradient(circle at 50% 100%, #000 0 2px, transparent 3px),
+        radial-gradient(circle at 0% 50%, #000 0 2px, transparent 3px);
+    }
+    .weather-moon {
+      background: #E0E0E0;
+      box-shadow: 3px 3px 0 #000, inset -8px 0 0 rgba(0,0,0,0.1);
+    }
+    .weather-cloud {
+      position: absolute;
+      top: 30px;
+      left: 110px;
+      width: 96px;
+      height: 44px;
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 18px;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .weather-cloud::before,
+    .weather-cloud::after {
+      content: '';
+      position: absolute;
+      background: #fff;
+      border: 3px solid #000;
+      border-radius: 50%;
+      top: -18px;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .weather-cloud::before {
+      width: 42px;
+      height: 42px;
+      left: 10px;
+    }
+    .weather-cloud::after {
+      width: 52px;
+      height: 52px;
+      left: 40px;
+      top: -26px;
+    }
+    .weather-rain {
+      position: absolute;
+      top: 78px;
+      left: 132px;
+      width: 72px;
+      height: 70px;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 10px,
+          rgba(0,0,0,0.75) 10px 12px,
+          transparent 12px 18px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          transparent 0 10px,
+          #1e88e5 10px 12px,
+          transparent 12px 18px
+        );
+      background-size: 18px 18px, 18px 18px;
+      background-position: 0 0, 0 6px;
+      opacity: 0.95;
+      animation: rainMove 0.6s linear infinite;
+    }
+    @keyframes rainMove {
+      from { transform: translateY(0); }
+      to { transform: translateY(10px); }
+    }
+    .weather-snow {
+      position: absolute;
+      top: 78px;
+      left: 132px;
+      width: 72px;
+      height: 70px;
+      background:
+        radial-gradient(circle, #fff 0 2px, transparent 3px) 0 0/18px 18px,
+        radial-gradient(circle, #fff 0 2px, transparent 3px) 9px 9px/18px 18px;
+      filter: drop-shadow(1px 1px 0 #000);
+      animation: snowMove 1.2s linear infinite;
+    }
+    @keyframes snowMove {
+      from { transform: translateY(0); }
+      to { transform: translateY(12px); }
+    }
+    .pixel-fence {
+      display: none;
+    }
+    .pixel-grass {
+      display: none;
+    }
+    .pixel-dirt {
+      display: none;
+    }
+
+    .screen {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      min-height: 100dvh;
+      width: min(100%, 480px);
+      margin: 0 auto;
+      padding: calc(24px + env(safe-area-inset-top)) 20px calc(28px + env(safe-area-inset-bottom));
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .bgm-toggle {
+      position: fixed;
+      top: calc(12px + env(safe-area-inset-top));
+      right: calc(12px + env(safe-area-inset-right));
+      z-index: 120;
+      min-width: 44px;
+      padding: 8px 10px;
+      font-size: 11px;
+      line-height: 1;
+      border-radius: 12px;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ========== 시작 화면 ========== */
+    #home .subtitle {
+      color: #2b1808;
+      font-size: 14px;
+      margin-top: 50px;
+      margin-bottom: 8px;
+      letter-spacing: 1px;
+      text-align: center;
+      text-shadow: 2px 2px 0 rgba(255,255,255,0.4);
+    }
+    #home .main-title {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #home .btn-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 20px;
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .pixel-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: #ffd56a;
+      color: #1d1208;
+      border: 3px solid #000;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      image-rendering: pixelated;
+      box-shadow: 4px 4px 0 #000;
+      border-radius: 14px;
+      transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, filter 120ms ease;
+    }
+    .pixel-btn:hover {
+      background: #FFC107;
+    }
+    .pixel-btn:active {
+      box-shadow: 1px 1px 0 #000;
+      transform: translate(2px, 2px);
+    }
+
+    /* 말풍선 (사용설명) */
+    .speech-bubble {
+      position: relative;
+      background: var(--panel-bg);
+      border: 4px solid var(--panel-border);
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 420px;
+      text-align: left;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow);
+      border-radius: 20px;
+      backdrop-filter: blur(2px);
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: -20px;
+      left: 60px;
+      border: 12px solid transparent;
+      border-top-color: var(--panel-border);
+    }
+    .speech-bubble::before {
+      content: '';
+      position: absolute;
+      bottom: -14px;
+      left: 64px;
+      border: 10px solid transparent;
+      border-top-color: var(--panel-bg);
+      z-index: 1;
+    }
+    .speech-bubble ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: #000;
+    }
+
+    /* 시작 화면 고구마 캐릭터 */
+    .char-potato-home {
+      position: absolute;
+      right: -6px;
+      bottom: 108px;
+      width: min(34vw, 156px);
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 0 rgba(60, 28, 8, 0.35));
+    }
+    .home-logo {
+      width: min(100%, 360px);
+      image-rendering: pixelated;
+      filter: drop-shadow(0 8px 0 rgba(43, 24, 8, 0.18));
+    }
+    .home-stage-strip {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      margin-top: auto;
+      padding-right: min(28vw, 132px);
+    }
+    .home-stage-strip img {
+      width: 48px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.25));
+    }
+    .floating-deco {
+      position: absolute;
+      width: 58px;
+      opacity: 0.95;
+      image-rendering: pixelated;
+      pointer-events: none;
+      animation: bob 2.8s ease-in-out infinite;
+    }
+    .floating-deco.left {
+      top: 108px;
+      left: 6px;
+    }
+    .floating-deco.right {
+      top: 172px;
+      right: 12px;
+      animation-delay: 0.6s;
+    }
+    @keyframes bob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    /* ========== 게임 화면 ========== */
+    #game .game-header {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    #game input {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      padding: 8px 12px;
+      border: 3px solid #000;
+      font-size: 12px;
+      width: 140px;
+    }
+    #game .add-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: #FFD700;
+      color: #000;
+      border: 3px solid #000;
+      border-radius: 14px;
+      padding: 8px 16px;
+      font-size: 12px;
+      cursor: pointer;
+      box-shadow: 3px 3px 0 #000;
+    }
+
+    /* 리스트 (고구마 선택) */
+    .goguma-list-bar {
+      width: 100%;
+      margin: 8px auto 14px;
+      padding: 8px 10px;
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      background: linear-gradient(180deg, rgba(255, 248, 233, 0.92) 0%, rgba(247, 223, 176, 0.9) 100%);
+      box-shadow: var(--shadow);
+    }
+    .goguma-list {
+      display: flex;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      gap: 6px;
+      margin-bottom: 0;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    .goguma-chip {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      background: rgba(255, 248, 233, 0.95);
+      border: 3px solid var(--panel-border);
+      padding: 6px 12px;
+      font-size: 11px;
+      cursor: pointer;
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.75);
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    .goguma-chip:hover, .goguma-chip.selected {
+      background: #FFD700;
+    }
+
+    /* 상단 상태바 (픽셀 스타일) */
+    .status-bar {
+      display: inline-flex;
+      align-items: center;
+      background: #333;
+      margin-bottom: 8px;
+      color: #fff;
+      font-size: 12px;
+    }
+    .status-bar .name {
+      margin-right: 12px;
+    }
+    .status-bar .hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-bar .hp-box {
+      width: 120px;
+      height: 16px;
+      background: #222;
+      border: 2px solid #000;
+      overflow: hidden;
+    }
+    .status-bar .hp-fill {
+      height: 100%;
+      background: #ff9800;
+      transition: width 0.2s;
+    }
+    .status-bar-inline {
+      position: absolute;
+      left: 45%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-width: calc(90% - 24px);
+      width: calc(100% - 24px);
+      padding: 0;
+      margin-bottom: 0;
+      font-size: 10px;
+    }
+    .status-bar-inline .status-pill {
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .status-bar-inline .hp-wrap {
+      gap: 6px;
+      min-width: 0;
+      width: 100%;
+      color: rgba(43, 24, 8, 0.88);
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.35);
+    }
+    .status-bar-inline .hp-box {
+      position: relative;
+      flex: 1;
+      width: auto;
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(56, 37, 15, 0.24);
+      border: 2px solid rgba(43, 24, 8, 0.32);
+      overflow: hidden;
+    }
+    .status-bar-inline .hp-value {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+      font-size: 9px;
+      line-height: 1;
+      color: #2b1808;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.45);
+      pointer-events: none;
+    }
+    .status-bar-inline .status-icon {
+      filter: drop-shadow(1px 1px 0 rgba(255,255,255,0.25));
+    }
+    .status-bar .arrow {
+      width: 0;
+      height: 0;
+      border-top: 8px solid transparent;
+      border-bottom: 8px solid transparent;
+      border-left: 10px solid #333;
+      margin-left: 4px;
+    }
+
+    /* 냄비 + 고구마 + 불 */
+    .pot-scene {
+      position: relative;
+      width: 260px;
+      height: 220px;
+      margin: 0 auto 12px;
+      transition: transform 0.3s ease;
+    }
+    .pot-scene .fire {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 140px;
+      height: 30px;
+      background: linear-gradient(180deg, #ff6b00 0%, #ffd000 50%, #ff6b00 100%);
+      border: 2px solid #000;
+      border-radius: 0 0 50% 50%;
+      animation: flicker 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes flicker {
+      from { opacity: 1; transform: translateX(-50%) scaleY(1); }
+      to { opacity: 0.9; transform: translateX(-50%) scaleY(1.1); }
+    }
+    .pot-scene .pot {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 160px;
+      height: 100px;
+      background: #2d2d2d;
+      border: 4px solid #000;
+      border-radius: 0 0 20px 20px;
+      border-top: 8px solid #1a1a1a;
+    }
+    .pot-scene .steam {
+      position: absolute;
+      top: 42px;
+      left: 58px;
+      width: 20px;
+      height: 20px;
+      border-left: 2px solid #999;
+      border-bottom: 2px solid #999;
+      transform: rotate(-20deg);
+      animation: steam 1.5s ease-in-out infinite;
+    }
+    .pot-scene .steam2 {
+      left: 72px;
+      top: 48px;
+      transform: rotate(-15deg);
+      animation-delay: 0.3s;
+    }
+    @keyframes steam {
+      0%, 100% { opacity: 0.3; }
+      50% { opacity: 0.8; }
+    }
+    .pot-scene .potato-in-pot {
+      position: absolute;
+      bottom: 48px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70px;
+      height: 75px;
+    }
+    .pot-scene .potato-in-pot .body {
+      width: 70px;
+      height: 75px;
+      border-radius: 35px 35px 38px 38px;
+      background: linear-gradient(165deg, #FFD700 0%, #e6c200 60%, #8B4513 60%, #6B3410 100%);
+      border: 3px solid #000;
+      position: relative;
+    }
+    .pot-scene .potato-in-pot .arm {
+      position: absolute;
+      top: 15px;
+      left: -8px;
+      width: 24px;
+      height: 10px;
+      background: #FFD700;
+      border: 2px solid #000;
+      border-radius: 12px;
+      transform: rotate(-30deg);
+    }
+    .pot-scene .potato-in-pot .face {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .pot-scene .potato-in-pot .eye {
+      width: 6px;
+      height: 8px;
+      background: #000;
+      display: inline-block;
+      margin: 0 4px;
+    }
+    .pot-scene .potato-in-pot .mouth {
+      width: 12px;
+      height: 2px;
+      background: #000;
+      margin: 4px auto 0;
+      display: block;
+    }
+    .pot-scene .potato-in-pot .blush {
+      position: absolute;
+      top: 18px;
+      width: 8px;
+      height: 4px;
+      background: #ff9999;
+      border-radius: 50%;
+    }
+    .pot-scene .potato-in-pot .blush.left { left: 8px; }
+    .pot-scene .potato-in-pot .blush.right { right: 8px; }
+
+    /* 게임 화면 액션 버튼 5개 */
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      width: 320px;
+      max-width: calc(100vw - 40px);
+      margin: 0 auto;
+    }
+    .action-buttons .pixel-btn {
+      padding: 10px 16px;
+      font-size: 12px;
+      width: 100%;
+    }
+    .action-buttons .btn-invite {
+      grid-column: 1 / -1;
+    }
+
+    .back-btn {
+      margin-top: 20px;
+      font-size: 12px;
+    }
+
+    /* 하트 발사 */
+    #heartContainer {
+      position: absolute;
+      left: 50%;
+      bottom: 85px;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      pointer-events: none;
+      z-index: 20;
+    }
+    .heart-burst {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 88px;
+      height: 88px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      opacity: 1;
+      animation: heartFly 0.9s ease-out forwards;
+    }
+    @keyframes heartFly {
+      0% {
+        transform: translate(-50%, 50%) scale(0.4);
+        opacity: 1;
+      }
+      100% {
+        transform: translate(-50%, -132px) scale(1.45);
+        opacity: 0;
+      }
+    }
+    .heart-burst:nth-child(1) { animation-duration: 0.8s; animation-delay: 0ms; }
+    .heart-burst:nth-child(2) { animation-duration: 0.85s; animation-delay: 50ms; left: -12px; }
+    .heart-burst:nth-child(3) { animation-duration: 0.9s; animation-delay: 100ms; left: 12px; }
+    .heart-burst:nth-child(4) { animation-duration: 0.75s; animation-delay: 30ms; left: -20px; }
+    .heart-burst:nth-child(5) { animation-duration: 0.95s; animation-delay: 70ms; left: 20px; }
+
+    @keyframes gogumaFloat {
+      0%, 100% {
+        transform: translateY(0) scale(var(--goguma-scale, 1));
+      }
+      50% {
+        transform: translateY(-8px) scale(var(--goguma-scale, 1));
+      }
+    }
+    @keyframes fieldGogumaFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-6px);
+      }
+    }
+
+    /* 레벨별 크기 (pot-scene scale) */
+    .pot-scene.scale-sm .goguma-stage-image { --goguma-scale: 0.76; }
+    .pot-scene.scale-md .goguma-stage-image { --goguma-scale: 0.9; }
+    .pot-scene.scale-lg .goguma-stage-image { --goguma-scale: 1.02; }
+    .pot-scene.scale-xl .goguma-stage-image { --goguma-scale: 1.14; }
+
+    /* 레벨별 고구마 모습 (단계) - 색 + 모양 변화 */
+    .pot-scene.stage1 .potato-in-pot .body {
+      width: 55px;
+      height: 65px;
+      border-radius: 26px 26px 30px 30px;
+      background: linear-gradient(165deg, #e6d48b 0%, #d4b85c 60%, #8B4513 60%, #6B3410 100%);
+      box-shadow: inset 0 0 15px rgba(255,255,255,0.3);
+      transform: translateY(8px) scaleX(0.9);
+    }
+    .pot-scene.stage1 .potato-in-pot .face {
+      top: 16px;
+    }
+    .pot-scene.stage1 .potato-in-pot .arm {
+      top: 20px;
+      transform: rotate(-40deg);
+    }
+    .pot-scene.stage1 .potato-in-pot .mouth {
+      transform: scaleX(0.7);
+    }
+
+    .pot-scene.stage2 .potato-in-pot .body {
+      width: 62px;
+      height: 70px;
+      border-radius: 30px 30px 34px 34px;
+      background: linear-gradient(165deg, #c8e6c9 0%, #FFD700 50%, #8B4513 60%, #6B3410 100%);
+      transform: translateY(4px);
+    }
+
+    .pot-scene.stage3 .potato-in-pot .body {
+      width: 70px;
+      height: 75px;
+      border-radius: 35px 35px 38px 38px;
+      background: linear-gradient(165deg, #FFD700 0%, #e6c200 60%, #8B4513 60%, #6B3410 100%);
+    }
+
+    .pot-scene.stage4 .potato-in-pot .body {
+      width: 78px;
+      height: 82px;
+      border-radius: 40px 40px 42px 42px;
+      background: linear-gradient(165deg, #FFE082 0%, #FFD700 60%, #A0522D 60%, #8B4513 100%);
+      box-shadow: 0 0 10px rgba(255,193,7,0.4);
+      transform: translateY(-4px) scaleX(1.05);
+    }
+
+    .pot-scene.stage5 .potato-in-pot .body {
+      width: 85px;
+      height: 88px;
+      border-radius: 44px 44px 46px 46px;
+      background: linear-gradient(165deg, #FFF59D 0%, #FFD700 55%, #D2691E 55%, #8B4513 100%);
+      box-shadow: 0 0 15px rgba(255,235,59,0.6);
+      transform: translateY(-6px) scaleX(1.1);
+    }
+    .pot-scene.stage5 .potato-in-pot .mouth {
+      border-radius: 0 0 12px 12px;
+      height: 3px;
+      width: 18px;
+    }
+
+    .modal-heading {
+      margin: 0 0 12px;
+      text-align: center;
+    }
+    .modal-heading img {
+      width: min(100%, 320px);
+      image-rendering: pixelated;
+    }
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 420px;
+      flex-wrap: wrap;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 0;
+      width: 100%;
+      max-width: 420px;
+    }
+    .player-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+      font-size: 12px;
+      color: #3a2514;
+      background: rgba(255,255,255,0.52);
+      border: 3px solid rgba(43, 24, 8, 0.15);
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+    }
+    .player-tag img {
+      width: 18px;
+      height: 18px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .player-tag span {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .visit-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: #5b3a16;
+      background: rgba(255,255,255,0.52);
+      border: 3px solid rgba(43, 24, 8, 0.15);
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+    }
+    .visit-badge img {
+      width: 18px;
+      height: 18px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .modal-shell {
+      position: fixed;
+      inset: 0;
+      z-index: 80;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(20px + env(safe-area-inset-top))
+        calc(20px + env(safe-area-inset-right))
+        calc(20px + env(safe-area-inset-bottom))
+        calc(20px + env(safe-area-inset-left));
+      background: rgba(28, 15, 4, 0.48);
+      backdrop-filter: blur(4px);
+      animation: overlayFade 160ms ease-out;
+    }
+    .modal-card {
+      max-width: 440px;
+      max-height: min(82vh, 720px);
+      padding: 18px 18px 16px;
+      margin: 0;
+      overflow: auto;
+      animation: modalPop 180ms ease-out;
+    }
+    .modal-card::after,
+    .modal-card::before {
+      display: none;
+    }
+    .modal-head-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .modal-head-row .modal-heading {
+      margin: 0;
+      flex: 1;
+    }
+    .modal-close {
+      flex-shrink: 0;
+      min-width: 64px;
+    }
+    .list-panel {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .ranking-item {
+      display: grid;
+      grid-template-columns: 26px 1fr auto 34px;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.18);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.58);
+      min-height: 56px;
+    }
+    .ranking-item.is-top {
+      background: linear-gradient(90deg, rgba(255, 213, 106, 0.72) 0%, rgba(255,255,255,0.58) 100%);
+    }
+    .ranking-rank {
+      font-size: 14px;
+      text-align: center;
+      color: #2b1808;
+    }
+    .ranking-main {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .ranking-user {
+      font-size: 12px;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranking-meta {
+      font-size: 10px;
+      color: #6c4a21;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranking-hp {
+      font-size: 12px;
+      color: #2b1808;
+    }
+    .ranking-stage {
+      width: 34px;
+      height: 34px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+    .board-scroll {
+      max-height: 220px;
+      overflow-y: auto;
+      border-top: 2px solid rgba(43, 24, 8, 0.3);
+      padding-top: 8px;
+    }
+    .board-item {
+      list-style: none;
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.52);
+      margin-bottom: 8px;
+    }
+    .board-item:last-child {
+      margin-bottom: 0;
+    }
+    .board-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .board-title {
+      min-width: 0;
+      font-size: 12px;
+      font-weight: bold;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .board-content {
+      font-size: 11px;
+      color: #5b3a16;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+    .roulette-screen {
+      justify-content: flex-start;
+      gap: 18px;
+      padding-top: 40px;
+    }
+    .roulette-topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+    .roulette-header {
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      padding: 4px 0 2px;
+    }
+    .roulette-header h2 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.1;
+      color: #2b1808;
+      text-shadow: 3px 3px 0 rgba(255,255,255,0.35);
+    }
+    .roulette-header p {
+      margin: 8px 0 0;
+      font-size: 12px;
+      color: #6c4a21;
+    }
+    .roulette-panel {
+      width: 100%;
+      max-width: 420px;
+      padding: 18px;
+      border: 4px solid var(--panel-border);
+      border-radius: 24px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .roulette-status {
+      margin: 0 0 14px;
+      font-size: 13px;
+      color: #5b3a16;
+      line-height: 1.6;
+    }
+    .roulette-wheel-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .roulette-pointer {
+      width: 0;
+      height: 0;
+      border-left: 14px solid transparent;
+      border-right: 14px solid transparent;
+      border-top: 20px solid #c33a1f;
+      filter: drop-shadow(0 3px 0 rgba(43, 24, 8, 0.28));
+    }
+    .roulette-wheel {
+      width: min(84vw, 340px);
+      aspect-ratio: 891 / 800;
+      object-fit: contain;
+      image-rendering: pixelated;
+      transform-origin: center center;
+      filter: drop-shadow(0 8px 0 rgba(43, 24, 8, 0.18));
+    }
+    .roulette-result {
+      min-height: 62px;
+      padding: 12px 14px;
+      border: 3px solid rgba(43, 24, 8, 0.16);
+      border-radius: 18px;
+      background: rgba(255,255,255,0.55);
+      font-size: 12px;
+      color: #2b1808;
+      line-height: 1.6;
+    }
+    .roulette-result strong {
+      display: block;
+      font-size: 16px;
+      margin-bottom: 4px;
+    }
+    .roulette-debug {
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 2px dashed rgba(43, 24, 8, 0.22);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.58);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+      font-size: 10px;
+      color: #3b2310;
+      line-height: 1.45;
+      text-align: left;
+      white-space: pre-line;
+    }
+    .field-screen {
+      justify-content: flex-start;
+      gap: 16px;
+      padding-top: 34px;
+    }
+    .field-topbar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .field-panel {
+      width: 100%;
+      max-width: 420px;
+      padding: 16px;
+      border: 4px solid var(--panel-border);
+      border-radius: 24px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: var(--shadow);
+    }
+    .field-panel h2 {
+      margin: 0 0 6px;
+      font-size: 28px;
+      text-align: center;
+      color: #2b1808;
+    }
+    .field-panel p {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #6c4a21;
+      text-align: center;
+      line-height: 1.5;
+    }
+    .field-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .field-summary-item {
+      padding: 8px 6px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.58);
+      text-align: center;
+    }
+    .field-summary-label {
+      display: block;
+      font-size: 10px;
+      color: #6c4a21;
+      margin-bottom: 4px;
+    }
+    .field-summary-value {
+      display: block;
+      font-size: 13px;
+      color: #2b1808;
+    }
+    .community-screen {
+      justify-content: flex-start;
+      gap: 14px;
+      padding:
+        calc(18px + env(safe-area-inset-top))
+        12px
+        calc(18px + env(safe-area-inset-bottom));
+    }
+    .community-shell {
+      width: 100%;
+      max-width: 420px;
+      min-height: calc(100dvh - 36px);
+      background: #ecf3ff;
+      border: 4px solid rgba(255,255,255,0.9);
+      border-radius: 26px;
+      overflow: hidden;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+    }
+    .community-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 18px;
+      background: rgba(255,255,255,0.96);
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .community-header-title {
+      font-size: 15px;
+      color: #051125;
+    }
+    .community-header-user {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: #dbe7ff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #051125;
+    }
+    .community-body {
+      padding: 16px;
+      position: relative;
+    }
+    #communityListView,
+    #communityDetailView {
+      min-height: 0;
+    }
+    .community-list-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .community-list-caption {
+      margin: 0;
+      font-size: 11px;
+      color: #667790;
+    }
+    .community-category-filters {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .community-category-chip {
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(5,17,37,0.12);
+      background: #fff;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 10px;
+      color: #44546a;
+      cursor: pointer;
+    }
+    .community-category-chip.is-active {
+      background: #ffd56a;
+      color: #1d1208;
+      border-color: rgba(0,0,0,0.3);
+    }
+    .community-compose-modal {
+      position: absolute;
+      top: 8px;
+      left: 16px;
+      right: 16px;
+      z-index: 8;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(-18px);
+      transition: opacity 180ms ease, transform 180ms ease;
+    }
+    .community-compose-modal.open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+    .community-compose,
+    .community-post-card,
+    .community-detail-card {
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      padding: 16px;
+    }
+    .community-compose {
+      margin-bottom: 14px;
+    }
+    .community-compose-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .community-section-title {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #051125;
+    }
+    .community-input,
+    .community-select,
+    .community-textarea {
+      width: 100%;
+      border: 1px solid #d8e3f3;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 13px;
+      background: #f8fbff;
+    }
+    .community-input {
+      margin-bottom: 8px;
+    }
+    .community-select {
+      margin-bottom: 8px;
+      appearance: none;
+    }
+    .community-textarea {
+      resize: vertical;
+      min-height: 110px;
+    }
+    .community-compose-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .community-upload-btn {
+      padding: 8px 12px;
+      font-size: 11px;
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .community-image-preview {
+      margin-top: 10px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #edf4ff;
+      display: none;
+    }
+    .community-image-preview.visible {
+      display: block;
+    }
+    .community-image-preview img {
+      display: block;
+      width: 100%;
+      max-height: 180px;
+      object-fit: cover;
+    }
+    .community-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-height: min(52dvh, 480px);
+      overflow-y: auto;
+      align-content: start;
+      padding-right: 2px;
+    }
+    .community-list .empty-state {
+      grid-column: 1 / -1;
+    }
+    .community-post-card {
+      cursor: pointer;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: transform 120ms ease, box-shadow 120ms ease, filter 120ms ease;
+    }
+    .community-post-card:active {
+      transform: translateY(1px) scale(0.99);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .community-post-card h3,
+    .community-detail-card h3 {
+      margin: 0 0 8px;
+      font-size: 15px;
+      color: #051125;
+      line-height: 1.45;
+    }
+    .community-category-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #ffe6a3;
+      color: #5b3a16;
+      font-size: 10px;
+      border: 1px solid rgba(91,58,22,0.12);
+      white-space: nowrap;
+    }
+    .community-post-card h3 {
+      margin: 0;
+      font-size: 12px;
+      min-height: 2.9em;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .community-post-meta,
+    .community-detail-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 11px;
+      color: #6b7b95;
+      flex-wrap: wrap;
+    }
+    .community-post-meta {
+      margin-bottom: 0;
+      font-size: 10px;
+      gap: 4px;
+      color: #75849b;
+    }
+    .community-post-image,
+    .community-detail-image {
+      width: 100%;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #edf4ff;
+      margin-bottom: 10px;
+    }
+    .community-post-image {
+      margin-bottom: 0;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(160deg, rgba(255,226,121,0.9), rgba(255,160,96,0.9)),
+        #edf4ff;
+    }
+    .community-post-image.is-empty {
+      border: 2px dashed rgba(5,17,37,0.16);
+    }
+    .community-post-image.is-empty span {
+      font-size: 11px;
+      color: rgba(5,17,37,0.55);
+    }
+    .community-post-image img,
+    .community-detail-image img {
+      display: block;
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+    }
+    .community-post-image img {
+      height: 100%;
+      max-height: none;
+    }
+    .community-detail-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: #f5f8ff;
+    }
+    .community-detail-image img {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: min(56dvh, 480px);
+      object-fit: contain;
+      margin: 0 auto;
+      border-radius: 10px;
+    }
+    .community-post-content,
+    .community-detail-content {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.7;
+      color: #55657d;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .community-post-content {
+      display: none;
+    }
+    .community-detail-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .community-inline-actions {
+      display: flex;
+      gap: 6px;
+    }
+    .community-detail-loading {
+      text-align: center;
+      font-size: 12px;
+      color: #6b7b95;
+      padding: 28px 0;
+    }
+    .community-detail-image {
+      cursor: zoom-in;
+      position: relative;
+    }
+    .community-detail-image-button {
+      position: absolute;
+      right: 10px;
+      bottom: 10px;
+      padding: 6px 8px;
+      font-size: 10px;
+      border: 2px solid #000;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.92);
+      color: #2b1808;
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.6);
+    }
+    .community-engagement {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .community-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 2px solid rgba(5,17,37,0.12);
+      background: #f6f9ff;
+      font-size: 11px;
+      color: #45556f;
+    }
+    .community-like-btn {
+      min-height: 34px;
+      padding: 7px 12px;
+      font-size: 11px;
+      box-shadow: 3px 3px 0 #000;
+    }
+    .community-like-btn.is-active {
+      background: #ffb7c4;
+    }
+    .community-comment-form {
+      display: flex;
+      align-items: stretch;
+      gap: 8px;
+      margin-top: 14px;
+      margin-bottom: 12px;
+    }
+    .community-comment-input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid #d8e3f3;
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 12px;
+      background: #f8fbff;
+    }
+    .community-comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .community-comment-empty {
+      padding: 12px;
+      border-radius: 14px;
+      background: #f6f9ff;
+      color: #73839b;
+      font-size: 11px;
+      text-align: center;
+    }
+    .community-comment-item {
+      border-radius: 14px;
+      background: #f8fbff;
+      border: 1px solid #dbe6f6;
+      padding: 10px 12px;
+    }
+    .community-comment-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 4px;
+      font-size: 10px;
+      color: #76869d;
+    }
+    .community-comment-author {
+      font-size: 11px;
+      color: #1f2e45;
+    }
+    .community-comment-body {
+      font-size: 12px;
+      line-height: 1.6;
+      color: #44546a;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .community-comment-actions {
+      display: inline-flex;
+      gap: 6px;
+      margin-left: auto;
+    }
+    .community-post-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: auto;
+    }
+    .community-post-stats .community-stat-pill {
+      min-height: 28px;
+      padding: 4px 8px;
+      font-size: 10px;
+    }
+    .image-lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 160;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding:
+        calc(20px + env(safe-area-inset-top))
+        calc(20px + env(safe-area-inset-right))
+        calc(20px + env(safe-area-inset-bottom))
+        calc(20px + env(safe-area-inset-left));
+      background: rgba(3, 7, 15, 0.88);
+      backdrop-filter: blur(8px);
+      animation: overlayFade 160ms ease-out;
+    }
+    .image-lightbox img {
+      display: block;
+      max-width: min(92vw, 880px);
+      max-height: min(82vh, 920px);
+      object-fit: contain;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    }
+    .image-lightbox-close {
+      position: absolute;
+      top: calc(16px + env(safe-area-inset-top));
+      right: calc(16px + env(safe-area-inset-right));
+      z-index: 2;
+    }
+    @keyframes overlayFade {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes modalPop {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .field-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .field-toolbar-label {
+      font-size: 11px;
+      color: #6c4a21;
+    }
+    .field-sort-buttons {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .field-sort-btn {
+      padding: 6px 10px;
+      font-size: 10px;
+      border-radius: 999px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .field-grid {
+      position: relative;
+      min-height: 220px;
+      padding: 18px 14px 16px;
+      border: 4px solid rgba(43, 24, 8, 0.14);
+      border-radius: 22px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.48) 0%, rgba(255,255,255,0.18) 60%, rgba(119, 74, 30, 0.08) 100%),
+        url('game_images/24.png') center 30% / 100% auto no-repeat;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .field-slot {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-end;
+      width: calc(25% - 8px);
+      min-width: 74px;
+      min-height: 168px;
+      padding: 8px 4px 0;
+    }
+    .field-stage-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      width: 100%;
+      min-height: 104px;
+      margin-bottom: 8px;
+    }
+    .field-stage-wrap img {
+      width: min(100%, 70px);
+      max-height: 94px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 6px 0 rgba(43, 24, 8, 0.16));
+      transform-origin: center bottom;
+      animation: fieldGogumaFloat 2.9s ease-in-out infinite;
+      animation-delay: var(--float-delay, 0s);
+      will-change: transform;
+    }
+    .field-card-name,
+    .field-card-meta {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      width: 100%;
+      padding: 4px 6px;
+      border-radius: 10px;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.18);
+    }
+    .field-card-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: #2b1808;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .field-card-meta {
+      font-size: 10px;
+      color: #5b3a16;
+      line-height: 1.35;
+      white-space: normal;
+      word-break: keep-all;
+    }
+    .inline-notice {
+      width: 100%;
+      max-width: 420px;
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 3px solid rgba(43, 24, 8, 0.2);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.58);
+      color: #5b3a16;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .inline-notice.error {
+      background: rgba(255, 235, 233, 0.88);
+      color: #8a1f11;
+    }
+    .inline-notice.success {
+      background: rgba(236, 255, 238, 0.88);
+      color: #205b2f;
+    }
+    .action-tips {
+      width: 100%;
+      margin: 10px auto 0;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 11px;
+    }
+    .action-tip {
+      padding: 8px 10px;
+      border: 3px solid rgba(43, 24, 8, 0.14);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.52);
+      color: #5b3a16;
+      text-align: center;
+    }
+    .mission-panel {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 14px;
+      border: 2px solid rgba(43,24,8,0.2);
+      background: rgba(255,255,255,0.62);
+    }
+    .mission-empty {
+      font-size: 11px;
+      color: #6c4a21;
+      text-align: center;
+    }
+    .mission-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .mission-card {
+      border-radius: 12px;
+      border: 2px solid rgba(43,24,8,0.15);
+      background: rgba(255, 253, 245, 0.88);
+      padding: 8px;
+    }
+    .mission-card.completed {
+      border-color: rgba(47, 125, 50, 0.5);
+      background: rgba(232, 245, 233, 0.92);
+    }
+    .mission-card.claimed {
+      opacity: 0.72;
+    }
+    .mission-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 6px;
+      font-size: 10px;
+      color: #5b3a16;
+    }
+    .mission-title {
+      font-size: 11px;
+      color: #2b1808;
+    }
+    .mission-progress {
+      font-size: 10px;
+      color: #5b3a16;
+      margin-bottom: 6px;
+    }
+    .mission-desc {
+      font-size: 10px;
+      color: #6c4a21;
+      margin-bottom: 6px;
+    }
+    .mission-checklist {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-bottom: 6px;
+    }
+    .mission-chip {
+      padding: 3px 7px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,24,8,0.2);
+      background: #fff;
+      font-size: 10px;
+      color: #6c4a21;
+      white-space: nowrap;
+    }
+    .mission-chip.done {
+      border-color: rgba(47, 125, 50, 0.5);
+      color: #1b5e20;
+      background: #e8f5e9;
+    }
+    .mission-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 6px;
+    }
+    .mission-reward {
+      font-size: 10px;
+      color: #2b1808;
+    }
+    .mission-claim-btn {
+      font-size: 10px;
+      padding: 6px 9px;
+      min-width: 78px;
+      border-radius: 10px;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .mission-claim-btn:disabled {
+      cursor: default;
+      filter: grayscale(0.2);
+      opacity: 0.7;
+    }
+    .history-panel {
+      width: 100%;
+      max-width: 420px;
+      margin: 10px auto 0;
+      padding: 12px;
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      background: rgba(255, 248, 233, 0.84);
+      box-shadow: var(--shadow);
+    }
+    .history-title {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: #5b3a16;
+      text-align: center;
+    }
+    .history-empty {
+      font-size: 11px;
+      color: #6c4a21;
+      text-align: center;
+      padding: 8px 0;
+    }
+    .history-summary {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .history-stat {
+      border: 2px solid rgba(43,24,8,0.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.68);
+      padding: 6px 7px;
+    }
+    .history-stat-label {
+      display: block;
+      font-size: 9px;
+      color: #6c4a21;
+      margin-bottom: 3px;
+    }
+    .history-stat-value {
+      display: block;
+      font-size: 11px;
+      color: #2b1808;
+    }
+    .history-ratio {
+      margin-bottom: 10px;
+      border: 2px solid rgba(43,24,8,0.14);
+      border-radius: 10px;
+      background: rgba(255,255,255,0.68);
+      padding: 6px 7px;
+      font-size: 10px;
+      color: #5b3a16;
+      line-height: 1.45;
+    }
+    .history-chart {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 6px;
+      align-items: end;
+      min-height: 96px;
+      margin-bottom: 10px;
+    }
+    .history-day {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .history-bar-wrap {
+      width: 100%;
+      height: 64px;
+      border: 2px solid rgba(43,24,8,0.2);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+    }
+    .history-bar {
+      width: 100%;
+      min-height: 4px;
+      background: linear-gradient(180deg, #ffcf66 0%, #f59e0b 100%);
+      border-top: 2px solid rgba(0,0,0,0.2);
+    }
+    .history-score {
+      font-size: 9px;
+      color: #5b3a16;
+      line-height: 1;
+    }
+    .history-date {
+      font-size: 9px;
+      color: #6c4a21;
+      line-height: 1;
+    }
+    .history-log {
+      max-height: 122px;
+      overflow-y: auto;
+      border-top: 2px solid rgba(43,24,8,0.14);
+      padding-top: 8px;
+    }
+    .history-log-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10px;
+      color: #5b3a16;
+      padding: 4px 2px;
+      border-bottom: 1px dashed rgba(43,24,8,0.12);
+    }
+    .history-log-item:last-child {
+      border-bottom: 0;
+    }
+    .history-log-action {
+      color: #2b1808;
+    }
+    .empty-state {
+      padding: 16px 12px;
+      border: 3px dashed rgba(43, 24, 8, 0.22);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.4);
+      text-align: center;
+      font-size: 12px;
+      color: #6c4a21;
+    }
+    .game-header,
+    .goguma-list-bar,
+    #detailView,
+    #detailActions,
+    #noSelectHint {
+      width: 100%;
+      max-width: 420px;
+    }
+    .game-header {
+      background: rgba(255, 248, 233, 0.84);
+      border: 4px solid var(--panel-border);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+      backdrop-filter: blur(2px);
+      margin-top: 12px;
+    }
+    .goguma-list {
+      width: 100%;
+      margin-top: 0;
+      gap: 8px;
+      justify-content: flex-start;
+    }
+    #detailView,
+    #fieldDetailView {
+      margin-top: 4px;
+    }
+    .goguma-chip {
+      background: rgba(255, 248, 233, 0.9);
+      border-color: var(--panel-border);
+      border-radius: 999px;
+      box-shadow: 3px 3px 0 rgba(43, 24, 8, 0.9);
+    }
+    .goguma-chip:hover, .goguma-chip.selected {
+      background: #ffd56a;
+    }
+    .status-bar {
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      background: rgba(211, 211, 200);
+      border-radius: 18px;
+      color: #1d1208;
+      margin-bottom: -1px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .status-icon {
+      width: 22px;
+      height: 22px;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+    .status-bar .name {
+      margin-right: 0;
+      font-size: 13px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-bar .hp-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+    }
+    .status-bar .hp-box {
+      flex: 1;
+      width: auto;
+      height: 18px;
+      background: #fff7dd;
+      border: 3px solid #000;
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .status-bar .hp-fill {
+      background: linear-gradient(90deg, #ff9d00 0%, #ff5252 100%);
+    }
+    .status-bar .arrow {
+      display: none;
+    }
+    .pot-scene {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      height: 280px;
+      margin: 0 auto 14px;
+      padding: 18px 18px 22px;
+      border: 4px solid var(--panel-border);
+      border-radius: 26px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255, 248, 233, 0.72) 100%) 0 0 / cover no-repeat,
+        var(--pot-bg-image, url('game_images/Backgrounds/backgroundForest.png')) 0 center / auto 100% repeat-x;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      animation: potCardBgLoop 36s linear infinite;
+    }
+    @keyframes potCardBgLoop {
+      from { background-position: 0 0, 0 center; }
+      to { background-position: 0 0, -360px center; }
+    }
+    .card-bg-btn {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 4;
+      width: 30px;
+      height: 30px;
+      min-width: 30px;
+      padding: 0;
+      border: 3px solid #000;
+      border-radius: 999px;
+      background: rgba(255, 253, 244, 0.9);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.7);
+      font-size: 13px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .card-bg-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 1px 1px 0 rgba(43, 24, 8, 0.7);
+    }
+    .pot-scene::before {
+      content: '';
+      position: absolute;
+      inset: auto 0 0 0;
+      height: 76px;
+      background:
+        linear-gradient(180deg, transparent 0%, rgba(82, 45, 18, 0.1) 22%, rgba(82, 45, 18, 0.2) 100%),
+        url('game_images/24.png') center bottom / cover no-repeat;
+      opacity: 0.95;
+      z-index: 0;
+    }
+    .stage-fire-gif {
+      position: absolute;
+      left: 50%;
+      bottom: 30px;
+      width: clamp(130px, 38vw, 190px);
+      transform: translateX(-50%);
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.86;
+      filter: drop-shadow(0 6px 0 rgba(43, 24, 8, 0.18));
+      animation: stageFireFlicker 1.4s ease-in-out infinite;
+    }
+    @keyframes stageFireFlicker {
+      0%, 100% { opacity: 0.82; transform: translateX(-50%) scale(0.98); }
+      50% { opacity: 0.94; transform: translateX(-50%) scale(1.03); }
+    }
+    .stage-frame {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .goguma-stage-image {
+      --goguma-scale: 1;
+      width: min(58vw, 250px);
+      max-height: 210px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 10px 0 rgba(43, 24, 8, 0.16));
+      transform-origin: center bottom;
+      animation: gogumaFloat 2.8s ease-in-out infinite;
+      will-change: transform;
+    }
+    @keyframes gogumaSpeechFloat {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-8px);
+      }
+    }
+    .goguma-speech {
+      position: absolute;
+      top: 12px;
+      left: 142px;
+      display: inline-block;
+      width: auto;
+      min-width: 48px;
+      max-width: 152px;
+      max-height: 120px;
+      padding: 10px 8px;
+      background: rgba(255, 253, 244, 0.88);
+      color: #000;
+      box-sizing: border-box;
+      font-size: 10px;
+      line-height: 1.45;
+      text-align: center;
+      box-shadow:
+        0 -4px #fff,
+        0 -8px #000,
+        4px 0 #fff,
+        4px -4px #000,
+        8px 0 #000,
+        0 4px #fff,
+        0 8px #000,
+        -4px 0 #fff,
+        -4px 4px #000,
+        -8px 0 #000,
+        -4px -4px #000,
+        4px 4px #000;
+      z-index: 3;
+      word-break: keep-all;
+      overflow-y: auto;
+      animation: gogumaSpeechFloat 2.8s ease-in-out infinite;
+      will-change: transform;
+    }
+    .goguma-speech-text {
+      display: block;
+      padding-right: 12px;
+      white-space: normal;
+      overflow-wrap: anywhere;
+    }
+    .goguma-speech-close {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 14px;
+      height: 14px;
+      padding: 0;
+      border: 2px solid #000;
+      background: rgba(255, 253, 244, 0.92);
+      color: #000;
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 9px;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .goguma-speech-toggle {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 3;
+      width: 28px;
+      height: 28px;
+      padding: 0;
+      border: 3px solid #000;
+      border-radius: 999px;
+      background: rgba(255, 253, 244, 0.86);
+      box-shadow: 2px 2px 0 rgba(43, 24, 8, 0.8);
+      font-size: 12px;
+      line-height: 1;
+      cursor: pointer;
+      animation: gogumaSpeechFloat 2.8s ease-in-out infinite;
+    }
+    .goguma-speech.is-multi {
+      max-width: 240px;
+    }
+    .goguma-speech::after {
+      content: '';
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      left: 28px;
+      bottom: -8px;
+      background: rgba(255, 253, 244, 0.88);
+      box-shadow:
+        0 4px #000,
+        0 8px #000,
+        0 12px #000,
+        0 16px #000,
+        -4px 12px #000,
+        -8px 8px #000,
+        -12px 4px #000,
+        -4px 4px #fff,
+        -8px 4px #fff,
+        -4px 8px #fff,
+        -4px 0 #fff,
+        -8px 0 #fff,
+        -12px 0 #fff;
+    }
+    .goguma-nameplate {
+      position: absolute;
+      left: 50%;
+      bottom: 40px;
+      transform: translateX(-50%);
+      z-index: 2;
+      min-width: 120px;
+      max-width: calc(100% - 120px);
+      padding: 6px 12px;
+      border-radius: 999px;
+      background: rgba(255, 248, 233, 0.95);
+      text-align: center;
+      font-size: 12px;
+      color: #2b1808;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stage-tool {
+      position: absolute;
+      z-index: 1;
+      width: 56px;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.16));
+      opacity: 0.95;
+    }
+    .stage-tool.left {
+      left: 18px;
+      bottom: 18px;
+    }
+    .stage-tool.right {
+      right: 18px;
+      bottom: 18px;
+    }
+    .stage-tool-history {
+      cursor: pointer;
+      z-index: 5;
+      pointer-events: auto;
+    }
+    .action-panel {
+      width: 100%;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 14px 12px 12px;
+      border: 4px solid var(--panel-border);
+      border-radius: 22px;
+      background: rgba(255, 248, 233, 0.84);
+      box-shadow: var(--shadow);
+    }
+    .action-panel-title {
+      margin: 0 0 12px;
+      font-size: 12px;
+      color: #5b3a16;
+      text-align: center;
+    }
+    .pot-scene-actions {
+      position: absolute;
+      left: 90%;
+      bottom: 2px;
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+    .pot-delete-btn {
+      min-width: 30px;
+      width: 30px;
+      height: 30px;
+      padding: 0;
+      border-radius: 999px;
+      font-size: 14px;
+      line-height: 1;
+      background: rgba(255, 248, 233, 0.88);
+      box-shadow: 2px 2px 0 rgba(0,0,0,0.7);
+      opacity: 0.84;
+    }
+    .pot-delete-btn:hover {
+      background: rgba(255, 224, 178, 0.96);
+      opacity: 1;
+    }
+    .pot-delete-btn:active {
+      box-shadow: 1px 1px 0 rgba(0,0,0,0.7);
+      transform: translate(1px, 1px);
+    }
+    .celebration-canvas {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+    .celebration-canvas.active {
+      opacity: 1;
+    }
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(64px, 1fr));
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+    }
+    .asset-btn {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      width: 100%;
+      cursor: pointer;
+      transition: transform 0.12s ease;
+    }
+    .asset-btn:hover {
+      transform: translateY(-2px);
+    }
+    .asset-btn:active {
+      transform: translateY(1px);
+    }
+    .asset-btn:disabled {
+      cursor: default;
+      opacity: 0.7;
+      transform: none !important;
+      filter: grayscale(0.25);
+    }
+    .asset-btn.is-used::after {
+      content: '오늘 완료';
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      padding: 2px 5px;
+      border-radius: 999px;
+      border: 1px solid rgba(43,24,8,0.22);
+      background: rgba(255,255,255,0.92);
+      color: #6c4a21;
+      font-size: 9px;
+      line-height: 1;
+    }
+    .asset-btn img {
+      width: 100%;
+      height: 80px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 4px 0 rgba(43, 24, 8, 0.22));
+    }
+    .asset-btn span {
+      margin-top: 6px;
+      font-size: 11px;
+      line-height: 1.2;
+      color: #3f2915;
+      text-align: center;
+      word-break: keep-all;
+    }
+    #noSelectHint {
+      padding: 16px 18px;
+      margin-top: 24px;
+      background: rgba(255, 248, 233, 0.84);
+      border: 4px solid var(--panel-border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+    }
+    body[data-stage="1"] { --sky-glow: rgba(106, 137, 204, 0.72); }
+    body[data-stage="2"] { --sky-glow: rgba(135, 206, 235, 0.62); }
+    body[data-stage="3"] { --sky-glow: rgba(79, 195, 247, 0.54); }
+    body[data-stage="4"] { --sky-glow: rgba(255, 183, 77, 0.48); }
+    body[data-stage="5"] { --sky-glow: rgba(255, 215, 0, 0.45); }
+
+    @media (max-width: 420px) {
+      .screen {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+      .char-potato-home {
+        bottom: 126px;
+      }
+      .home-stage-strip {
+        gap: 8px;
+      }
+      .home-stage-strip img {
+        width: 40px;
+      }
+      .status-bar .name {
+        font-size: 12px;
+      }
+      .toolbar-row,
+      .input-row {
+        align-items: stretch;
+      }
+      .toolbar-actions,
+      .input-row {
+        width: 100%;
+      }
+      .player-tag,
+      .visit-badge {
+        width: 100%;
+        justify-content: center;
+      }
+      .toolbar-actions .pixel-btn,
+      .input-row .add-btn,
+      .input-row input {
+        flex: 1;
+      }
+      .ranking-item {
+        grid-template-columns: 22px 1fr auto 28px;
+        gap: 6px;
+        padding: 7px 8px;
+      }
+      .roulette-header h2 {
+        font-size: 24px;
+      }
+      .roulette-wheel {
+        width: min(88vw, 320px);
+      }
+      .field-slot {
+        width: calc(33.333% - 7px);
+        min-width: 0;
+      }
+      .field-summary {
+        grid-template-columns: 1fr;
+      }
+      .action-tips {
+        grid-template-columns: 1fr;
+      }
+      .action-buttons { gap: 8px; }
+      .asset-btn img {
+        height: 72px;
+      }
+      .ranking-hp {
+        font-size: 11px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .name-input-wrap input,
+      #nameInput,
+      #boardTitle,
+      #boardContent {
+        font-size: 16px !important;
+      }
+    }
+
+    /* 자신의 이름 입력 단계 (모달) */
+    .name-input-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .name-input-overlay.hidden {
+      display: none !important;
+    }
+    .name-input-wrap {
+      position: relative;
+      z-index: 101;
+      background: #fff;
+      border: 3px solid #000;
+      padding: 30px 40px;
+      box-shadow: 6px 6px 0 #000;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .name-input-wrap h3 {
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      color: #1a237e;
+    }
+    .name-input-wrap input {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      padding: 12px 16px;
+      border: 3px solid #000;
+      font-size: 14px;
+      width: 200px;
+      margin-bottom: 16px;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .name-input-wrap .pixel-btn {
+      margin-top: 8px;
+    }
+    .dept-select {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      max-width: 280px;
+      margin: 0 auto 8px;
+    }
+    .dept-btn {
+      font-family: 'NeoDunggeunmo', sans-serif;
+      font-size: 12px;
+      padding: 8px 6px;
+      border: 2px solid #000;
+      background: #f5f5f5;
+      cursor: pointer;
+    }
+    .dept-btn.active {
+      background: #ffecb3;
+      box-shadow: inset 0 -2px 0 #c49a00;
+    }
+  </style>
+</head>
+<body data-stage="2">
+  <audio id="bgmPlayer" src="game_sounds/bgm.mp3" loop preload="auto"></audio>
+  <audio id="buttonEffectPlayer" src="game_sounds/button_effect.mp3" preload="auto"></audio>
+  <button id="bgmToggle" class="pixel-btn bgm-toggle" type="button" onclick="toggleBgm()">BGM ON</button>
+  <div class="pixel-bg">
+    <div class="pixel-sky">
+      <div id="weatherLayer" class="weather-layer"></div>
+    </div>
+    <div class="pixel-fence"></div>
+    <div class="pixel-grass"></div>
+    <div class="pixel-dirt"></div>
+  </div>
+
+  <!-- 시작 화면 -->
+  <div id="home" class="screen">
+    <img class="floating-deco left" src="game_images/22.png" alt="">
+    <img class="floating-deco right" src="game_images/22.png" alt="">
+    <p class="subtitle">복음을 전하며 고구마를 키우는</p>
+    <div class="main-title">
+      <img class="home-logo" src="game_images/3.png" alt="고구마 전도">
+    </div>
+    <div class="btn-row">
+      <button class="pixel-btn" onclick="showNameInput()">시작하기</button>
+      <button class="pixel-btn" onclick="toggleHelp()">사용설명</button>
+    </div>
+    <div id="helpBubble" class="speech-bubble">
+      <ul>
+        <li>고구마 키우기 게임</li>
+        <li>1 자신의 고구마의 이름을 작성해서 추가한다.</li>
+        <li>2 말씀읽기, 기도(부탁)하기, 연락&만남, 권유하기</li>
+        <li>3 버튼을 눌러 고구마를 키운다!</li>
+      </ul>
+    </div>
+    <div class="home-stage-strip" aria-hidden="true">
+      <img src="game_images/17.png" alt="">
+      <img src="game_images/18.png" alt="">
+      <img src="game_images/19.png" alt="">
+      <img src="game_images/20.png" alt="">
+    </div>
+    <img class="char-potato-home" src="game_images/21.png" alt="대표 고구마">
+  </div>
+
+  <!-- 이름 입력 모달 (시작하기 클릭 시 화면 가운데 표시) -->
+  <div id="nameInputStep" class="name-input-overlay hidden">
+    <div class="name-input-wrap">
+      <h3>이름과 부서를 입력하세요</h3>
+      <input type="text" id="userNameInput" placeholder="이름" maxlength="20" onkeypress="if(event.key==='Enter')submitUserName()">
+      <div id="departmentSelect" class="dept-select">
+        <button type="button" class="dept-btn" data-department="언약부" onclick="selectDepartment('언약부')">언약부</button>
+        <button type="button" class="dept-btn" data-department="밀알부" onclick="selectDepartment('밀알부')">밀알부</button>
+        <button type="button" class="dept-btn" data-department="이레부" onclick="selectDepartment('이레부')">이레부</button>
+      </div>
+      <button class="pixel-btn" onclick="submitUserName()">확인</button>
+    </div>
+  </div>
+
+  <!-- 게임 화면 -->
+  <div id="game" class="screen hidden">
+    <div class="game-header">
+      <div class="toolbar-row">
+        <div class="player-tag">
+          <img src="game_images/23.png" alt="">
+          <span id="currentUserName"></span>
+        </div>
+        <div class="visit-badge">
+          <img src="game_images/14.png" alt="">
+          <span id="currentUserDays">누적 접속 1일</span>
+        </div>
+        <div class="toolbar-actions">
+          <button class="pixel-btn" id="btnRoulette" style="font-size:12px;padding:6px 10px" onclick="openRoulette()">7일 룰렛</button>
+          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="toggleRanking()">리더보드</button>
+          <button class="pixel-btn" style="font-size:12px;padding:6px 10px" onclick="openCommunity()">커뮤니티</button>
+        </div>
+      </div>
+      <div class="input-row">
+        <button class="add-btn" style="width:100%;" onclick="openAddGogumaModal()">고구마 추가하기</button>
+      </div>
+    </div>
+    <div id="rankingModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'ranking')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 class="modal-heading">부서별 평균 온도</h3>
+          <button class="pixel-btn modal-close" onclick="closeRanking()">닫기</button>
+        </div>
+        <ol id="rankingList" class="list-panel"></ol>
+      </div>
+    </div>
+
+    <div id="boardModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'board')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 style="margin:0;">📜 게시판</h3>
+          <button class="pixel-btn modal-close" onclick="closeBoard()">닫기</button>
+        </div>
+        <div style="margin-bottom:8px;display:flex;justify-content:flex-end;gap:8px;">
+          <button class="pixel-btn" style="font-size:11px;padding:6px 10px" onclick="togglePostForm()">작성하기</button>
+        </div>
+        <div id="boardForm" class="hidden" style="margin-bottom:12px">
+          <input
+            id="boardTitle"
+            placeholder="제목"
+            maxlength="100"
+            style="width:100%;margin-bottom:6px;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
+          >
+          <textarea
+            id="boardContent"
+            placeholder="내용을 적어 주세요."
+            maxlength="1000"
+            rows="4"
+            style="width:100%;resize:none;font-family:'NeoDunggeunmo',sans-serif;padding:8px 10px;border:3px solid #000;font-size:12px;"
+          ></textarea>
+          <button class="pixel-btn" style="margin-top:6px;font-size:12px;padding:6px 12px" onclick="submitPost()">등록</button>
+        </div>
+        <div class="board-scroll">
+          <ul id="boardList" class="list-panel"></ul>
+        </div>
+      </div>
+    </div>
+    <div id="historyModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'history')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+        <div class="modal-head-row">
+          <h3 id="historyModalHeading" class="modal-heading">성장 히스토리 (최근 7일)</h3>
+          <button class="pixel-btn modal-close" onclick="closeHistoryModal()">닫기</button>
+        </div>
+        <div id="historyModalContent" class="history-empty">고구마를 선택하면 히스토리를 확인할 수 있습니다.</div>
+      </div>
+    </div>
+    <div id="upgradeModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'upgrade')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 id="upgradeModalHeading" class="modal-heading">업그레이드!</h3>
+          <button class="pixel-btn modal-close" onclick="closeUpgradeModal()">닫기</button>
+        </div>
+        <div style="display:flex;justify-content:center;">
+          <img id="upgradeModalImage" src="game_images/upgrade/upgrade1.gif" alt="업그레이드 이미지" style="width:100%;max-width:280px;image-rendering:pixelated;">
+        </div>
+      </div>
+    </div>
+    <div id="addGogumaModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'addGoguma')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 class="modal-heading">고구마 추가</h3>
+          <button class="pixel-btn modal-close" onclick="closeAddGogumaModal()">닫기</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input id="addGogumaName" type="text" maxlength="20" placeholder="고구마 이름" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <input id="addGogumaRelation" type="text" maxlength="30" placeholder="관계" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <input id="addGogumaAge" type="number" min="1" max="120" placeholder="나이" style="font-family:'NeoDunggeunmo',sans-serif;padding:10px;border:3px solid #000;font-size:12px;" onkeypress="if(event.key==='Enter')submitAddGoguma()">
+          <button class="pixel-btn" onclick="submitAddGoguma()">저장</button>
+        </div>
+      </div>
+    </div>
+    <div id="ddayModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'dday')">
+      <div class="speech-bubble modal-card" onclick="event.stopPropagation()" style="max-width:360px;">
+        <div class="modal-head-row">
+          <h3 class="modal-heading">집회 일정</h3>
+          <button class="pixel-btn modal-close" onclick="closeDdayModal()">닫기</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="padding:10px;border:2px solid #000;border-radius:12px;background:#fff7dd;">
+            <strong style="display:block;font-size:18px;">3월 30일 청년회 집회</strong>
+            <span id="ddayMainValue" style="display:block;margin-top:4px;color:#d84315;font-size:18px;">D-Day</span>
+          </div>
+          <div style="padding:10px;border:2px solid #000;border-radius:12px;background:#fff;">
+            <div>3월 15일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday15" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+            <div style="margin-top:8px;">3월 22일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday22" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+            <div style="margin-top:8px;">3월 29일 - 기도모임(8시)</div>
+            <div id="prayerMeetingDday29" style="margin-top:2px;color:#d84315;font-size:16px;">D-Day</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="goguma-list-bar">
+      <div class="goguma-list" id="gogumaList"></div>
+    </div>
+
+    <div id="fieldDetailView" class="field-panel hidden" style="margin-top: 8px;">
+      <h2>나의 밭</h2>
+      <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
+      <div id="fieldSummary" class="field-summary"></div>
+      <div class="field-toolbar">
+      </div>
+      <div id="inlineFieldGrid" class="field-grid"></div>
+    </div>
+
+    <div id="detailView" class="hidden">
+      <div class="pot-scene" id="potScene">
+        <div id="heartContainer"></div>
+        <canvas id="celebrationCanvas" class="celebration-canvas"></canvas>
+        <button type="button" id="cardBgBtn" class="card-bg-btn" onclick="cycleSelectedGogumaCardBg()" aria-label="카드 배경 변경" title="카드 배경 변경">🖼️</button>
+        <img class="stage-fire-gif" src="game_images/fire.gif" alt="" onerror="this.style.display='none'">
+        <div class="pot-scene-actions">
+          <button class="pixel-btn pot-delete-btn hidden" id="btnDelete" onclick="removeSelected()" aria-label="고구마 삭제" title="삭제">🗑</button>
+        </div>
+        <div id="gogumaSpeech" class="goguma-speech">
+          <button type="button" class="goguma-speech-close" onclick="hideGogumaSpeech(event)" aria-label="말풍선 숨기기">x</button>
+          <span id="gogumaSpeechText" class="goguma-speech-text">오늘도 함께 자라요!</span>
+        </div>
+        <button type="button" id="gogumaSpeechToggle" class="goguma-speech-toggle hidden" onclick="showGogumaSpeech()" aria-label="말풍선 다시 보기">💬</button>
+        <div class="stage-frame" onclick="advanceGogumaSpeech(true)">
+          <img id="gogumaStageImage" class="goguma-stage-image" src="game_images/17.png" alt="고구마 단계">
+        </div>
+        <div class="status-bar status-bar-inline">
+          <div class="hp-wrap">
+            <img class="status-icon" src="game_images/13.png" alt="">
+            <span>온도</span>
+            <div class="hp-box">
+              <div class="hp-fill" id="statusHpFill" style="width:0%"></div>
+              <span class="hp-value" id="statusHpValue">0</span>
+            </div>
+          </div>
+        </div>
+        <img class="stage-tool left stage-tool-history" src="game_images/11.png" alt="성장 히스토리 보기" role="button" tabindex="0" onclick="openSelectedHistory()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSelectedHistory();}">
+        <img class="stage-tool right stage-tool-history" src="game_images/12.png" alt="집회 일정 보기" role="button" tabindex="0" onclick="openDdayModal()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDdayModal();}">
+      </div>
+      <div class="action-panel">
+        <p class="action-panel-title">오늘의 미션</p>
+        <div class="action-buttons">
+          <button class="asset-btn" data-action="postWrite" onclick="grow('postWrite')" aria-label="게시판작성 (+1)">
+            <img src="game_images/27.png" alt="게시판작성 (+1)">
+            <span>게시판 작성 +1</span>
+          </button>
+          <button class="asset-btn" data-action="bible" onclick="grow('bible')"><img src="game_images/6.png" alt="말씀읽기 (+1)"><span>말씀 +1</span></button>
+          <button class="asset-btn" data-action="prayer" onclick="grow('prayer')"><img src="game_images/7.png" alt="기도 (+1)"><span>기도 +1</span></button>
+          <button class="asset-btn" data-action="contact" onclick="grow('contact')"><img src="game_images/28.png" alt="연락&만남 (+2)"><span>연락&만남 +2</span></button>
+          <button class="asset-btn" data-action="invite" onclick="grow('invite')"><img src="game_images/10.png" alt="전도초대 (+8)"><span>집회권유 +8</span></button>
+        </div>
+        <div class="action-tips">
+          <div class="action-tip">행동 카드는 하루에 1번씩만 사용할 수 있습니다.</div>
+          <div id="actionResetTimer" class="action-tip">다음 리셋(KST)까지 --:--:--</div>
+        </div>
+        <div id="missionPanel" class="mission-panel">
+          <div id="missionContent" class="mission-empty">미션 정보를 불러오는 중입니다...</div>
+        </div>
+      </div>
+    </div>
+
+    <p id="noSelectHint" class="subtitle" style="margin-top:40px;">고구마를 추가한 뒤 목록에서 선택하세요.</p>
+    <div id="inlineNotice" class="inline-notice">고구마를 선택하면 성장 상태와 행동 카드를 바로 사용할 수 있습니다.</div>
+    <div id="detailActions" style="margin-top:20px">
+      <button class="pixel-btn back-btn" onclick="backHome()">처음으로</button>
+      <button class="pixel-btn back-btn hidden" id="btnScreenshot" onclick="captureSelectedGoguma()" style="margin-left:10px;font-size:11px;padding:8px 10px">캡쳐</button>
+    </div>
+  </div>
+
+  <div id="fieldView" class="screen field-screen hidden">
+    <div class="field-topbar">
+      <button class="pixel-btn" onclick="closeFieldView()">뒤로</button>
+      <div class="visit-badge">
+        <img src="game_images/14.png" alt="">
+        <span id="fieldDays">누적 접속 1일</span>
+      </div>
+    </div>
+    <div class="field-panel">
+      <h2>나의 밭</h2>
+      <p>내가 키우는 고구마들의 성장 상태를 한눈에 확인할 수 있습니다.</p>
+      <div id="fieldGrid" class="field-grid"></div>
+    </div>
+  </div>
+
+  <div id="roulette" class="screen roulette-screen hidden">
+    <div class="roulette-topbar">
+      <button class="pixel-btn" onclick="closeRoulette()">뒤로</button>
+      <div class="visit-badge">
+        <img src="game_images/14.png" alt="">
+        <span id="rouletteDays">누적 접속 1일</span>
+      </div>
+    </div>
+    <div class="roulette-header">
+      <h2>7일 보상 룰렛</h2>
+      <p>누적 접속 7일마다 한 번 돌릴 수 있습니다.</p>
+    </div>
+    <div class="roulette-panel">
+      <p id="rouletteStatus" class="roulette-status">누적 접속 7일이 되면 룰렛을 돌릴 수 있습니다.</p>
+      <div class="roulette-wheel-wrap">
+        <div class="roulette-pointer" aria-hidden="true"></div>
+        <img id="rouletteWheel" class="roulette-wheel" src="game_images/5.png" alt="룰렛">
+      </div>
+      <button id="spinRouletteBtn" class="pixel-btn" onclick="spinRoulette()">룰렛 돌리기</button>
+      <div id="rouletteResult" class="roulette-result" style="margin-top:16px;">아직 룰렛 결과가 없습니다.</div>
+    </div>
+  </div>
+  <div id="rouletteRewardModal" class="modal-shell hidden" onclick="handleModalBackdropClick(event, 'rouletteReward')">
+    <div class="speech-bubble modal-card" onclick="event.stopPropagation()">
+      <div class="modal-head-row">
+        <h3 class="modal-heading">룰렛 결과</h3>
+        <button class="pixel-btn modal-close" onclick="closeRouletteRewardModal()">닫기</button>
+      </div>
+      <div style="text-align:center;display:flex;flex-direction:column;gap:10px;">
+        <strong id="rouletteRewardLabel" style="font-size:18px;"></strong>
+        <p id="rouletteRewardDesc" style="margin:0;font-size:13px;color:#4e342e;"></p>
+      </div>
+    </div>
+  </div>
+
+  <div id="community" class="screen community-screen hidden">
+    <div class="community-shell">
+      <div class="community-header">
+        <button class="pixel-btn" style="font-size:11px;padding:8px 10px" onclick="closeCommunity()">뒤로</button>
+        <span class="community-header-title">Community</span>
+        <span id="communityUserBadge" class="community-header-user">ME</span>
+      </div>
+      <div class="community-body">
+        <div id="communityListView">
+          <div class="community-list-toolbar">
+            <p class="community-list-caption">최근 글을 이미지 중심으로 둘러볼 수 있습니다.</p>
+            <button class="pixel-btn" type="button" style="font-size:11px;padding:8px 12px" onclick="openCommunityComposer()">작성</button>
+          </div>
+          <div id="communityCategoryFilters" class="community-category-filters"></div>
+          <div id="communityComposeModal" class="community-compose-modal hidden">
+            <div class="community-compose">
+              <div class="community-compose-header">
+                <h3 class="community-section-title" style="margin:0;">새 글 작성</h3>
+                <button class="pixel-btn" type="button" style="font-size:10px;padding:6px 10px" onclick="closeCommunityComposer()">닫기</button>
+              </div>
+              <input id="communityTitle" class="community-input" type="text" maxlength="100" placeholder="제목을 입력해 주세요.">
+              <select id="communityCategory" class="community-select">
+                <option value="출석인사">출석인사</option>
+                <option value="간식당첨">간식당첨</option>
+                <option value="기도부탁">기도부탁</option>
+                <option value="만남인증">만남인증</option>
+                <option value="묵상나눔">묵상나눔</option>
+              </select>
+              <textarea id="communityContent" class="community-textarea" maxlength="1000" placeholder="오늘의 이야기를 적어 주세요."></textarea>
+              <input id="communityImageInput" type="file" accept="image/*" class="hidden">
+              <div class="community-compose-actions">
+                <button class="pixel-btn community-upload-btn" type="button" onclick="pickCommunityImage()">사진첨부</button>
+                <button class="pixel-btn" type="button" onclick="submitCommunityPost()">글작성</button>
+              </div>
+              <div id="communityImagePreview" class="community-image-preview">
+                <img id="communityPreviewImage" src="" alt="첨부 이미지 미리보기">
+              </div>
+            </div>
+          </div>
+          <div id="communityList" class="community-list"></div>
+        </div>
+        <div id="communityDetailView" class="hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="imageLightbox" class="image-lightbox hidden" onclick="handleImageLightboxBackdrop(event)">
+    <button class="pixel-btn image-lightbox-close" type="button" style="font-size:11px;padding:8px 10px" onclick="closeImageLightbox()">닫기</button>
+    <img id="imageLightboxImg" src="" alt="확대 이미지">
+  </div>
+
+  <script>
+    var MAX = 10;
+    var API = '';
+    var data = [];
+    var selectedIndex = -1;
+    var currentUser = null;
+    var selectedDepartment = '';
+    var currentViewMode = 'field';
+    var fieldSortMode = 'created';
+    var bgmEnabled = true;
+    var communityPosts = [];
+    var communityDetailPost = null;
+    var selectedCommunityPostId = null;
+    var communityImageData = '';
+    var activeZoomImage = '';
+    var communityCommentSubmitting = false;
+    var communityCategoryFilter = 'all';
+    var gogumaSpeechIndex = 0;
+    var gogumaSpeechTargetId = null;
+    var gogumaSpeechTimer = null;
+    var gogumaSpeechDismissed = false;
+    var lastRouletteReward = null;
+    var isRouletteSpinning = false;
+    var rouletteBaseRotationDeg = 0;
+    var rouletteWheelLoaded = false;
+    var rouletteSeedOverride = null;
+    var rouletteSeededRng = null;
+    var rouletteSeededRngSeed = null;
+    var fireworkFrameId = null;
+    var fireworkStopTimer = null;
+    var fireworkParticles = [];
+    var missionState = null;
+    var missionClaimLoading = '';
+    var gogumaHistoryById = {};
+    var historyLoadingById = {};
+    var actionUsageDayKey = '';
+    var actionCooldownTimer = null;
+    var STAGE_ASSETS = {
+      1: 'game_images/17.png',
+      2: 'game_images/18.png',
+      3: 'game_images/19.png',
+      4: 'game_images/20.png'
+    };
+    var SPROUT_TRANSFORM_ASSETS = {
+      bible: 'game_images/sprout_charactors/01_word_reader.png',
+      prayer: 'game_images/sprout_charactors/02_prayer.png',
+      contact: 'game_images/sprout_charactors/03_contact_angel.png',
+      meeting: 'game_images/sprout_charactors/04_meeting.png',
+      invite: 'game_images/sprout_charactors/05_invite.png',
+      postWrite: 'game_images/sprout_charactors/01_word_reader.png'
+    };
+    var SPROUT_TRANSFORM_ASSETS_2 = {
+      bible: 'game_images/sprout_charactors2/01_bible2.png',
+      prayer: 'game_images/sprout_charactors2/02_pray2.png',
+      contact: 'game_images/sprout_charactors2/03_contact2.png',
+      meeting: 'game_images/sprout_charactors2/04_meet2.png',
+      invite: 'game_images/sprout_charactors2/05_invite2.png',
+      postWrite: 'game_images/sprout_charactors2/01_bible2.png'
+    };
+    var SPROUT_TRANSFORM_ASSETS_3 = {
+      'bible:prayer': 'game_images/sprout_charactors3/1_bibleprey.png',
+      'bible:contact': 'game_images/sprout_charactors3/2_bible_contact.png',
+      'bible:meeting': 'game_images/sprout_charactors3/3_bible_meeting.png',
+      'prayer:bible': 'game_images/sprout_charactors3/4_preybible.png',
+      'prayer:contact': 'game_images/sprout_charactors3/5_pray_contact.png',
+      'prayer:meeting': 'game_images/sprout_charactors3/6_praymeeting.png',
+      'contact:bible': 'game_images/sprout_charactors3/7_contactbible.png',
+      'contact:prayer': 'game_images/sprout_charactors3/8_contactpray.png',
+      'contact:meeting': 'game_images/sprout_charactors3/9_contact_meeting.png',
+      'meeting:bible': 'game_images/sprout_charactors3/10_meetingbiblepng.png',
+      'meeting:prayer': 'game_images/sprout_charactors3/11_meetingpray.png',
+      'meeting:contact': 'game_images/sprout_charactors3/12_meetingcontact.png'
+    };
+    var ACTION_VALUES_CLIENT = {
+      postWrite: 1,
+      bible: 1,
+      prayer: 1,
+      contact: 2,
+      invite: 8
+    };
+    var ACTION_PRIORITY_CLIENT = ['invite', 'contact', 'postWrite', 'bible', 'prayer'];
+    var STAGE4_ACTION_CATEGORY_ALIASES_CLIENT = {
+      bible: 'bible',
+      prayer: 'prayer',
+      contact: 'contact',
+      invite: 'meeting',
+      postWrite: 'bible'
+    };
+    var STAGE4_CATEGORY_PRIORITY_CLIENT = ['meeting', 'contact', 'bible', 'prayer'];
+    var ACTION_LABELS_CLIENT = {
+      postWrite: '게시판 작성',
+      bible: '말씀',
+      prayer: '기도',
+      contact: '연락&만남',
+      invite: '초대'
+    };
+    var MISSION_ACTION_LABELS = {
+      bible: '말씀',
+      prayer: '기도',
+      contact: '연락&만남'
+    };
+    var GOGUMA_CARD_BACKGROUNDS = [
+      'game_images/Backgrounds/backgroundForest.png',
+      'game_images/Backgrounds/backgroundColorForest.png',
+      'game_images/Backgrounds/backgroundColorGrass.png',
+      'game_images/Backgrounds/backgroundColorFall.png',
+      'game_images/Backgrounds/backgroundDesert.png',
+      'game_images/Backgrounds/backgroundColorDesert.png',
+      'game_images/Backgrounds/backgroundCastles.png',
+      'game_images/Backgrounds/backgroundEmpty.png'
+    ];
+    var CARD_BG_STORAGE_KEY = 'goguma.cardBgPrefs.v1';
+    var gogumaCardBgPrefById = {};
+    // 12시(0deg) 정중앙 = 벳세다 상품권 1000원
+    // 이후 시계 방향 배치
+    var ROULETTE_SEGMENTS = [
+      { id: 'voucher_1000', label: '벳세다 상품권 1000원', weight: 1, hpBonus: 0 },
+      { id: 'miss_a', label: '마이쮸', weight: 1, hpBonus: 0 },
+      { id: 'jelly_a', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'jelly_b', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'all_plus_5_a', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
+      { id: 'all_plus_5_b', label: '전체온도 +5도', weight: 1, hpBonus: 5 },
+      { id: 'jelly_c', label: '젤리', weight: 1, hpBonus: 0 },
+      { id: 'miss_b', label: '마이쮸', weight: 1, hpBonus: 0 }
+    ];
+    var rouletteEngine = {
+      pointerAngle: 0,
+      imageOffsetDeg: 0,
+      minSpins: 5,
+      maxSpins: 7,
+      minDurationMs: 2500,
+      maxDurationMs: 4500,
+      debug: true,
+      onSpinEnd: null
+    };
+    var COMMUNITY_CATEGORIES = ['출석인사', '간식당첨', '기도부탁', '만남인증', '묵상나눔'];
+    var GOGUMA_SPEECH_LINES = [
+      '{name}를 위해 기도하고 있어요!',
+      '따뜻한 마음으로 함께 전해요!',
+      '기도하면 제 온도가 올라가요!',
+      '오늘도 묵상을 나눠 볼까요?',
+      '기도부탁도 언제든 나눠 주세요!',
+      '저를 눌러 주면 더 신나요!',
+      '{name}가 연락을 기다려요!',
+      '작은 순종이 큰 열매가 돼요!',
+	    '지금도 늦지 않았어요!',
+	    '말씀 한줄이 내 마음을 바꿔요!',
+	    '오늘의 기도가 내일을 만들어요!',
+	    '포기 말고 한 번만 더!',
+	    '당신의 걸음이 누군가의 기도가 돼요!'
+    ];
+    let rankingInterval = null;
+    let boardInterval = null;
+
+    function fetchJson(url, opts) {
+      return fetch(url, opts)
+        .then(function(r) {
+          return r.text().then(function(text) {
+            try { return { ok: r.ok, data: JSON.parse(text) }; }
+            catch (e) { return { ok: false, data: { error: '서버 응답 오류' } }; }
+          });
+        })
+        .catch(function() { return { ok: false, data: { error: '서버에 연결할 수 없습니다. 터미널에서 npm start 후 http://localhost:3001 으로 접속하세요.'} }; });
+    }
+
+    function syncBgmButton() {
+      var btn = document.getElementById('bgmToggle');
+      if (!btn) return;
+      btn.textContent = bgmEnabled ? 'BGM ON' : 'BGM OFF';
+    }
+
+    function tryPlayBgm() {
+      var player = document.getElementById('bgmPlayer');
+      if (!player || !bgmEnabled) return;
+      player.volume = 0.35;
+      var playPromise = player.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function() {});
+      }
+    }
+
+    function toggleBgm() {
+      var player = document.getElementById('bgmPlayer');
+      bgmEnabled = !bgmEnabled;
+      syncBgmButton();
+      if (!player) return;
+      if (bgmEnabled) {
+        tryPlayBgm();
+      } else {
+        player.pause();
+      }
+    }
+    window.toggleBgm = toggleBgm;
+
+    function playButtonEffect() {
+      var player = document.getElementById('buttonEffectPlayer');
+      if (!player) return;
+      try {
+        player.pause();
+        player.currentTime = 0;
+      } catch (e) {}
+      var playPromise = player.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(function() {});
+      }
+    }
+
+    function setCurrentUser(user) {
+      currentUser = user || null;
+
+      var userNameEl = document.getElementById("currentUserName");
+      var userDaysEl = document.getElementById("currentUserDays");
+      var rouletteDaysEl = document.getElementById("rouletteDays");
+      var fieldDaysEl = document.getElementById("fieldDays");
+      var rouletteBtn = document.getElementById("btnRoulette");
+
+      if (userNameEl) {
+        userNameEl.textContent = currentUser ? (currentUser.name + "님" + (currentUser.department ? (' · ' + currentUser.department) : '')) : "";
+      }
+
+      var loginDays = currentUser && currentUser.loginDays ? currentUser.loginDays : 1;
+      var dayText = "누적 접속 " + loginDays + "일";
+
+      if (userDaysEl) userDaysEl.textContent = dayText;
+      if (rouletteDaysEl) rouletteDaysEl.textContent = dayText;
+      if (fieldDaysEl) fieldDaysEl.textContent = dayText;
+
+      if (rouletteBtn) {
+        rouletteBtn.disabled = !currentUser;
+        if (!currentUser) {
+          rouletteBtn.textContent = "7일 룰렛";
+        } else if (currentUser.canSpinRoulette) {
+          rouletteBtn.textContent = "7일 룰렛";
+        } else {
+          var remain = Math.max(0, (currentUser.nextRouletteAt || 7) - loginDays);
+          rouletteBtn.textContent = remain > 0 ? ("룰렛 D-" + remain) : "7일 룰렛";
+        }
+      }
+    }
+
+    function setInlineNotice(message, tone) {
+      var notice = document.getElementById('inlineNotice');
+      if (!notice) return;
+      notice.textContent = message;
+      notice.className = 'inline-notice' + (tone ? (' ' + tone) : '');
+    }
+
+    function setMissionState(nextState) {
+      missionState = nextState && typeof nextState === 'object' ? nextState : null;
+      renderMissionPanel();
+    }
+
+    function fetchMissions() {
+      if (!currentUser) {
+        setMissionState(null);
+        return;
+      }
+      fetchJson(API + '/api/missions', { credentials: 'include', cache: 'no-store' })
+        .then(function(res) {
+          if (!res.ok || !res.data || res.data.error) return;
+          setMissionState(res.data);
+        });
+    }
+
+    function missionClaimButtonText(mission) {
+      if (!mission) return '받기';
+      if (mission.claimed) return '수령 완료';
+      if (missionClaimLoading && missionClaimLoading === mission.key) return '처리 중...';
+      if (!mission.completed) return '진행 중';
+      return '보상 받기';
+    }
+
+    function renderDailyMissionChecklist(mission) {
+      var required = Array.isArray(mission.requiredActions) ? mission.requiredActions : [];
+      var completedSet = new Set(Array.isArray(mission.completedActions) ? mission.completedActions : []);
+      return required.map(function(actionKey) {
+        var done = completedSet.has(actionKey);
+        var label = MISSION_ACTION_LABELS[actionKey] || actionKey;
+        return '<span class="mission-chip ' + (done ? 'done' : '') + '">' + (done ? '완료' : '1회') + ' ' + label + '</span>';
+      }).join('');
+    }
+
+    function renderMissionCard(mission, subText, checklistHtml) {
+      if (!mission) return '';
+      var cardClass = 'mission-card' + (mission.completed ? ' completed' : '') + (mission.claimed ? ' claimed' : '');
+      var btnDisabled = mission.claimed || !mission.completed || !!missionClaimLoading;
+      return (
+        '<div class="' + cardClass + '">' +
+          '<div class="mission-head">' +
+            '<strong class="mission-title">' + mission.label + '</strong>' +
+            '<span>' + subText + '</span>' +
+          '</div>' +
+          (mission.description ? ('<div class="mission-desc">' + mission.description + '</div>') : '') +
+          '<div class="mission-progress">진행도 ' + (mission.progress && mission.progress.current || 0) + ' / ' + (mission.progress && mission.progress.total || 0) + '</div>' +
+          (checklistHtml ? ('<div class="mission-checklist">' + checklistHtml + '</div>') : '') +
+          '<div class="mission-actions">' +
+            '<span class="mission-reward">보상: 전체 온도 +' + (mission.rewardHp || 0) + '</span>' +
+            '<button class="pixel-btn mission-claim-btn" onclick="claimMissionReward(\'' + mission.key + '\')" ' + (btnDisabled ? 'disabled' : '') + '>' + missionClaimButtonText(mission) + '</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function renderMissionPanel() {
+      var contentEl = document.getElementById('missionContent');
+      if (!contentEl) return;
+      if (!currentUser) {
+        contentEl.className = 'mission-empty';
+        contentEl.textContent = '로그인 후 미션을 확인할 수 있습니다.';
+        return;
+      }
+      if (!missionState || !missionState.daily || !missionState.weekly) {
+        contentEl.className = 'mission-empty';
+        contentEl.textContent = '미션 정보를 불러오는 중입니다...';
+        return;
+      }
+
+      var daily = missionState.daily;
+      var weekly = missionState.weekly;
+      var dailyChecklist = renderDailyMissionChecklist(daily);
+      var weeklySub = (weekly.weekStart && weekly.weekEnd) ? (weekly.weekStart + ' ~ ' + weekly.weekEnd) : '이번 주';
+
+      contentEl.className = 'mission-list';
+      contentEl.innerHTML =
+        renderMissionCard(daily, '오늘', dailyChecklist) +
+        renderMissionCard(weekly, weeklySub, '');
+    }
+
+    function claimMissionReward(missionKey) {
+      if (!missionKey || missionClaimLoading) return;
+      missionClaimLoading = missionKey;
+      renderMissionPanel();
+
+      fetchJson(API + '/api/missions/' + missionKey + '/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || !result || result.error) {
+          setInlineNotice((result && result.error) || '미션 보상 수령 중 오류가 발생했습니다.', 'error');
+          return;
+        }
+
+        if (result.user) {
+          setCurrentUser(result.user);
+        }
+        if (Array.isArray(result.gogumas)) {
+          data = result.gogumas.map(function(g) { return normalizeGoguma(g); });
+          if (selectedIndex >= data.length) selectedIndex = data.length - 1;
+        }
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
+
+        setInlineNotice('미션 보상을 받았습니다. 전체 온도 +' + (Number(result.rewardHp) || 0) + ' 적용!', 'success');
+        render();
+      }).finally(function() {
+        missionClaimLoading = '';
+        renderMissionPanel();
+      });
+    }
+    window.claimMissionReward = claimMissionReward;
+
+    function formatHistoryDateShort(dateText) {
+      var text = String(dateText || '');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+      return text.slice(5).replace('-', '/');
+    }
+
+    function getActionLabel(actionType) {
+      return ACTION_LABELS_CLIENT[actionType] || actionType || '행동';
+    }
+
+    function getKstDateKeyNow() {
+      var kstOffsetMs = 9 * 60 * 60 * 1000;
+      return new Date(Date.now() + kstOffsetMs).toISOString().slice(0, 10);
+    }
+
+    function getMsUntilNextKstMidnight() {
+      var kstOffsetMs = 9 * 60 * 60 * 1000;
+      var now = new Date();
+      // KST 시각을 UTC 시간축으로 옮겨 계산한 뒤 다시 원래 시간축으로 환산한다.
+      var kstNow = new Date(now.getTime() + kstOffsetMs);
+      var kstNext = new Date(kstNow);
+      kstNext.setUTCHours(24, 0, 0, 0);
+      var nextUtcMs = kstNext.getTime() - kstOffsetMs;
+      return Math.max(0, nextUtcMs - now.getTime());
+    }
+
+    function formatRemainHms(ms) {
+      var totalSec = Math.max(0, Math.floor(ms / 1000));
+      var h = Math.floor(totalSec / 3600);
+      var m = Math.floor((totalSec % 3600) / 60);
+      var s = totalSec % 60;
+      var hh = String(h).padStart(2, '0');
+      var mm = String(m).padStart(2, '0');
+      var ss = String(s).padStart(2, '0');
+      return hh + ':' + mm + ':' + ss;
+    }
+
+    function clearDailyActionUsageLocal() {
+      data.forEach(function(g) {
+        if (!g || typeof g !== 'object') return;
+        g.todayActions = {};
+      });
+    }
+
+    function renderActionCooldownState() {
+      var timerTip = document.getElementById('actionResetTimer');
+      var dayKey = getKstDateKeyNow();
+      if (actionUsageDayKey && actionUsageDayKey !== dayKey) {
+        actionUsageDayKey = dayKey;
+        clearDailyActionUsageLocal();
+      } else if (!actionUsageDayKey) {
+        actionUsageDayKey = dayKey;
+      }
+
+      if (timerTip) {
+        timerTip.textContent = '다음 리셋(KST)까지 ' + formatRemainHms(getMsUntilNextKstMidnight());
+      }
+
+      var selected = (currentViewMode !== 'field' && selectedIndex >= 0 && data[selectedIndex]) ? data[selectedIndex] : null;
+      var usedActions = selected && selected.todayActions && typeof selected.todayActions === 'object'
+        ? selected.todayActions
+        : {};
+
+      var buttons = document.querySelectorAll('.action-buttons .asset-btn[data-action]');
+      buttons.forEach(function(btn) {
+        var actionType = btn.getAttribute('data-action') || '';
+        var used = !!usedActions[actionType];
+        btn.disabled = !selected || used;
+        btn.classList.toggle('is-used', used);
+      });
+    }
+
+    function startActionCooldownTimer() {
+      if (actionCooldownTimer) clearInterval(actionCooldownTimer);
+      actionCooldownTimer = setInterval(function() {
+        renderActionCooldownState();
+      }, 1000);
+    }
+
+    function renderPassiveTip() {
+      var tip = document.getElementById('passiveTip');
+      if (!tip) return;
+      tip.textContent = '';
+    }
+
+    function renderHistoryContentForElement(contentEl, noSelectionMessage) {
+      if (!contentEl) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        contentEl.className = 'history-empty';
+        contentEl.textContent = noSelectionMessage || '고구마를 선택하면 히스토리를 확인할 수 있습니다.';
+        return;
+      }
+
+      var g = data[selectedIndex];
+      var cache = gogumaHistoryById[String(g.id)];
+      if (!cache) {
+        if (historyLoadingById[String(g.id)]) {
+          contentEl.className = 'history-empty';
+          contentEl.textContent = '히스토리를 불러오는 중입니다...';
+          return;
+        }
+        fetchGogumaHistory(g.id);
+        contentEl.className = 'history-empty';
+        contentEl.textContent = '히스토리를 불러오는 중입니다...';
+        return;
+      }
+
+      var last7 = Array.isArray(cache.last7Days) ? cache.last7Days : [];
+      var logs = Array.isArray(cache.recentActions) ? cache.recentActions : [];
+      var totalScore7 = 0;
+      var bestDay = null;
+      var actionCountByType = {};
+      var totalActionCount = 0;
+
+      last7.forEach(function(day) {
+        var score = Number(day && day.score) || 0;
+        totalScore7 += score;
+        if (!bestDay || score > (Number(bestDay.score) || 0)) {
+          bestDay = day;
+        }
+        var actions = day && day.actions && typeof day.actions === 'object' ? day.actions : {};
+        Object.keys(actions).forEach(function(actionType) {
+          var count = Number(actions[actionType]) || 0;
+          if (count <= 0) return;
+          actionCountByType[actionType] = (Number(actionCountByType[actionType]) || 0) + count;
+          totalActionCount += count;
+        });
+      });
+
+      var maxScore = last7.reduce(function(max, day) {
+        return Math.max(max, Number(day && day.score) || 0);
+      }, 1);
+
+      var bestDayText = bestDay
+        ? (formatHistoryDateShort(bestDay.date) + ' (+' + (Number(bestDay.score) || 0) + ')')
+        : '-';
+      var avgScore7 = last7.length ? Math.round((totalScore7 / last7.length) * 10) / 10 : 0;
+
+      var ratioRows = Object.keys(actionCountByType)
+        .map(function(actionType) {
+          var count = Number(actionCountByType[actionType]) || 0;
+          var ratio = totalActionCount > 0 ? Math.round((count / totalActionCount) * 100) : 0;
+          return {
+            actionType: actionType,
+            count: count,
+            ratio: ratio
+          };
+        })
+        .sort(function(a, b) { return (b.count - a.count) || a.actionType.localeCompare(b.actionType); });
+
+      var ratioText = ratioRows.length
+        ? ratioRows.slice(0, 3).map(function(row) {
+            return getActionLabel(row.actionType) + ' ' + row.ratio + '% (' + row.count + '회)';
+          }).join(' · ')
+        : '아직 행동 기록이 없습니다.';
+
+      var chartHtml = last7.map(function(day) {
+        var score = Number(day && day.score) || 0;
+        var height = score > 0 ? Math.max(6, Math.round((score / maxScore) * 100)) : 4;
+        return (
+          '<div class="history-day">' +
+            '<div class="history-bar-wrap"><div class="history-bar" style="height:' + height + '%"></div></div>' +
+            '<div class="history-score">+' + score + '</div>' +
+            '<div class="history-date">' + formatHistoryDateShort(day && day.date) + '</div>' +
+          '</div>'
+        );
+      }).join('');
+
+      var logHtml = logs.length
+        ? logs.map(function(item) {
+            return (
+              '<div class="history-log-item">' +
+                '<span class="history-log-action">' + getActionLabel(item.actionType) + ' (+' + (Number(item.score) || 0) + ')</span>' +
+                '<span>' + formatHistoryDateShort(item.actionDate) + '</span>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div class="history-empty">아직 행동 기록이 없습니다.</div>';
+
+      contentEl.className = '';
+      contentEl.innerHTML =
+        '<div class="history-summary">' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 총점</span><span class="history-stat-value">+' + totalScore7 + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 평균</span><span class="history-stat-value">+' + avgScore7 + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최고 성장일</span><span class="history-stat-value">' + bestDayText + '</span></div>' +
+          '<div class="history-stat"><span class="history-stat-label">최근 7일 행동 수</span><span class="history-stat-value">' + totalActionCount + '회</span></div>' +
+        '</div>' +
+        '<div class="history-ratio"><strong>행동 비율:</strong> ' + ratioText + '</div>' +
+        '<div class="history-chart">' + chartHtml + '</div>' +
+        '<div class="history-log">' + logHtml + '</div>';
+    }
+
+    function renderHistoryModalForSelected() {
+      renderHistoryContentForElement(document.getElementById('historyModalContent'), '고구마를 선택하면 히스토리를 확인할 수 있습니다.');
+    }
+
+    function updateHistoryModalHeading() {
+      var heading = document.getElementById('historyModalHeading');
+      if (!heading) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        heading.textContent = '성장 히스토리 (최근 7일)';
+        return;
+      }
+      heading.textContent = data[selectedIndex].name + ' 성장 히스토리 (최근 7일)';
+    }
+
+    function openHistoryModal() {
+      var modal = document.getElementById('historyModal');
+      if (!modal) return;
+      updateHistoryModalHeading();
+      renderHistoryModalForSelected();
+      modal.classList.remove('hidden');
+    }
+
+    function closeHistoryModal() {
+      var modal = document.getElementById('historyModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeHistoryModal = closeHistoryModal;
+
+    function openSelectedHistory() {
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        setInlineNotice('히스토리를 보려면 고구마를 먼저 선택해 주세요.', '');
+        return;
+      }
+
+      openHistoryModal();
+    }
+
+    function fetchGogumaHistory(gogumaId) {
+      if (!gogumaId || historyLoadingById[String(gogumaId)]) return;
+      historyLoadingById[String(gogumaId)] = true;
+
+      fetchJson(API + '/api/goguma/' + gogumaId + '/history', {
+        credentials: 'include',
+        cache: 'no-store'
+      }).then(function(res) {
+        if (!res.ok || !res.data || res.data.error) return;
+        gogumaHistoryById[String(gogumaId)] = res.data;
+      }).finally(function() {
+        historyLoadingById[String(gogumaId)] = false;
+        if (selectedIndex >= 0 && data[selectedIndex] && Number(data[selectedIndex].id) === Number(gogumaId)) {
+          var historyModal = document.getElementById('historyModal');
+          if (historyModal && !historyModal.classList.contains('hidden')) {
+            renderHistoryModalForSelected();
+          }
+        }
+      });
+    }
+
+    function invalidateGogumaHistory(gogumaId) {
+      if (!gogumaId) return;
+      delete gogumaHistoryById[String(gogumaId)];
+    }
+
+    function normalizeDeg(deg) {
+      var n = Number(deg) % 360;
+      if (n < 0) n += 360;
+      return n;
+    }
+
+    function createSeededRng(seed) {
+      if (seed == null || seed === '') {
+        var cryptoApi = window.crypto || window.msCrypto;
+        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+          return function() {
+            var buf = new Uint32Array(1);
+            cryptoApi.getRandomValues(buf);
+            return buf[0] / 4294967296;
+          };
+        }
+        return function() { return Math.random(); };
+      }
+      var state = Number(seed);
+      if (!Number.isFinite(state)) {
+        var cryptoApi = window.crypto || window.msCrypto;
+        if (cryptoApi && typeof cryptoApi.getRandomValues === 'function') {
+          return function() {
+            var buf = new Uint32Array(1);
+            cryptoApi.getRandomValues(buf);
+            return buf[0] / 4294967296;
+          };
+        }
+        return function() { return Math.random(); };
+      }
+      state = (Math.floor(state) >>> 0) || 1;
+      return function() {
+        state = (1664525 * state + 1013904223) >>> 0;
+        return state / 4294967296;
+      };
+    }
+
+    function getRouletteRng() {
+      if (Number.isFinite(rouletteSeedOverride)) {
+        if (!rouletteSeededRng || rouletteSeededRngSeed !== rouletteSeedOverride) {
+          rouletteSeededRng = createSeededRng(rouletteSeedOverride);
+          rouletteSeededRngSeed = rouletteSeedOverride;
+        }
+        return rouletteSeededRng;
+      }
+      return createSeededRng(null);
+    }
+
+    function easeOutCubic(t) {
+      var x = Math.min(1, Math.max(0, t));
+      return 1 - Math.pow(1 - x, 3);
+    }
+
+    function getRouletteSegmentAngle() {
+      return 360 / ROULETTE_SEGMENTS.length;
+    }
+
+    function getSegmentCenterAngle(index) {
+      return normalizeDeg(index * getRouletteSegmentAngle());
+    }
+
+    function getLandingIndexFromRotation(rotationDeg) {
+      var segmentAngle = getRouletteSegmentAngle();
+      var wheelAngleAtPointer = normalizeDeg(
+        rouletteEngine.pointerAngle - normalizeDeg(rotationDeg) - rouletteEngine.imageOffsetDeg
+      );
+      return Math.floor((wheelAngleAtPointer + segmentAngle / 2) / segmentAngle) % ROULETTE_SEGMENTS.length;
+    }
+
+    // 입력 각도(finalAngleDeg, 0deg=12시 기준)에서 정확한 상품 반환
+    // 범위 기준:
+    // 0번(상품권): -22.5~22.5, 이후 45도 단위 시계 방향
+    function getRoulettePrizeByFinalAngle(finalAngleDeg) {
+      var a = normalizeDeg(finalAngleDeg);
+      var idx = Math.floor(((a + 22.5) % 360) / 45);
+      return ROULETTE_SEGMENTS[idx] || ROULETTE_SEGMENTS[0];
+    }
+    window.getRoulettePrizeByFinalAngle = getRoulettePrizeByFinalAngle;
+
+    function getRouletteSpinPlan(rng, currentRotationDeg, forcedWinnerIndex) {
+      var sectors = ROULETTE_SEGMENTS.length; // 8칸
+      var sectorAngle = 360 / sectors; // 45도
+
+      // 1) 서버에서 당첨 칸을 내려주면 그 결과를 사용하고, 아니면 로컬 랜덤을 사용한다.
+      var winnerIndex = Number.isInteger(forcedWinnerIndex)
+        ? ((forcedWinnerIndex % sectors) + sectors) % sectors
+        : Math.floor(rng() * sectors);
+      // 2) 최소 5바퀴 이상 회전
+      var minRotation = 360 * 5;
+      // 3) 당첨 칸 중앙 각도
+      var targetAngle = winnerIndex * sectorAngle;
+      // 4) 칸 내부 랜덤 오차 (+-15도)
+      var randomOffset = (rng() - 0.5) * 30;
+      var targetAngleWithOffset = normalizeDeg(targetAngle + randomOffset);
+
+      // 현재 회전 상태/포인터/이미지 오프셋을 반영해 목표 각도까지 필요한 추가 회전량 계산
+      var currentDeg = normalizeDeg(currentRotationDeg);
+      var desiredEndDeg = normalizeDeg(
+        rouletteEngine.pointerAngle - rouletteEngine.imageOffsetDeg - targetAngleWithOffset
+      );
+      var forwardDeltaDeg = normalizeDeg(desiredEndDeg - currentDeg);
+      var targetDeg = minRotation + forwardDeltaDeg;
+
+      var durationMs = rouletteEngine.minDurationMs + Math.floor(
+        rng() * (rouletteEngine.maxDurationMs - rouletteEngine.minDurationMs + 1)
+      );
+
+      return {
+        targetAngle: targetAngleWithOffset,
+        winnerIndex: winnerIndex,
+        spins: 5,
+        randomOffset: randomOffset,
+        durationMs: durationMs,
+        desiredEndDeg: desiredEndDeg,
+        deltaDeg: targetDeg
+      };
+    }
+
+    function setWheelRotation(deg) {
+      var wheel = document.getElementById('rouletteWheel');
+      if (!wheel) return;
+      wheel.style.transform = 'rotate(' + deg + 'deg)';
+    }
+
+    function updateRouletteDebug(info) {
+      var debugEl = document.getElementById('rouletteDebug');
+      if (!debugEl) return;
+      if (!rouletteEngine.debug) {
+        debugEl.classList.add('hidden');
+        return;
+      }
+      debugEl.classList.remove('hidden');
+      debugEl.textContent =
+        'angle=' + normalizeDeg(info.currentDeg || 0).toFixed(2) + 'deg\n' +
+        'offset=' + Number(rouletteEngine.imageOffsetDeg).toFixed(2) + 'deg\n' +
+        'winnerIndex=' + String(info.winnerIndex != null ? info.winnerIndex : '-') + '\n' +
+        'landingIndex=' + String(info.landingIndex != null ? info.landingIndex : '-') + '\n' +
+        'targetAngle=' + String(info.targetAngle != null ? info.targetAngle : '-');
+    }
+
+    function initRouletteWheel() {
+      var wheel = document.getElementById('rouletteWheel');
+      if (!wheel) return;
+      function markLoaded() {
+        rouletteWheelLoaded = true;
+      }
+      wheel.addEventListener('load', markLoaded);
+      wheel.addEventListener('error', function() {
+        rouletteWheelLoaded = false;
+      });
+      if (wheel.complete && wheel.naturalWidth > 0) {
+        rouletteWheelLoaded = true;
+      }
+    }
+
+    function setRouletteSeed(seed) {
+      rouletteSeedOverride = seed == null ? null : Number(seed);
+      rouletteSeededRng = null;
+      rouletteSeededRngSeed = null;
+    }
+    window.setRouletteSeed = setRouletteSeed;
+
+    function setRouletteOnSpinEnd(callback) {
+      rouletteEngine.onSpinEnd = typeof callback === 'function' ? callback : null;
+    }
+    window.setRouletteOnSpinEnd = setRouletteOnSpinEnd;
+
+    function setRouletteImageOffsetDeg(deg) {
+      rouletteEngine.imageOffsetDeg = Number(deg) || 0;
+      updateRouletteDebug({
+        currentDeg: rouletteBaseRotationDeg,
+        winnerIndex: lastRouletteReward ? lastRouletteReward.segmentIndex : null,
+        landingIndex: lastRouletteReward ? getLandingIndexFromRotation(rouletteBaseRotationDeg) : null,
+        jitter: 0
+      });
+    }
+    window.setRouletteImageOffsetDeg = setRouletteImageOffsetDeg;
+
+    function sanitizeCardBgIndex(value) {
+      var n = Number(value);
+      if (!Number.isFinite(n)) return 0;
+      n = Math.floor(n);
+      if (n < 0) return 0;
+      if (n >= GOGUMA_CARD_BACKGROUNDS.length) return GOGUMA_CARD_BACKGROUNDS.length - 1;
+      return n;
+    }
+
+    function loadCardBgPrefs() {
+      try {
+        var raw = localStorage.getItem(CARD_BG_STORAGE_KEY);
+        if (!raw) return;
+        var parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return;
+        gogumaCardBgPrefById = parsed;
+      } catch (e) {
+        gogumaCardBgPrefById = {};
+      }
+    }
+
+    function saveCardBgPrefs() {
+      try {
+        localStorage.setItem(CARD_BG_STORAGE_KEY, JSON.stringify(gogumaCardBgPrefById));
+      } catch (e) {}
+    }
+
+    function normalizeGoguma(g) {
+      var pref = g && g.id != null ? gogumaCardBgPrefById[String(g.id)] : null;
+      var cardBgIndex = sanitizeCardBgIndex(g && g.cardBgIndex != null ? g.cardBgIndex : pref);
+      return {
+        id: g.id,
+        name: g.name,
+        hp: g.hp,
+        dominantAction: g && g.dominantAction ? String(g.dominantAction) : null,
+        stage2ActionLock: g && g.stage2ActionLock ? String(g.stage2ActionLock) : null,
+        stage3ActionLock: g && g.stage3ActionLock ? String(g.stage3ActionLock) : null,
+        stage4ActionLock: g && g.stage4ActionLock ? String(g.stage4ActionLock) : null,
+        actionScores: g && g.actionScores && typeof g.actionScores === 'object' ? g.actionScores : {},
+        todayActions: g && g.todayActions && typeof g.todayActions === 'object' ? g.todayActions : {},
+        cardBgIndex: cardBgIndex
+      };
+    }
+
+    function updateDominantActionFromScores(g) {
+      if (!g || !g.actionScores) return;
+      var bestAction = null;
+      var bestScore = -1;
+      ACTION_PRIORITY_CLIENT.forEach(function(actionType) {
+        var score = Number(g.actionScores[actionType]) || 0;
+        if (score > bestScore) {
+          bestScore = score;
+          bestAction = actionType;
+        }
+      });
+      g.dominantAction = bestScore > 0 ? bestAction : null;
+    }
+
+    function applyGrowActionScore(g, actionType) {
+      if (!g || !ACTION_VALUES_CLIENT[actionType]) return;
+      if (!g.actionScores || typeof g.actionScores !== 'object') g.actionScores = {};
+      g.actionScores[actionType] = (Number(g.actionScores[actionType]) || 0) + ACTION_VALUES_CLIENT[actionType];
+      updateDominantActionFromScores(g);
+    }
+
+    function getStage4ComboKeyFromScores(scores) {
+      if (!scores || typeof scores !== 'object') return null;
+      var categoryScores = {
+        bible: 0,
+        prayer: 0,
+        contact: 0,
+        meeting: 0
+      };
+
+      Object.keys(STAGE4_ACTION_CATEGORY_ALIASES_CLIENT).forEach(function(actionType) {
+        var category = STAGE4_ACTION_CATEGORY_ALIASES_CLIENT[actionType];
+        categoryScores[category] += Number(scores[actionType]) || 0;
+      });
+
+      var ranked = STAGE4_CATEGORY_PRIORITY_CLIENT
+        .map(function(category, index) {
+          return {
+            category: category,
+            score: Number(categoryScores[category]) || 0,
+            index: index
+          };
+        })
+        .filter(function(item) {
+          return item.score > 0;
+        })
+        .sort(function(a, b) {
+          if (b.score !== a.score) return b.score - a.score;
+          return a.index - b.index;
+        });
+
+      if (ranked.length < 2) return null;
+      return ranked[0].category + ':' + ranked[1].category;
+    }
+
+    function getGogumaStageImage(g, stage) {
+      if (stage === 2) {
+        if (g && g.stage2ActionLock && SPROUT_TRANSFORM_ASSETS[g.stage2ActionLock]) {
+          return SPROUT_TRANSFORM_ASSETS[g.stage2ActionLock];
+        }
+        if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS[g.dominantAction]) {
+          return SPROUT_TRANSFORM_ASSETS[g.dominantAction];
+        }
+        return SPROUT_TRANSFORM_ASSETS.bible;
+      }
+      if (stage === 3) {
+        if (g && g.stage3ActionLock && SPROUT_TRANSFORM_ASSETS_2[g.stage3ActionLock]) {
+          return SPROUT_TRANSFORM_ASSETS_2[g.stage3ActionLock];
+        }
+        if (g && g.dominantAction && SPROUT_TRANSFORM_ASSETS_2[g.dominantAction]) {
+          return SPROUT_TRANSFORM_ASSETS_2[g.dominantAction];
+        }
+        return SPROUT_TRANSFORM_ASSETS_2.bible;
+      }
+      if (stage === 4) {
+        var stage4Key = g && g.stage4ActionLock ? g.stage4ActionLock : getStage4ComboKeyFromScores(g && g.actionScores);
+        if (stage4Key && SPROUT_TRANSFORM_ASSETS_3[stage4Key]) {
+          return SPROUT_TRANSFORM_ASSETS_3[stage4Key];
+        }
+      }
+      return STAGE_ASSETS[stage] || STAGE_ASSETS[1];
+    }
+
+    function applyPotSceneBackground(index) {
+      var potScene = document.getElementById('potScene');
+      if (!potScene) return;
+      var safeIndex = sanitizeCardBgIndex(index);
+      var imagePath = GOGUMA_CARD_BACKGROUNDS[safeIndex] || GOGUMA_CARD_BACKGROUNDS[0];
+      potScene.style.setProperty('--pot-bg-image', "url('" + imagePath + "')");
+    }
+
+    function cycleSelectedGogumaCardBg() {
+      if (selectedIndex < 0 || !data[selectedIndex]) return;
+      var g = data[selectedIndex];
+      var nextIndex = (sanitizeCardBgIndex(g.cardBgIndex) + 1) % GOGUMA_CARD_BACKGROUNDS.length;
+      g.cardBgIndex = nextIndex;
+      gogumaCardBgPrefById[String(g.id)] = nextIndex;
+      saveCardBgPrefs();
+      applyPotSceneBackground(nextIndex);
+    }
+    window.cycleSelectedGogumaCardBg = cycleSelectedGogumaCardBg;
+
+    function updateGogumaSpeech() {
+      var bubble = document.getElementById('gogumaSpeech');
+      var bubbleText = document.getElementById('gogumaSpeechText');
+      var bubbleToggle = document.getElementById('gogumaSpeechToggle');
+      if (!bubble) return;
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) {
+        bubble.classList.add('hidden');
+        if (bubbleToggle) bubbleToggle.classList.add('hidden');
+        return;
+      }
+
+      var g = data[selectedIndex];
+
+      if (gogumaSpeechTargetId !== g.id) {
+        gogumaSpeechTargetId = g.id;
+        gogumaSpeechIndex = 0;
+      }
+
+      var template = GOGUMA_SPEECH_LINES[gogumaSpeechIndex % GOGUMA_SPEECH_LINES.length];
+      bubble.classList.remove('is-multi');
+      if (bubbleText) {
+        bubbleText.textContent = template.replace(/\{name\}/g, g.name);
+      }
+
+      if (gogumaSpeechDismissed) {
+        bubble.classList.add('hidden');
+        if (bubbleToggle) bubbleToggle.classList.remove('hidden');
+        return;
+      }
+
+      bubble.classList.remove('hidden');
+      if (bubbleToggle) bubbleToggle.classList.add('hidden');
+
+      requestAnimationFrame(function() {
+        if (bubble.classList.contains('hidden')) return;
+        var lineHeight = parseFloat(window.getComputedStyle(bubble).lineHeight) || 14;
+        if (bubble.offsetHeight > lineHeight * 2.1) {
+          bubble.classList.add('is-multi');
+        }
+      });
+    }
+
+    function advanceGogumaSpeech(isManual) {
+      if (currentViewMode === 'field' || selectedIndex < 0 || !data[selectedIndex]) return;
+      if (gogumaSpeechTargetId !== data[selectedIndex].id) {
+        gogumaSpeechTargetId = data[selectedIndex].id;
+        gogumaSpeechIndex = 0;
+      } else if (isManual) {
+        gogumaSpeechIndex = (gogumaSpeechIndex + 1) % GOGUMA_SPEECH_LINES.length;
+      } else {
+        gogumaSpeechIndex = (gogumaSpeechIndex + 1) % GOGUMA_SPEECH_LINES.length;
+      }
+      updateGogumaSpeech();
+    }
+    window.advanceGogumaSpeech = advanceGogumaSpeech;
+
+    function hideGogumaSpeech(event) {
+      if (event && typeof event.stopPropagation === 'function') {
+        event.stopPropagation();
+      }
+      gogumaSpeechDismissed = true;
+      updateGogumaSpeech();
+    }
+    window.hideGogumaSpeech = hideGogumaSpeech;
+
+    function showGogumaSpeech() {
+      gogumaSpeechDismissed = false;
+      updateGogumaSpeech();
+    }
+    window.showGogumaSpeech = showGogumaSpeech;
+
+    function startGogumaSpeechTimer() {
+      if (gogumaSpeechTimer) {
+        clearInterval(gogumaSpeechTimer);
+      }
+      gogumaSpeechTimer = setInterval(function() {
+        advanceGogumaSpeech(false);
+      }, 10000);
+    }
+
+    function formatCommunityDate(text) {
+      if (!text) return '';
+      var raw = String(text).trim();
+      var normalized = raw.indexOf('T') >= 0
+        ? raw
+        : raw.replace(' ', 'T');
+      // SQLite `datetime('now')` is stored in UTC, so plain timestamps need an explicit UTC marker.
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(normalized)) {
+        normalized += 'Z';
+      }
+
+      var parsed = new Date(normalized);
+      if (!Number.isNaN(parsed.getTime())) {
+        var year = parsed.getFullYear();
+        var month = String(parsed.getMonth() + 1).padStart(2, '0');
+        var day = String(parsed.getDate()).padStart(2, '0');
+        var hours = String(parsed.getHours()).padStart(2, '0');
+        var minutes = String(parsed.getMinutes()).padStart(2, '0');
+        return year + '-' + month + '-' + day + ' ' + hours + ':' + minutes;
+      }
+
+      return raw.replace('T', ' ').slice(0, 16);
+    }
+
+    function resetCommunityComposer() {
+      var titleEl = document.getElementById('communityTitle');
+      var categoryEl = document.getElementById('communityCategory');
+      var contentEl = document.getElementById('communityContent');
+      var imageInput = document.getElementById('communityImageInput');
+      var preview = document.getElementById('communityImagePreview');
+      var previewImage = document.getElementById('communityPreviewImage');
+      communityImageData = '';
+      if (titleEl) titleEl.value = '';
+      if (categoryEl) categoryEl.value = COMMUNITY_CATEGORIES[0];
+      if (contentEl) contentEl.value = '';
+      if (imageInput) imageInput.value = '';
+      if (preview) preview.classList.remove('visible');
+      if (previewImage) previewImage.src = '';
+    }
+
+    function openCommunityComposer() {
+      var modal = document.getElementById('communityComposeModal');
+      var titleEl = document.getElementById('communityTitle');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      requestAnimationFrame(function() {
+        modal.classList.add('open');
+        if (titleEl) titleEl.focus();
+      });
+    }
+    window.openCommunityComposer = openCommunityComposer;
+
+    function closeCommunityComposer() {
+      var modal = document.getElementById('communityComposeModal');
+      if (!modal) return;
+      modal.classList.remove('open');
+      setTimeout(function() {
+        if (!modal.classList.contains('open')) {
+          modal.classList.add('hidden');
+        }
+      }, 180);
+    }
+    window.closeCommunityComposer = closeCommunityComposer;
+
+    function pickCommunityImage() {
+      var input = document.getElementById('communityImageInput');
+      if (input) input.click();
+    }
+    window.pickCommunityImage = pickCommunityImage;
+
+    function applyCommunityImagePreview(dataUrl) {
+      communityImageData = String(dataUrl || '');
+      var preview = document.getElementById('communityImagePreview');
+      var previewImage = document.getElementById('communityPreviewImage');
+      if (previewImage) previewImage.src = communityImageData;
+      if (preview) {
+        if (communityImageData) {
+          preview.classList.add('visible');
+        } else {
+          preview.classList.remove('visible');
+        }
+      }
+    }
+
+    function handleCommunityImageChange(event) {
+      var file = event && event.target && event.target.files ? event.target.files[0] : null;
+      if (!file) return;
+      if (!/^image\//.test(file.type)) {
+        alert('이미지 파일만 첨부할 수 있습니다.');
+        return;
+      }
+
+      var maxSourceSize = 12 * 1024 * 1024;
+      if (file.size > maxSourceSize) {
+        alert('이미지 파일이 너무 큽니다. 12MB 이하 이미지를 사용해 주세요.');
+        event.target.value = '';
+        return;
+      }
+
+      var objectUrl = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function() {
+        try {
+          var maxWidth = 1280;
+          var maxHeight = 1280;
+          var width = img.naturalWidth || img.width;
+          var height = img.naturalHeight || img.height;
+          var scale = Math.min(1, maxWidth / width, maxHeight / height);
+          var targetWidth = Math.max(1, Math.round(width * scale));
+          var targetHeight = Math.max(1, Math.round(height * scale));
+
+          var canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          var ctx = canvas.getContext('2d');
+          if (!ctx) {
+            throw new Error('canvas');
+          }
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+          var quality = 0.86;
+          var dataUrl = canvas.toDataURL('image/jpeg', quality);
+          while (dataUrl.length > 1_800_000 && quality > 0.45) {
+            quality -= 0.08;
+            dataUrl = canvas.toDataURL('image/jpeg', quality);
+          }
+
+          if (dataUrl.length > 1_800_000) {
+            alert('이미지를 더 작게 줄인 뒤 다시 시도해 주세요.');
+            event.target.value = '';
+            applyCommunityImagePreview('');
+            return;
+          }
+
+          applyCommunityImagePreview(dataUrl);
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      };
+      img.onerror = function() {
+        URL.revokeObjectURL(objectUrl);
+        alert('이미지를 불러오지 못했습니다.');
+        event.target.value = '';
+      };
+      img.src = objectUrl;
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderCommunityCategoryFilters() {
+      var filtersEl = document.getElementById('communityCategoryFilters');
+      if (!filtersEl) return;
+
+      var html = '<button type="button" class="community-category-chip ' + (communityCategoryFilter === 'all' ? 'is-active' : '') + '" data-category="all">전체</button>';
+      COMMUNITY_CATEGORIES.forEach(function(category) {
+        html += '<button type="button" class="community-category-chip ' + (communityCategoryFilter === category ? 'is-active' : '') + '" data-category="' + escapeHtml(category) + '">' + category + '</button>';
+      });
+      filtersEl.innerHTML = html;
+    }
+
+    function setCommunityCategoryFilter(category) {
+      communityCategoryFilter = category || 'all';
+      renderCommunityCategoryFilters();
+      renderCommunityList();
+    }
+    window.setCommunityCategoryFilter = setCommunityCategoryFilter;
+
+    function bindCommunityCategoryFilterEvents() {
+      var filtersEl = document.getElementById('communityCategoryFilters');
+      if (!filtersEl || filtersEl.dataset.bound === 'true') return;
+      filtersEl.dataset.bound = 'true';
+      filtersEl.addEventListener('click', function(event) {
+        var target = event.target;
+        if (!target || !target.classList || !target.classList.contains('community-category-chip')) return;
+        var category = target.getAttribute('data-category') || 'all';
+        setCommunityCategoryFilter(category);
+      });
+    }
+
+    function renderCommunityList() {
+      var listEl = document.getElementById('communityList');
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      var badge = document.getElementById('communityUserBadge');
+      if (!listEl || !listView || !detailView) return;
+
+      if (badge) {
+        badge.textContent = currentUser && currentUser.name ? currentUser.name.slice(0, 3) : 'ME';
+      }
+
+      listView.classList.remove('hidden');
+      detailView.classList.add('hidden');
+      listEl.innerHTML = '';
+      renderCommunityCategoryFilters();
+
+      var filteredPosts = communityPosts.filter(function(post) {
+        return communityCategoryFilter === 'all' || (post.category || '출석인사') === communityCategoryFilter;
+      });
+
+      if (!filteredPosts.length) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = communityPosts.length
+          ? '선택한 카테고리에 아직 글이 없습니다.'
+          : '아직 커뮤니티 글이 없습니다. 첫 글을 남겨 보세요.';
+        listEl.appendChild(empty);
+        return;
+      }
+
+      filteredPosts.forEach(function(post) {
+        var card = document.createElement('div');
+        card.className = 'community-post-card';
+        card.addEventListener('click', function() { openCommunityDetail(post.id); });
+
+        var imageWrap = document.createElement('div');
+        imageWrap.className = 'community-post-image';
+        if (post.imageData) {
+          var image = document.createElement('img');
+          image.src = post.imageData;
+          image.alt = post.title || '첨부 이미지';
+          imageWrap.appendChild(image);
+        } else {
+          imageWrap.classList.add('is-empty');
+          var placeholder = document.createElement('span');
+          placeholder.textContent = 'NO IMAGE';
+          imageWrap.appendChild(placeholder);
+        }
+
+        var title = document.createElement('h3');
+        title.textContent = post.title || '(제목 없음)';
+
+        var meta = document.createElement('div');
+        meta.className = 'community-post-meta';
+        meta.innerHTML = '<span class="community-category-badge">' + escapeHtml(post.category || '출석인사') + '</span><span>' + formatCommunityDate(post.created_at || post.createdAt) + '</span>';
+
+        card.appendChild(imageWrap);
+        card.appendChild(title);
+        card.appendChild(meta);
+
+        var stats = document.createElement('div');
+        stats.className = 'community-post-stats';
+
+        var likeStat = document.createElement('span');
+        likeStat.className = 'community-stat-pill';
+        likeStat.textContent = '♥ ' + (Number(post.likeCount) || 0);
+
+        var commentStat = document.createElement('span');
+        commentStat.className = 'community-stat-pill';
+        commentStat.textContent = '댓글 ' + (Number(post.commentCount) || 0);
+
+        stats.appendChild(likeStat);
+        stats.appendChild(commentStat);
+
+        var content = document.createElement('p');
+        content.className = 'community-post-content';
+        var text = (post.content || '').trim();
+        content.textContent = text.length > 120 ? text.slice(0, 120) + '...' : text;
+        card.appendChild(content);
+        card.appendChild(stats);
+        listEl.appendChild(card);
+      });
+    }
+
+    function renderCommunityDetail() {
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      var post = communityDetailPost;
+      if (!post || !listView || !detailView) return;
+
+      listView.classList.add('hidden');
+      detailView.classList.remove('hidden');
+
+      var actions = '';
+      if (currentUser && post.userId === currentUser.id) {
+        actions = '<div class="community-inline-actions"><button class="pixel-btn" style="font-size:10px;padding:6px 10px" onclick="deleteCommunityPost(' + post.id + ')">삭제</button></div>';
+      }
+
+      var imageHtml = post.imageData
+        ? '<div id="communityDetailImage" class="community-detail-image"><img src="' + post.imageData + '" alt="' + escapeHtml(post.title || '첨부 이미지') + '"><span class="community-detail-image-button">확대</span></div>'
+        : '';
+
+      var comments = Array.isArray(post.comments) ? post.comments : [];
+      var commentsHtml = comments.length
+        ? comments.map(function(comment) {
+            var commentActions = '';
+            if (currentUser && Number(comment.userId) === Number(currentUser.id)) {
+              commentActions =
+                '<span class="community-comment-actions">' +
+                  '<button class="pixel-btn" style="font-size:9px;padding:4px 8px" onclick="editCommunityComment(' + comment.id + ')">수정</button>' +
+                  '<button class="pixel-btn" style="font-size:9px;padding:4px 8px" onclick="deleteCommunityComment(' + comment.id + ')">삭제</button>' +
+                '</span>';
+            }
+            return (
+              '<div class="community-comment-item">' +
+                '<div class="community-comment-head">' +
+                  '<span class="community-comment-author">' + escapeHtml(comment.userName || '익명') + '</span>' +
+                  commentActions +
+                  '<span>' + escapeHtml(formatCommunityDate(comment.created_at || comment.createdAt)) + '</span>' +
+                '</div>' +
+                '<div class="community-comment-body">' + escapeHtml(comment.content || '') + '</div>' +
+              '</div>'
+            );
+          }).join('')
+        : '<div class="community-comment-empty">아직 댓글이 없습니다. 첫 반응을 남겨 보세요.</div>';
+
+      detailView.innerHTML =
+        '<div class="community-detail-card">' +
+          '<div class="community-detail-actions">' +
+            '<button class="pixel-btn" style="font-size:10px;padding:6px 10px" onclick="backToCommunityList()">목록</button>' +
+            actions +
+          '</div>' +
+          '<h3>' + escapeHtml(post.title || '(제목 없음)') + '</h3>' +
+          '<div class="community-detail-meta"><span class="community-category-badge">' + escapeHtml(post.category || '출석인사') + '</span><span>' + escapeHtml(post.userName || '') + '</span><span>' + escapeHtml(formatCommunityDate(post.created_at || post.createdAt)) + '</span></div>' +
+          imageHtml +
+          '<div class="community-engagement">' +
+            '<button class="pixel-btn community-like-btn' + (post.likedByMe ? ' is-active' : '') + '" onclick="toggleCommunityLike(' + post.id + ')">♥ 공감 ' + (Number(post.likeCount) || 0) + '</button>' +
+            '<span class="community-stat-pill">댓글 ' + (Number(post.commentCount) || 0) + '개</span>' +
+          '</div>' +
+          '<p class="community-detail-content">' + escapeHtml(post.content || '') + '</p>' +
+          '<div class="community-comment-form">' +
+            '<input id="communityCommentInput" class="community-comment-input" type="text" maxlength="300" placeholder="댓글을 입력해 주세요.">' +
+            '<button class="pixel-btn" style="font-size:11px;padding:8px 12px" onclick="submitCommunityComment(' + post.id + ')">댓글</button>' +
+          '</div>' +
+          '<div class="community-comment-list">' + commentsHtml + '</div>' +
+        '</div>';
+
+      var commentInput = document.getElementById('communityCommentInput');
+      if (commentInput) {
+        commentInput.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            submitCommunityComment(post.id);
+          }
+        });
+      }
+      var detailImage = document.getElementById('communityDetailImage');
+      if (detailImage && post.imageData) {
+        detailImage.addEventListener('click', function() {
+          openImageLightbox(post.imageData);
+        });
+      }
+    }
+
+    function fetchCommunityPostDetail(postId) {
+      selectedCommunityPostId = postId;
+      communityDetailPost = null;
+      var listView = document.getElementById('communityListView');
+      var detailView = document.getElementById('communityDetailView');
+      if (!listView || !detailView) return;
+
+      listView.classList.add('hidden');
+      detailView.classList.remove('hidden');
+      detailView.innerHTML = '<div class="community-detail-card"><div class="community-detail-loading">글을 불러오는 중입니다...</div></div>';
+
+      fetchJson(API + '/api/posts/' + postId, { credentials: 'include' }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || !result || result.error || !result.post) {
+          detailView.innerHTML = '<div class="community-detail-card"><div class="community-detail-loading">' + escapeHtml((result && result.error) || '게시글을 불러오지 못했습니다.') + '</div></div>';
+          return;
+        }
+        communityDetailPost = result.post;
+        communityDetailPost.comments = Array.isArray(result.comments) ? result.comments : [];
+        renderCommunityDetail();
+      });
+    }
+
+    function openCommunityDetail(postId) {
+      fetchCommunityPostDetail(postId);
+    }
+    window.openCommunityDetail = openCommunityDetail;
+
+    function backToCommunityList() {
+      selectedCommunityPostId = null;
+      communityDetailPost = null;
+      renderCommunityList();
+    }
+    window.backToCommunityList = backToCommunityList;
+
+    function toggleCommunityLike(postId) {
+      fetchJson(API + '/api/posts/' + postId + '/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '공감 처리 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchCommunityPosts();
+        fetchCommunityPostDetail(postId);
+      });
+    }
+    window.toggleCommunityLike = toggleCommunityLike;
+
+    function submitCommunityComment(postId) {
+      var input = document.getElementById('communityCommentInput');
+      if (!input) return;
+      var content = input.value.trim();
+      if (!content) {
+        alert('댓글을 입력해 주세요.');
+        return;
+      }
+      if (communityCommentSubmitting) {
+        return;
+      }
+      communityCommentSubmitting = true;
+
+      fetchJson(API + '/api/posts/' + postId + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: content })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          communityCommentSubmitting = false;
+          alert((result && result.error) || '댓글 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        input.value = '';
+        fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' }).then(function(listRes) {
+          communityPosts = Array.isArray(listRes.data) ? listRes.data : communityPosts;
+          fetchCommunityPostDetail(postId);
+        });
+      }).finally(function() {
+        communityCommentSubmitting = false;
+      });
+    }
+    window.submitCommunityComment = submitCommunityComment;
+
+    function editCommunityComment(commentId) {
+      if (!communityDetailPost || !Array.isArray(communityDetailPost.comments)) return;
+      var comment = communityDetailPost.comments.find(function(item) { return Number(item.id) === Number(commentId); });
+      if (!comment) return;
+      var nextContent = prompt('댓글 수정', comment.content || '');
+      if (nextContent == null) return;
+      nextContent = nextContent.trim();
+      if (!nextContent) {
+        alert('댓글을 입력해 주세요.');
+        return;
+      }
+
+      fetchJson(API + '/api/comments/' + commentId + '/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ content: nextContent })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '댓글 수정 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchCommunityPostDetail(communityDetailPost.id);
+      });
+    }
+    window.editCommunityComment = editCommunityComment;
+
+    function deleteCommunityComment(commentId) {
+      if (!communityDetailPost) return;
+      if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
+
+      fetchJson(API + '/api/comments/' + commentId + '/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert((result && result.error) || '댓글 삭제 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' }).then(function(listRes) {
+          communityPosts = Array.isArray(listRes.data) ? listRes.data : communityPosts;
+          fetchCommunityPostDetail(communityDetailPost.id);
+        });
+      });
+    }
+    window.deleteCommunityComment = deleteCommunityComment;
+
+    function openImageLightbox(src) {
+      var lightbox = document.getElementById('imageLightbox');
+      var img = document.getElementById('imageLightboxImg');
+      if (!lightbox || !img || !src) return;
+      activeZoomImage = String(src);
+      img.src = activeZoomImage;
+      lightbox.classList.remove('hidden');
+    }
+    window.openImageLightbox = openImageLightbox;
+
+    function closeImageLightbox() {
+      var lightbox = document.getElementById('imageLightbox');
+      var img = document.getElementById('imageLightboxImg');
+      activeZoomImage = '';
+      if (img) img.src = '';
+      if (lightbox) lightbox.classList.add('hidden');
+    }
+    window.closeImageLightbox = closeImageLightbox;
+
+    function handleImageLightboxBackdrop(event) {
+      if (event.target && event.target.id === 'imageLightbox') {
+        closeImageLightbox();
+      }
+    }
+    window.handleImageLightboxBackdrop = handleImageLightboxBackdrop;
+
+    async function fetchCommunityPosts() {
+      const res = await fetchJson('/api/posts', { cache: 'no-store', credentials: 'include' });
+      const data = res.data;
+      communityPosts = Array.isArray(data) ? data : [];
+      if (selectedCommunityPostId) {
+        var stillExists = communityPosts.some(function(item) { return item.id === selectedCommunityPostId; });
+        if (stillExists) {
+          fetchCommunityPostDetail(selectedCommunityPostId);
+          return;
+        }
+        selectedCommunityPostId = null;
+        communityDetailPost = null;
+      }
+      renderCommunityList();
+    }
+
+    function openCommunity() {
+      if (!currentUser) return;
+      document.getElementById('game').classList.add('hidden');
+      document.getElementById('roulette').classList.add('hidden');
+      document.getElementById('fieldView').classList.add('hidden');
+      document.getElementById('community').classList.remove('hidden');
+      closeCommunityComposer();
+      fetchCommunityPosts();
+    }
+    window.openCommunity = openCommunity;
+
+    function closeCommunity() {
+      closeCommunityComposer();
+      closeImageLightbox();
+      document.getElementById('community').classList.add('hidden');
+      if (!document.getElementById('home').classList.contains('hidden')) return;
+      document.getElementById('game').classList.remove('hidden');
+    }
+    window.closeCommunity = closeCommunity;
+
+    function submitCommunityPost() {
+      const titleEl = document.getElementById('communityTitle');
+      const categoryEl = document.getElementById('communityCategory');
+      const contentEl = document.getElementById('communityContent');
+      if (!titleEl || !contentEl || !categoryEl) return;
+      const title = titleEl.value.trim();
+      const category = categoryEl.value;
+      const content = contentEl.value.trim();
+
+      if (!title) {
+        alert('제목을 입력해 주세요.');
+        return;
+      }
+      if (!content) {
+        alert('내용을 입력해 주세요.');
+        return;
+      }
+
+      fetchJson(API + '/api/posts/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: title, category: category, content: content, imageData: communityImageData })
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert(result.error || '게시글 등록 중 오류가 발생했습니다.');
+          return;
+        }
+        resetCommunityComposer();
+        closeCommunityComposer();
+        fetchCommunityPosts();
+      });
+    }
+    window.submitCommunityPost = submitCommunityPost;
+
+    function deleteCommunityPost(id) {
+      if (!confirm('이 글을 삭제하시겠습니까?')) return;
+      fetchJson(API + '/api/posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert(result.error || '삭제 중 오류가 발생했습니다.');
+          return;
+        }
+        selectedCommunityPostId = null;
+        fetchCommunityPosts();
+      });
+    }
+    window.deleteCommunityPost = deleteCommunityPost;
+
+    function renderRoulette() {
+      var statusEl = document.getElementById("rouletteStatus");
+      var resultEl = document.getElementById("rouletteResult");
+      var spinBtn = document.getElementById("spinRouletteBtn");
+
+      if (!statusEl || !resultEl || !spinBtn) return;
+
+      if (!currentUser) {
+        statusEl.textContent = "로그인 후 룰렛을 사용할 수 있습니다.";
+        spinBtn.disabled = true;
+      } else if (currentUser.canSpinRoulette) {
+        statusEl.textContent = "누적 접속 " + currentUser.loginDays + "일 달성. 지금 룰렛을 돌릴 수 있습니다.";
+        spinBtn.disabled = isRouletteSpinning;
+      } else {
+        var remain = Math.max(0, (currentUser.nextRouletteAt || 7) - (currentUser.loginDays || 1));
+        statusEl.textContent = "누적 접속 " + (currentUser.nextRouletteAt || 7) + "일에 룰렛이 열립니다. " + remain + "일 더 접속해 주세요.";
+        spinBtn.disabled = true;
+      }
+
+      if (lastRouletteReward) {
+        var bonusText = lastRouletteReward.hpBonus > 0
+          ? ("내 고구마 전체 온도 +" + lastRouletteReward.hpBonus)
+          : "";
+        resultEl.innerHTML = "<strong>" + lastRouletteReward.label + "</strong>" + bonusText;
+      } else {
+        resultEl.textContent = "아직 룰렛 결과가 없습니다.";
+      }
+
+      updateRouletteDebug({
+        currentDeg: rouletteBaseRotationDeg,
+        winnerIndex: lastRouletteReward ? lastRouletteReward.segmentIndex : null,
+        landingIndex: lastRouletteReward ? getLandingIndexFromRotation(rouletteBaseRotationDeg) : null,
+        jitter: 0
+      });
+    }
+
+    function renderFieldView() {
+      var summaryEl = document.getElementById('fieldSummary');
+      var sortButtons = {
+        created: document.getElementById('sortByCreated'),
+        hp: document.getElementById('sortByHp'),
+        name: document.getElementById('sortByName')
+      };
+
+      Object.keys(sortButtons).forEach(function(key) {
+        var btn = sortButtons[key];
+        if (!btn) return;
+        btn.style.background = fieldSortMode === key ? '#ffd56a' : '#fff7dd';
+      });
+
+      if (summaryEl) {
+        if (!data.length) {
+          summaryEl.innerHTML = '';
+        } else {
+          var totalHp = data.reduce(function(sum, item) { return sum + (Number(item.hp) || 0); }, 0);
+          var avgHp = Math.round(totalHp / data.length);
+          var topGoguma = data.slice().sort(function(a, b) { return b.hp - a.hp; })[0];
+          summaryEl.innerHTML =
+            '<div class="field-summary-item"><span class="field-summary-label">총 고구마</span><span class="field-summary-value">' + data.length + '개</span></div>' +
+            '<div class="field-summary-item"><span class="field-summary-label">평균 온도</span><span class="field-summary-value">' + avgHp + '</span></div>' +
+            '<div class="field-summary-item"><span class="field-summary-label">최고 성장</span><span class="field-summary-value">' + (topGoguma ? topGoguma.name : '-') + '</span></div>';
+        }
+      }
+
+      var sortedData = data.slice();
+      if (fieldSortMode === 'hp') {
+        sortedData.sort(function(a, b) { return (b.hp - a.hp) || a.name.localeCompare(b.name, 'ko'); });
+      } else if (fieldSortMode === 'name') {
+        sortedData.sort(function(a, b) { return a.name.localeCompare(b.name, 'ko'); });
+      }
+
+      var grids = [
+        document.getElementById('inlineFieldGrid'),
+        document.getElementById('fieldGrid')
+      ];
+
+      grids.forEach(function(grid) {
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        if (!data.length) {
+          var empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = '아직 심어진 고구마가 없습니다. 먼저 고구마를 추가해 주세요.';
+          grid.appendChild(empty);
+          return;
+        }
+
+        sortedData.forEach(function(g) {
+          var stage = getStage(g.hp);
+          var card = document.createElement('div');
+          card.className = 'field-slot';
+
+          var stageWrap = document.createElement('div');
+          stageWrap.className = 'field-stage-wrap';
+
+          var img = document.createElement('img');
+          img.src = getGogumaStageImage(g, stage);
+          img.alt = g.name + ' 성장 상태';
+          img.style.setProperty('--float-delay', (((Number(g.id) || 0) % 7) * 0.18) + 's');
+
+          var name = document.createElement('div');
+          name.className = 'field-card-name';
+          name.textContent = g.name;
+
+          var meta = document.createElement('div');
+          meta.className = 'field-card-meta';
+          meta.textContent = '성장 ' + stage + '단계 · 온도 ' + g.hp;
+
+          stageWrap.appendChild(img);
+          card.appendChild(stageWrap);
+          card.appendChild(name);
+          card.appendChild(meta);
+          card.addEventListener('click', function() {
+            var index = data.findIndex(function(item) { return item.id === g.id; });
+            if (index >= 0) {
+              selectGoguma(index);
+            }
+          });
+          grid.appendChild(card);
+        });
+      });
+    }
+
+    function setFieldSort(mode) {
+      fieldSortMode = mode;
+      renderFieldView();
+    }
+    window.setFieldSort = setFieldSort;
+
+    function handleModalBackdropClick(event, target) {
+      if (!event || event.target !== event.currentTarget) return;
+      if (target === 'ranking') closeRanking();
+      if (target === 'board') closeBoard();
+      if (target === 'history') closeHistoryModal();
+      if (target === 'rouletteReward') closeRouletteRewardModal();
+      if (target === 'upgrade') closeUpgradeModal();
+      if (target === 'addGoguma') closeAddGogumaModal();
+      if (target === 'dday') closeDdayModal();
+    }
+    window.handleModalBackdropClick = handleModalBackdropClick;
+
+    function openAddGogumaModal() {
+      var modal = document.getElementById('addGogumaModal');
+      var nameEl = document.getElementById('addGogumaName');
+      var relationEl = document.getElementById('addGogumaRelation');
+      var ageEl = document.getElementById('addGogumaAge');
+      if (!modal) return;
+      if (nameEl) nameEl.value = '';
+      if (relationEl) relationEl.value = '';
+      if (ageEl) ageEl.value = '';
+      modal.classList.remove('hidden');
+      if (nameEl) nameEl.focus();
+    }
+    window.openAddGogumaModal = openAddGogumaModal;
+
+    function closeAddGogumaModal() {
+      var modal = document.getElementById('addGogumaModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeAddGogumaModal = closeAddGogumaModal;
+
+    function updateDdayValue() {
+      var ddayEl = document.getElementById('ddayMainValue');
+      var prayerDday15 = document.getElementById('prayerMeetingDday15');
+      var prayerDday22 = document.getElementById('prayerMeetingDday22');
+      var prayerDday29 = document.getElementById('prayerMeetingDday29');
+      if (!ddayEl) return;
+      var now = new Date();
+      var year = now.getFullYear();
+      var target = new Date(year, 2, 30); // 3월 30일
+      var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      var targetDay = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+      var diff = Math.round((targetDay.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+      if (diff > 0) {
+        ddayEl.textContent = 'D-' + diff;
+      } else if (diff === 0) {
+        ddayEl.textContent = 'D-Day';
+      } else {
+        ddayEl.textContent = 'D+' + Math.abs(diff);
+      }
+
+      function setMeetingDday(day, el) {
+        if (!el) return;
+        var meetingDate = new Date(year, 2, day);
+        var todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var diffDays = Math.round((meetingDate.getTime() - todayDate.getTime()) / (24 * 60 * 60 * 1000));
+        el.textContent = diffDays > 0 ? ('D-' + diffDays) : (diffDays === 0 ? 'D-Day' : ('D+' + Math.abs(diffDays)));
+      }
+      setMeetingDday(15, prayerDday15);
+      setMeetingDday(22, prayerDday22);
+      setMeetingDday(29, prayerDday29);
+    }
+
+    function openDdayModal() {
+      var modal = document.getElementById('ddayModal');
+      if (!modal) return;
+      updateDdayValue();
+      modal.classList.remove('hidden');
+    }
+    window.openDdayModal = openDdayModal;
+
+    function closeDdayModal() {
+      var modal = document.getElementById('ddayModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeDdayModal = closeDdayModal;
+
+    function openUpgradeModal(imageSrc, headingText) {
+      var modal = document.getElementById('upgradeModal');
+      var imageEl = document.getElementById('upgradeModalImage');
+      var headingEl = document.getElementById('upgradeModalHeading');
+      if (!modal) return;
+      if (imageEl && imageSrc) imageEl.src = imageSrc;
+      if (headingEl) headingEl.textContent = headingText || '업그레이드!';
+      modal.classList.remove('hidden');
+    }
+    window.openUpgradeModal = openUpgradeModal;
+
+    function closeUpgradeModal() {
+      var modal = document.getElementById('upgradeModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeUpgradeModal = closeUpgradeModal;
+
+    function openRouletteRewardModal(winner) {
+      var modal = document.getElementById('rouletteRewardModal');
+      var labelEl = document.getElementById('rouletteRewardLabel');
+      var descEl = document.getElementById('rouletteRewardDesc');
+      if (!modal || !winner) return;
+      if (labelEl) labelEl.textContent = winner.label || '결과';
+      if (descEl) {
+        descEl.textContent = (Number(winner.hpBonus) || 0) > 0
+          ? ('내 고구마 전체 온도 +' + Number(winner.hpBonus))
+          : '';
+      }
+      modal.classList.remove('hidden');
+    }
+    window.openRouletteRewardModal = openRouletteRewardModal;
+
+    function closeRouletteRewardModal() {
+      var modal = document.getElementById('rouletteRewardModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+    }
+    window.closeRouletteRewardModal = closeRouletteRewardModal;
+
+    window.toggleHelp = function() {
+      var el = document.getElementById("helpBubble");
+      if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    };
+
+    window.showNameInput = function() {
+      var step = document.getElementById("nameInputStep");
+      var input = document.getElementById("userNameInput");
+      selectedDepartment = '';
+      if (step) step.classList.remove("hidden");
+      var deptButtons = document.querySelectorAll('#departmentSelect .dept-btn');
+      deptButtons.forEach(function(btn) { btn.classList.remove('active'); });
+      if (input) { input.value = ""; input.focus(); }
+    };
+
+    window.selectDepartment = function(department) {
+      selectedDepartment = department || '';
+      var deptButtons = document.querySelectorAll('#departmentSelect .dept-btn');
+      deptButtons.forEach(function(btn) {
+        if (btn.getAttribute('data-department') === selectedDepartment) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+    };
+
+    window.submitUserName = function() {
+      var userName = document.getElementById("userNameInput").value.trim();
+      if (!userName) { alert("이름을 입력해 주세요."); return; }
+      if (!selectedDepartment) { alert("부서를 선택해 주세요."); return; }
+      fetchJson(API + '/api/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName: userName, department: selectedDepartment }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        setCurrentUser(result.user);
+        data = (result.gogumas || []).map(function(g) {
+          return normalizeGoguma(g);
+        });
+        setMissionState(result.missions || null);
+        currentViewMode = 'field';
+        selectedIndex = data.length > 0 ? 0 : -1;
+        document.getElementById("nameInputStep").classList.add("hidden");
+        document.getElementById("home").classList.add("hidden");
+        document.getElementById("game").classList.remove("hidden");
+        document.getElementById("fieldView").classList.add("hidden");
+        document.getElementById("roulette").classList.add("hidden");
+        document.getElementById("community").classList.add("hidden");
+        setInlineNotice("플레이를 시작했습니다. 고구마를 추가하거나 기존 캐릭터를 선택해 주세요.", "");
+        render();
+      });
+    };
+
+    function start() {
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("game").classList.remove("hidden");
+      render();
+    }
+
+    function backHome() {
+      closeRoulette();
+      closeFieldView();
+      closeCommunity();
+      document.getElementById("game").classList.add("hidden");
+      document.getElementById("home").classList.remove("hidden");
+      document.getElementById("nameInputStep").classList.add("hidden");
+      document.getElementById("helpBubble").style.display = 'block';
+    };
+    window.backHome = backHome;
+
+    function add() {
+      var nameEl = document.getElementById('addGogumaName');
+      var relationEl = document.getElementById('addGogumaRelation');
+      var ageEl = document.getElementById('addGogumaAge');
+      var name = nameEl ? nameEl.value.trim() : '';
+      var relation = relationEl ? relationEl.value.trim() : '';
+      var age = ageEl ? ageEl.value.trim() : '';
+      if (!name) { setInlineNotice("고구마 이름을 입력해 주세요.", "error"); return; }
+      if (!relation) { setInlineNotice("관계를 입력해 주세요.", "error"); return; }
+      if (!age) { setInlineNotice("나이를 입력해 주세요.", "error"); return; }
+      if (data.length >= MAX) { setInlineNotice("최대 10명까지 가능합니다.", "error"); return; }
+      fetchJson(API + '/api/goguma/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, relation: relation, age: age }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
+        var g = result.goguma;
+        if (g) {
+          data.push(normalizeGoguma(g));
+          closeAddGogumaModal();
+          currentViewMode = 'detail';
+          selectedIndex = data.length - 1;
+          const stage = getStage(g.hp);
+          updateBackgroundByStage(stage);
+          setInlineNotice(g.name + " 고구마를 추가했습니다. 행동 카드를 눌러 성장시켜 보세요.", "success");
+          render();
+        }
+      });
+    }
+    window.add = add;
+    window.submitAddGoguma = add;
+
+    function selectGoguma(i) {
+      selectedIndex = i;
+      currentViewMode = 'detail';
+      const stage = getStage(data[i].hp);
+      updateBackgroundByStage(stage);
+      render();
+      fetchGogumaHistory(data[i] && data[i].id);
+    }
+    window.selectGoguma = selectGoguma;
+
+    function grow(actionType) {
+      if (selectedIndex < 0) return;
+      playButtonEffect();
+      var g = data[selectedIndex];
+      var prevStage = getStage(Number(g.hp) || 0);
+      if (g && g.todayActions && g.todayActions[actionType]) {
+        setInlineNotice('이 행동은 오늘 이미 사용했습니다. 리셋 후 다시 시도해 주세요.', 'error');
+        return;
+      }
+      fetchJson(API + '/api/goguma/grow', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id, actionType: actionType }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
+        if (result.hp != null) g.hp = result.hp;
+        if (result && result.actionScores && typeof result.actionScores === 'object') {
+          g.actionScores = result.actionScores;
+          updateDominantActionFromScores(g);
+        } else {
+          applyGrowActionScore(g, actionType);
+        }
+        if (typeof result.dominantAction === 'string' && result.dominantAction) {
+          g.dominantAction = result.dominantAction;
+        }
+        if (typeof result.stage2ActionLock === 'string' && result.stage2ActionLock) {
+          g.stage2ActionLock = result.stage2ActionLock;
+        }
+        if (typeof result.stage3ActionLock === 'string' && result.stage3ActionLock) {
+          g.stage3ActionLock = result.stage3ActionLock;
+        }
+        if (typeof result.stage4ActionLock === 'string' && result.stage4ActionLock) {
+          g.stage4ActionLock = result.stage4ActionLock;
+        }
+        if (result && result.todayActions && typeof result.todayActions === 'object') {
+          g.todayActions = result.todayActions;
+        } else {
+          if (!g.todayActions || typeof g.todayActions !== 'object') g.todayActions = {};
+          g.todayActions[actionType] = true;
+        }
+        invalidateGogumaHistory(g.id);
+        fetchGogumaHistory(g.id);
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
+        shootHearts();
+        const stage = getStage(g.hp);
+        updateBackgroundByStage(stage);
+        if (prevStage === 1 && stage === 2) {
+          openUpgradeModal('game_images/upgrade/upgrade1.gif', '업그레이드!');
+        } else if (prevStage === 2 && stage === 3) {
+          openUpgradeModal('game_images/upgrade/upgrade2.gif', '업그레이드!');
+        }
+        var totalGain = Number(result.totalGain);
+        var gainText = Number.isFinite(totalGain)
+          ? ('+' + totalGain)
+          : '';
+        setInlineNotice(g.name + "에게 행동을 적용했습니다. " + (gainText ? ('이번 증가 ' + gainText + ' · ') : '') + "현재 온도 " + g.hp + "입니다.", "success");
+        if (g.hp >= 99) {
+          triggerMaxLevelEffect();
+        }
+        render();
+      });
+    }
+    window.grow = grow;
+
+    function shootHearts() {
+      var container = document.getElementById("heartContainer");
+      if (!container) return;
+      container.innerHTML = "";
+      for (var i = 0; i < 5; i++) {
+        var heart = document.createElement("img");
+        heart.className = "heart-burst";
+        heart.src = "game_images/heart.gif";
+        heart.alt = "";
+        heart.style.animationDelay = (i * 60) + "ms";
+        container.appendChild(heart);
+      }
+      setTimeout(function() {
+        container.innerHTML = "";
+      }, 1000);
+    }
+
+    function startCardFireworks() {
+      var canvas = document.getElementById('celebrationCanvas');
+      var scene = document.getElementById('potScene');
+      if (!canvas || !scene) return;
+
+      var rect = scene.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+
+      var dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, Math.floor(rect.width * dpr));
+      canvas.height = Math.max(1, Math.floor(rect.height * dpr));
+      var ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      canvas.classList.add('active');
+      fireworkParticles = [];
+
+      if (fireworkFrameId) {
+        cancelAnimationFrame(fireworkFrameId);
+        fireworkFrameId = null;
+      }
+      if (fireworkStopTimer) {
+        clearTimeout(fireworkStopTimer);
+      }
+
+      function createBurst() {
+        var xPoint = Math.random() * (rect.width - 80) + 40;
+        var yPoint = Math.random() * (rect.height * 0.45) + 30;
+        var count = Math.floor(Math.random() * 26) + 44;
+        var color = 'rgb(' +
+          (~~(Math.random() * 200 + 55)) + ',' +
+          (~~(Math.random() * 200 + 55)) + ',' +
+          (~~(Math.random() * 200 + 55)) + ')';
+
+        for (var i = 0; i < count; i++) {
+          var vx = (Math.random() - 0.5) * 6.8;
+          var vy = (Math.random() - 0.5) * 6.8;
+          fireworkParticles.push({
+            x: xPoint,
+            y: yPoint,
+            vx: vx,
+            vy: vy,
+            size: Math.random() * 2.6 + 1,
+            alpha: Math.random() * 0.4 + 0.6,
+            color: color
+          });
+        }
+      }
+
+      createBurst();
+      createBurst();
+
+      function frame() {
+        ctx.clearRect(0, 0, rect.width, rect.height);
+        ctx.globalCompositeOperation = 'lighter';
+
+        var alive = [];
+        for (var i = 0; i < fireworkParticles.length; i++) {
+          var p = fireworkParticles[i];
+          p.x += p.vx;
+          p.vy += 0.05;
+          p.y += p.vy;
+          p.alpha -= 0.012;
+
+          if (p.alpha <= 0 || p.x < -10 || p.x > rect.width + 10 || p.y > rect.height + 10) {
+            continue;
+          }
+
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.beginPath();
+          ctx.fillStyle = p.color;
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+          alive.push(p);
+        }
+
+        fireworkParticles = alive;
+
+        if (fireworkParticles.length > 0) {
+          fireworkFrameId = requestAnimationFrame(frame);
+        } else {
+          ctx.clearRect(0, 0, rect.width, rect.height);
+          canvas.classList.remove('active');
+          fireworkFrameId = null;
+        }
+      }
+
+      fireworkFrameId = requestAnimationFrame(frame);
+      fireworkStopTimer = setTimeout(function() {
+        fireworkParticles = [];
+      }, 1800);
+    }
+
+    function getScaleClass(hp) {
+      if (hp <= 20) return "scale-sm";
+      if (hp <= 40) return "scale-md";
+      if (hp <= 60) return "scale-md";
+      if (hp <= 80) return "scale-lg";
+      return "scale-xl";
+    }
+
+    function removeItem(i) {
+      if (!confirm("삭제하시겠습니까?")) return;
+      var g = data[i];
+      fetchJson(API + '/api/goguma/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        invalidateGogumaHistory(g.id);
+        data.splice(i, 1);
+        if (selectedIndex >= data.length) selectedIndex = data.length - 1;
+        render();
+      });
+    }
+    window.removeItem = removeItem;
+
+    function removeSelected() {
+      if (selectedIndex < 0) return;
+      if (!confirm("이 고구마를 삭제하시겠습니까?")) return;
+      var g = data[selectedIndex];
+      fetchJson(API + '/api/goguma/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: g.id }),
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data;
+        if (!res.ok || result.error) { alert(result.error || '오류가 발생했습니다.'); return; }
+        invalidateGogumaHistory(g.id);
+        data.splice(selectedIndex, 1);
+        selectedIndex = data.length > 0 ? 0 : -1;
+        render();
+      });
+    }
+    window.removeSelected = removeSelected;
+
+    function safeFileName(s) {
+      return String(s || '')
+        .trim()
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .replace(/\s+/g, '_')
+        .slice(0, 80) || 'goguma';
+    }
+
+    function captureSelectedGoguma() {
+      if (selectedIndex < 0 || !data[selectedIndex]) {
+        alert('캡쳐할 고구마를 먼저 선택해 주세요.');
+        return;
+      }
+      if (typeof html2canvas !== 'function') {
+        alert('캡쳐 기능을 불러오지 못했습니다. 새로고침 후 다시 시도해 주세요.');
+        return;
+      }
+
+      var g = data[selectedIndex];
+      var target = document.getElementById('detailView');
+      if (!target) {
+        alert('캡쳐할 화면을 찾을 수 없습니다.');
+        return;
+      }
+
+      html2canvas(target, {
+        backgroundColor: null,
+        scale: 2,
+        useCORS: true
+      }).then(function (canvas) {
+        var a = document.createElement('a');
+        var userPart = currentUser && currentUser.name ? currentUser.name : 'user';
+        a.download = safeFileName(userPart + '-' + g.name + '-goguma') + '.png';
+        a.href = canvas.toDataURL('image/png');
+        a.click();
+      }).catch(function () {
+        alert('캡쳐 중 오류가 발생했습니다.');
+      });
+    }
+
+    window.captureSelectedGoguma = captureSelectedGoguma;
+
+    function openRoulette() {
+      if (!currentUser) return;
+        document.getElementById("game").classList.add("hidden");
+        document.getElementById("fieldView").classList.add("hidden");
+        document.getElementById("community").classList.add("hidden");
+        document.getElementById("roulette").classList.remove("hidden");
+      renderRoulette();
+    }
+    window.openRoulette = openRoulette;
+
+    function closeRoulette() {
+      closeRouletteRewardModal();
+      document.getElementById("roulette").classList.add("hidden");
+      if (!document.getElementById("home").classList.contains("hidden")) return;
+      document.getElementById("game").classList.remove("hidden");
+    }
+    window.closeRoulette = closeRoulette;
+
+    function openFieldView() {
+      if (!currentUser) return;
+      currentViewMode = 'field';
+      document.getElementById("roulette").classList.add("hidden");
+      document.getElementById("community").classList.add("hidden");
+      document.getElementById("fieldView").classList.add("hidden");
+      document.getElementById("game").classList.remove("hidden");
+      render();
+    }
+    window.openFieldView = openFieldView;
+
+    function closeFieldView() {
+      document.getElementById("fieldView").classList.add("hidden");
+      if (!document.getElementById("home").classList.contains("hidden")) return;
+      if (!document.getElementById("roulette").classList.contains("hidden")) return;
+      document.getElementById("game").classList.remove("hidden");
+    }
+    window.closeFieldView = closeFieldView;
+
+    function spinRoulette() {
+      if (!currentUser || !currentUser.canSpinRoulette || isRouletteSpinning) {
+        return;
+      }
+      var spinBtn = document.getElementById("spinRouletteBtn");
+      var statusEl = document.getElementById('rouletteStatus');
+      if (!rouletteWheelLoaded) {
+        if (statusEl) statusEl.textContent = '룰렛 이미지를 불러오는 중입니다. 잠시 후 다시 시도해 주세요.';
+        return;
+      }
+
+      isRouletteSpinning = true;
+      if (spinBtn) spinBtn.disabled = true;
+      if (statusEl) statusEl.textContent = '룰렛 회전 중...';
+      fetchJson(API + '/api/reward/spin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include'
+      }).then(function(res) {
+        var result = res.data || {};
+        if (!res.ok || result.error) {
+          isRouletteSpinning = false;
+          if (statusEl) statusEl.textContent = result.error || '룰렛 결과를 불러오지 못했습니다.';
+          if (spinBtn) spinBtn.disabled = false;
+          renderRoulette();
+          return;
+        }
+
+        var serverReward = result.reward || {};
+        var forcedWinnerIndex = Number(serverReward.segmentIndex);
+        var rng = getRouletteRng();
+        var plan = getRouletteSpinPlan(
+          rng,
+          rouletteBaseRotationDeg,
+          Number.isFinite(forcedWinnerIndex) ? forcedWinnerIndex : null
+        );
+        var startDeg = rouletteBaseRotationDeg;
+        var endDeg = startDeg + plan.deltaDeg;
+        var startTs = null;
+
+        updateRouletteDebug({
+          currentDeg: startDeg,
+          winnerIndex: plan.winnerIndex,
+          landingIndex: null,
+          targetAngle: plan.targetAngle
+        });
+
+        function finalizeSpin() {
+          rouletteBaseRotationDeg = endDeg;
+          var landingIndex = getLandingIndexFromRotation(endDeg);
+          var mismatch = landingIndex !== plan.winnerIndex;
+
+          if (mismatch) {
+            console.warn('[Roulette] landing mismatch', {
+              winnerIndex: plan.winnerIndex,
+              landingIndex: landingIndex,
+              rewardSegmentIndex: forcedWinnerIndex,
+              targetAngle: plan.targetAngle
+            });
+          }
+          console.assert(!mismatch, '[Roulette] landing index mismatch');
+
+          updateRouletteDebug({
+            currentDeg: endDeg,
+            winnerIndex: plan.winnerIndex,
+            landingIndex: landingIndex,
+            targetAngle: plan.targetAngle
+          });
+
+          if (result.user) {
+            setCurrentUser(result.user);
+          }
+          if (Array.isArray(result.gogumas)) {
+            data = result.gogumas.map(function(g) {
+              return normalizeGoguma(g);
+            });
+            if (selectedIndex >= data.length) {
+              selectedIndex = data.length - 1;
+            }
+          }
+
+          lastRouletteReward = {
+            id: serverReward.key || serverReward.id || '',
+            label: serverReward.label || '',
+            hpBonus: Number(serverReward.hpBonus) || 0,
+            segmentIndex: landingIndex
+          };
+
+          isRouletteSpinning = false;
+          if (typeof rouletteEngine.onSpinEnd === 'function') {
+            rouletteEngine.onSpinEnd(lastRouletteReward);
+          }
+          render();
+          renderRoulette();
+        }
+
+        function frame(ts) {
+          if (startTs == null) startTs = ts;
+          var elapsed = ts - startTs;
+          var t = Math.min(1, elapsed / plan.durationMs);
+          var eased = easeOutCubic(t);
+          var nowDeg = startDeg + (endDeg - startDeg) * eased;
+          setWheelRotation(nowDeg);
+
+          if (rouletteEngine.debug) {
+            updateRouletteDebug({
+              currentDeg: nowDeg,
+              winnerIndex: plan.winnerIndex,
+              landingIndex: getLandingIndexFromRotation(nowDeg),
+              targetAngle: plan.targetAngle
+            });
+          }
+
+          if (t < 1) {
+            requestAnimationFrame(frame);
+            return;
+          }
+          finalizeSpin();
+        }
+
+        requestAnimationFrame(frame);
+      }).catch(function() {
+        isRouletteSpinning = false;
+        if (statusEl) statusEl.textContent = '룰렛 처리 중 오류가 발생했습니다.';
+        if (spinBtn) spinBtn.disabled = false;
+        renderRoulette();
+      });
+    }
+    window.spinRoulette = spinRoulette;
+
+    function getStage(hp) {
+      if (hp < 20) return 1;
+      if (hp < 40) return 2;
+      if (hp < 60) return 3;
+      return 4;
+    }
+
+    function updateBackgroundByStage(stage) {
+      document.body.setAttribute('data-stage', String(stage));
+    }
+
+
+    function render() {
+      var listEl = document.getElementById("gogumaList");
+      var detailEl = document.getElementById("detailView");
+      var fieldDetailEl = document.getElementById("fieldDetailView");
+      var noHint = document.getElementById("noSelectHint");
+      updateHistoryModalHeading();
+      renderMissionPanel();
+      renderPassiveTip();
+      renderActionCooldownState();
+
+      var isFieldOpen = currentViewMode === 'field';
+      var listHtml = '<button type="button" class="goguma-chip ' + (isFieldOpen ? 'selected' : '') + '" onclick="openFieldView()">전체 고구마</button>';
+      data.forEach(function(g, i) {
+        listHtml += '<button type="button" class="goguma-chip ' + (!isFieldOpen && i === selectedIndex ? 'selected' : '') + '" onclick="selectGoguma(' + i + ')">' + g.name + '</button>';
+      });
+      listEl.innerHTML = listHtml;
+      renderFieldView();
+
+      if (isFieldOpen) {
+        if (fieldDetailEl) fieldDetailEl.classList.remove("hidden");
+        detailEl.classList.add("hidden");
+        noHint.style.display = 'none';
+        var btnDelField = document.getElementById("btnDelete");
+        if (btnDelField) btnDelField.classList.add("hidden");
+        var btnShotField = document.getElementById("btnScreenshot");
+        if (btnShotField) btnShotField.classList.add("hidden");
+        updateBackgroundByStage(selectedIndex >= 0 && data[selectedIndex] ? getStage(data[selectedIndex].hp) : 2);
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice("전체 고구마의 성장 상태를 보고 있습니다. 이름 칩을 누르면 개별 카드로 전환됩니다.", "");
+        }
+        updateGogumaSpeech();
+      } else if (selectedIndex >= 0 && data[selectedIndex]) {
+        if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
+        var g = data[selectedIndex];
+        var stage = getStage(g.hp);
+        detailEl.classList.remove("hidden");
+        noHint.style.display = 'none';
+        var btnDel = document.getElementById("btnDelete");
+        if (btnDel) btnDel.classList.remove("hidden");
+        var btnShot = document.getElementById("btnScreenshot");
+        if (btnShot) btnShot.classList.remove("hidden");
+        document.getElementById("statusHpFill").style.width = g.hp + '%';
+        document.getElementById("statusHpValue").textContent = String(Math.round(g.hp));
+        var nameplate = document.getElementById("gogumaNameplate");
+        if (nameplate) {
+          nameplate.textContent = g.name;
+        }
+        var stageImage = document.getElementById("gogumaStageImage");
+        if (stageImage) {
+          stageImage.src = getGogumaStageImage(g, stage);
+          stageImage.alt = g.name + ' 성장 단계';
+        }
+        updateBackgroundByStage(stage);
+        var potScene = document.getElementById("potScene");
+        if (potScene) {
+          applyPotSceneBackground(g.cardBgIndex);
+          potScene.classList.remove("stage1", "stage2", "stage3", "stage4", "stage5");
+          potScene.classList.remove("scale-sm", "scale-md", "scale-lg", "scale-xl");
+          potScene.classList.add("stage" + stage);
+          potScene.classList.add(getScaleClass(g.hp));
+        }
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice(g.name + "을(를) 선택했습니다. 아래 행동 카드로 바로 성장시킬 수 있습니다.", "");
+        }
+        updateGogumaSpeech();
+      } else {
+        if (fieldDetailEl) fieldDetailEl.classList.add("hidden");
+        detailEl.classList.add("hidden");
+        noHint.style.display = 'block';
+        var btnDel = document.getElementById("btnDelete");
+        if (btnDel) btnDel.classList.add("hidden");
+        var btnShot = document.getElementById("btnScreenshot");
+        if (btnShot) btnShot.classList.add("hidden");
+        updateBackgroundByStage(2);
+        if (!document.getElementById('inlineNotice').classList.contains('error') &&
+            !document.getElementById('inlineNotice').classList.contains('success')) {
+          setInlineNotice("고구마를 추가한 뒤 칩을 눌러 캐릭터를 선택해 주세요.", "");
+        }
+        updateGogumaSpeech();
+      }
+    }
+    function triggerMaxLevelEffect() {
+      startCardFireworks();
+    }
+
+    async function fetchRanking() {
+      const res = await fetch('/api/ranking', {
+        cache: 'no-store'
+      });
+
+      const data = await res.json();
+      updateRankingDOM(data);
+    }
+
+  function updateRankingDOM(data) {
+      const list = document.getElementById('rankingList');
+      if (!list) return;
+      list.innerHTML = '';
+
+      if (!Array.isArray(data) || data.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'empty-state';
+        empty.textContent = '아직 집계할 데이터가 없습니다.';
+        list.appendChild(empty);
+        return;
+      }
+
+      data.forEach((r, i) => {
+        const li = document.createElement('li');
+        li.className = 'ranking-item' + (i === 0 ? ' is-top' : '');
+
+        const rank = document.createElement('span');
+        rank.className = 'ranking-rank';
+        rank.textContent = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : String(i + 1);
+
+        const main = document.createElement('div');
+        main.className = 'ranking-main';
+
+        const user = document.createElement('span');
+        user.className = 'ranking-user';
+        user.textContent = r.department || '미지정부서';
+
+        const meta = document.createElement('span');
+        meta.className = 'ranking-meta';
+        meta.textContent = '참여 인원 ' + (Number(r.userCount) || 0) + '명 · 고구마 ' + (Number(r.gogumaCount) || 0) + '개';
+
+        const hp = document.createElement('span');
+        hp.className = 'ranking-hp';
+        hp.textContent = '평균 ' + (Number(r.avgHp) || 0).toFixed(1) + '°';
+
+        main.appendChild(user);
+        main.appendChild(meta);
+        li.appendChild(rank);
+        li.appendChild(main);
+        li.appendChild(hp);
+        list.appendChild(li);
+      });
+    }
+
+    function openRanking() {
+      document.getElementById('rankingModal').classList.remove('hidden');
+      fetchRanking();
+      rankingInterval = setInterval(fetchRanking, 1000);
+    }
+
+    function closeRanking() {
+      document.getElementById('rankingModal').classList.add('hidden');
+      clearInterval(rankingInterval);
+    }
+
+    function toggleRanking() {
+      const modal = document.getElementById('rankingModal');
+      if (!modal) return;
+      if (modal.classList.contains('hidden')) {
+        openRanking();
+      } else {
+        closeRanking();
+      }
+    }
+
+    window.toggleRanking = toggleRanking;
+
+    async function fetchPosts() {
+      const res = await fetch('/api/posts', { cache: 'no-store' });
+      const data = await res.json();
+      updateBoardDOM(data);
+    }
+
+    function updateBoardDOM(list) {
+      const ul = document.getElementById('boardList');
+      if (!ul) return;
+      ul.innerHTML = '';
+
+      if (!Array.isArray(list) || list.length === 0) {
+        var empty = document.createElement('li');
+        empty.className = 'empty-state';
+        empty.textContent = '아직 게시글이 없습니다. 첫 글을 남겨 보세요.';
+        ul.appendChild(empty);
+        return;
+      }
+
+      list.forEach(function (p) {
+        var li = document.createElement('li');
+        li.className = 'board-item';
+
+        var titleLine = document.createElement('div');
+        titleLine.className = 'board-title-row';
+
+        var titleText = document.createElement('span');
+        titleText.className = 'board-title';
+        titleText.textContent = (p.title || '(제목 없음)') + ' - ' + (p.userName || '');
+        titleLine.appendChild(titleText);
+
+        if (currentUser && p.userId === currentUser.id) {
+          var delBtn = document.createElement('button');
+          delBtn.textContent = '삭제';
+          delBtn.className = 'pixel-btn';
+          delBtn.style.fontSize = '10px';
+          delBtn.style.padding = '4px 8px';
+          delBtn.style.marginLeft = '8px';
+          delBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            deletePost(p.id);
+          });
+          titleLine.appendChild(delBtn);
+        }
+
+        var contentLine = document.createElement('div');
+        contentLine.className = 'board-content';
+        var content = (p.content || '').replace(/\s+/g, ' ').trim();
+        if (content.length > 50) content = content.slice(0, 50) + '...';
+        contentLine.textContent = content;
+
+        li.appendChild(titleLine);
+        li.appendChild(contentLine);
+        ul.appendChild(li);
+      });
+    }
+
+    function openBoard() {
+      const modal = document.getElementById('boardModal');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      fetchPosts();
+      if (boardInterval) clearInterval(boardInterval);
+      boardInterval = setInterval(fetchPosts, 5000);
+    }
+
+    function closeBoard() {
+      const modal = document.getElementById('boardModal');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      if (boardInterval) {
+        clearInterval(boardInterval);
+        boardInterval = null;
+      }
+    }
+
+    function toggleBoard() {
+      const modal = document.getElementById('boardModal');
+      if (!modal) return;
+      if (modal.classList.contains('hidden')) {
+        openBoard();
+      } else {
+        closeBoard();
+      }
+    }
+
+    window.toggleBoard = toggleBoard;
+
+    function submitPost() {
+      const titleEl = document.getElementById('boardTitle');
+      const contentEl = document.getElementById('boardContent');
+      if (!titleEl || !contentEl) return;
+
+      const title = titleEl.value.trim();
+      const content = contentEl.value.trim();
+
+      if (!title) {
+        alert('제목을 입력해 주세요.');
+        return;
+      }
+      if (!content) {
+        alert('내용을 입력해 주세요.');
+        return;
+      }
+
+      fetch('/api/posts/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ title: title, content: content })
+      })
+        .then(function (r) { return r.text(); })
+        .then(function (text) {
+          var res;
+          try { res = JSON.parse(text); } catch (e) { res = { error: '서버 응답 오류' }; }
+          if (res.error) {
+            alert(res.error);
+            return;
+          }
+          titleEl.value = '';
+          contentEl.value = '';
+          const form = document.getElementById('boardForm');
+          if (form && !form.classList.contains('hidden')) {
+            form.classList.add('hidden');
+          }
+          fetchPosts();
+        })
+        .catch(function () {
+          alert('게시글 등록 중 오류가 발생했습니다.');
+        });
+    }
+
+    window.submitPost = submitPost;
+
+    function togglePostForm() {
+      const form = document.getElementById('boardForm');
+      if (!form) return;
+      form.classList.toggle('hidden');
+      if (!form.classList.contains('hidden')) {
+        const titleEl = document.getElementById('boardTitle');
+        if (titleEl) {
+          titleEl.focus();
+        }
+      }
+    }
+
+    window.togglePostForm = togglePostForm;
+
+    function deletePost(id) {
+      if (!confirm('이 글을 삭제하시겠습니까?')) return;
+
+      fetchJson(API + '/api/posts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: id }),
+        credentials: 'include'
+      }).then(function (res) {
+        var result = res.data;
+        if (!res.ok || result.error) {
+          alert(result.error || '삭제 중 오류가 발생했습니다.');
+          return;
+        }
+        fetchPosts();
+      });
+    }
+
+    window.deletePost = deletePost;
+
+    // 페이지 로드 시 세션 확인 → 재접속 시 자동 로그인
+    (function init() {
+      syncBgmButton();
+      setRouletteSeed(null);
+      tryPlayBgm();
+      ['pointerdown', 'keydown'].forEach(function(eventName) {
+        window.addEventListener(eventName, tryPlayBgm, { once: true });
+      });
+      var communityImageInput = document.getElementById('communityImageInput');
+      if (communityImageInput) {
+        communityImageInput.addEventListener('change', handleCommunityImageChange);
+      }
+      loadCardBgPrefs();
+      initRouletteWheel();
+      bindCommunityCategoryFilterEvents();
+      setRouletteOnSpinEnd(function(winner) {
+        var resultEl = document.getElementById('rouletteResult');
+        if (!resultEl || !winner) return;
+        var bonusText = winner.hpBonus > 0
+          ? ('내 고구마 전체 온도 +' + winner.hpBonus)
+          : '';
+        resultEl.innerHTML = '<strong>' + winner.label + '</strong>' + bonusText;
+        openRouletteRewardModal(winner);
+      });
+
+      function setWeatherVisual(kind, isDay) {
+        var layer = document.getElementById('weatherLayer');
+        if (!layer) return;
+        layer.innerHTML = '';
+
+        function el(cls) {
+          var d = document.createElement('div');
+          d.className = cls;
+          return d;
+        }
+
+        if (kind === 'clear') {
+          layer.appendChild(el(isDay ? 'weather-sun' : 'weather-moon'));
+          return;
+        }
+        if (kind === 'cloudy') {
+          layer.appendChild(el(isDay ? 'weather-sun' : 'weather-moon'));
+          layer.appendChild(el('weather-cloud'));
+          return;
+        }
+        if (kind === 'rain') {
+          layer.appendChild(el('weather-cloud'));
+          layer.appendChild(el('weather-rain'));
+          return;
+        }
+        if (kind === 'snow') {
+          layer.appendChild(el('weather-cloud'));
+          layer.appendChild(el('weather-snow'));
+          return;
+        }
+
+        layer.appendChild(el(isDay ? 'weather-sun' : 'weather-moon'));
+      }
+
+      function classifyWeather(current) {
+        var code = current && current.weather_code != null ? Number(current.weather_code) : null;
+        var cloud = current && current.cloud_cover != null ? Number(current.cloud_cover) : 0;
+        var precip = current && current.precipitation != null ? Number(current.precipitation) : 0;
+        var snowfall = current && current.snowfall != null ? Number(current.snowfall) : 0;
+        var isDay = current && current.is_day != null ? Number(current.is_day) === 1 : true;
+
+        var isSnowCode = code != null && ((code >= 71 && code <= 77) || code === 85 || code === 86);
+        var isRainCode = code != null && ((code >= 51 && code <= 67) || (code >= 80 && code <= 82));
+        var isOvercast = code === 3;
+        var isPartlyCloudy = code === 2 || code === 1;
+
+        if (snowfall > 0 || isSnowCode) return { kind: 'snow', isDay: isDay };
+        if (precip > 0 || isRainCode) return { kind: 'rain', isDay: isDay };
+        if (isOvercast || cloud >= 65) return { kind: 'cloudy', isDay: isDay };
+        if (isPartlyCloudy || (cloud >= 35 && cloud < 65)) return { kind: 'cloudy', isDay: isDay };
+        return { kind: 'clear', isDay: isDay };
+      }
+
+      function fetchWeather(lat, lon) {
+        var url =
+          'https://api.open-meteo.com/v1/forecast' +
+          '?latitude=' + encodeURIComponent(lat) +
+          '&longitude=' + encodeURIComponent(lon) +
+          '&current=weather_code,cloud_cover,precipitation,rain,showers,snowfall,is_day' +
+          '&timezone=auto';
+        return fetch(url, { cache: 'no-store' })
+          .then(function (r) { return r.json(); })
+          .then(function (json) {
+            var current = json && json.current ? json.current : null;
+            var w = classifyWeather(current);
+            setWeatherVisual(w.kind, w.isDay);
+          })
+          .catch(function () {});
+      }
+
+      function initWeather() {
+        var fallbackLat = 37.5665;
+        var fallbackLon = 126.9780;
+
+        if (!navigator.geolocation) {
+          fetchWeather(fallbackLat, fallbackLon);
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            fetchWeather(pos.coords.latitude, pos.coords.longitude);
+          },
+          function () {
+            fetchWeather(fallbackLat, fallbackLon);
+          },
+          { enableHighAccuracy: false, timeout: 4000, maximumAge: 10 * 60 * 1000 }
+        );
+      }
+
+      if (location.protocol === 'file:') {
+        var notice = document.createElement('p');
+        notice.className = 'subtitle';
+        notice.style.cssText = 'margin-top:20px;color:#c62828;font-size:12px;';
+        notice.textContent = '이 앱은 서버에서 실행해야 합니다. 터미널에서 npm start 후 http://localhost:3001 으로 접속하세요.';
+        document.getElementById("home").querySelector('.btn-row').after(notice);
+        return;
+      }
+
+      initWeather();
+      setInterval(initWeather, 15 * 60 * 1000);
+      startGogumaSpeechTimer();
+      actionUsageDayKey = getKstDateKeyNow();
+      startActionCooldownTimer();
+
+      fetchJson(API + '/api/me', { credentials: 'include' }).then(function(res) {
+        var result = res.data;
+        if (res.ok && result && result.user && Array.isArray(result.gogumas)) {
+          setCurrentUser(result.user);
+          data = result.gogumas.map(function(g) { return normalizeGoguma(g); });
+          setMissionState(result.missions || null);
+          currentViewMode = 'field';
+          selectedIndex = data.length > 0 ? 0 : -1;
+          document.getElementById("home").classList.add("hidden");
+          document.getElementById("game").classList.remove("hidden");
+          document.getElementById("fieldView").classList.add("hidden");
+          document.getElementById("roulette").classList.add("hidden");
+          document.getElementById("community").classList.add("hidden");
+          setInlineNotice('이전 플레이 상태를 불러왔습니다. 이어서 키우면 됩니다.', 'success');
+          render();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

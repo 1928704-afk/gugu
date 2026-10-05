@@ -1,17 +1,21 @@
 package com.goguma.domain.user.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 public class StartRequest {
 
-    @NotBlank(message = "이름을 입력해 주세요.")
-    @Size(max = 20, message = "이름은 최대 20자까지 가능합니다.")
+    @JsonAlias({"name", "userName"})
     private String name;
 
     private String department;
+
+    public String getEffectiveName() {
+        return name != null ? name.trim() : "사용자";
+    }
 }
