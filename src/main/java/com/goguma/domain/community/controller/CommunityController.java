@@ -3,7 +3,6 @@ package com.goguma.domain.community.controller;
 import com.goguma.domain.community.dto.PostAddRequest;
 import com.goguma.domain.community.entity.Post;
 import com.goguma.domain.community.entity.PostComment;
-import com.goguma.domain.community.entity.PostLike;
 import com.goguma.domain.community.repository.PostRepository;
 import com.goguma.domain.user.controller.UserController;
 import com.goguma.domain.user.entity.User;
@@ -30,6 +29,20 @@ public class CommunityController {
         List<Post> posts = postRepository.findAllByOrderByIdDesc();
         List<Map<String, Object>> result = new ArrayList<>();
 
+        if (posts.isEmpty()) {
+            // 초기 데모 게시글 생성
+            User admin = userRepository.findAll().stream().findFirst().orElse(null);
+            if (admin != null) {
+                Post welcomePost = postRepository.save(Post.builder()
+                        .user(admin)
+                        .category("출석인사")
+                        .title("고구마 전도 플랫폼 오픈을 축하합니다! 🌱")
+                        .content("환영합니다! 매일 말씀과 기도로 고구마를 키우고 은혜를 나누어보세요.")
+                        .build());
+                posts = List.of(welcomePost);
+            }
+        }
+
         for (Post p : posts) {
             Map<String, Object> map = new HashMap<>();
             map.put("id", p.getId());
@@ -51,48 +64,49 @@ public class CommunityController {
     @GetMapping("/posts/{id}")
     public ResponseEntity<Map<String, Object>> getPostDetail(@PathVariable("id") Long id) {
         Post p = postRepository.findById(id).orElse(null);
+
+        Map<String, Object> postMap = new HashMap<>();
+        List<Map<String, Object>> commentsList = new ArrayList<>();
+
         if (p == null) {
-            // 데모용 가상 게시글 반환 (404 방지)
-            Map<String, Object> demo = new HashMap<>();
-            demo.put("id", id);
-            demo.put("category", "출석인사");
-            demo.put("title", "고구마 전도 플랫폼 오픈!");
-            demo.put("content", "환영합니다! 함께 고구마를 키우며 미션을 수행해보세요.");
-            demo.put("writer", "관리자");
-            demo.put("department", "언약부");
-            demo.put("createdAt", "2026-10-06 00:00");
-            demo.put("likesCount", 1);
-            demo.put("commentsCount", 0);
-            demo.put("isLiked", false);
-            demo.put("comments", Collections.emptyList());
-            return ResponseEntity.ok(demo);
+            postMap.put("id", id);
+            postMap.put("category", "출석인사");
+            postMap.put("title", "고구마 전도 플랫폼 오픈을 축하합니다! 🌱");
+            postMap.put("content", "환영합니다! 매일 말씀과 기도로 고구마를 키우고 은혜를 나누어보세요.");
+            postMap.put("writer", "관리자");
+            postMap.put("department", "언약부");
+            postMap.put("createdAt", "2026-10-06 00:00");
+            postMap.put("likesCount", 1);
+            postMap.put("commentsCount", 0);
+            postMap.put("isLiked", false);
+            postMap.put("imageData", null);
+        } else {
+            postMap.put("id", p.getId());
+            postMap.put("category", p.getCategory());
+            postMap.put("title", p.getTitle());
+            postMap.put("content", p.getContent());
+            postMap.put("writer", p.getUser().getName());
+            postMap.put("department", p.getUser().getDepartment().getDescription());
+            postMap.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().format(formatter) : "");
+            postMap.put("likesCount", p.getLikes().size());
+            postMap.put("commentsCount", p.getComments().size());
+            postMap.put("isLiked", false);
+            postMap.put("imageData", p.getImageData());
+
+            for (PostComment c : p.getComments()) {
+                Map<String, Object> cm = new HashMap<>();
+                cm.put("id", c.getId());
+                cm.put("writer", c.getUser().getName());
+                cm.put("content", c.getContent());
+                cm.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().format(formatter) : "");
+                commentsList.add(cm);
+            }
         }
 
-        Map<String, Object> map = new HashMap<>();
-        map.put("id", p.getId());
-        map.put("category", p.getCategory());
-        map.put("title", p.getTitle());
-        map.put("content", p.getContent());
-        map.put("writer", p.getUser().getName());
-        map.put("department", p.getUser().getDepartment().getDescription());
-        map.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().format(formatter) : "");
-        map.put("likesCount", p.getLikes().size());
-        map.put("commentsCount", p.getComments().size());
-        map.put("isLiked", false);
-        map.put("imageData", p.getImageData());
-
-        List<Map<String, Object>> comments = new ArrayList<>();
-        for (PostComment c : p.getComments()) {
-            Map<String, Object> cm = new HashMap<>();
-            cm.put("id", c.getId());
-            cm.put("writer", c.getUser().getName());
-            cm.put("content", c.getContent());
-            cm.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().format(formatter) : "");
-            comments.add(cm);
-        }
-        map.put("comments", comments);
-
-        return ResponseEntity.ok(map);
+        Map<String, Object> response = new HashMap<>();
+        response.put("post", postMap);
+        response.put("comments", commentsList);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/posts/add")
