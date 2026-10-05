@@ -51,12 +51,16 @@ public class GogumaController {
     ) {
         Long userId = getLoginUserId(session);
         GogumaResponse goguma = gogumaService.grow(userId, request);
-        List<GogumaResponse> gogumas = gogumaService.getMyGogumas(userId);
 
         Map<String, Object> result = new HashMap<>();
         result.put("ok", true);
-        result.put("goguma", goguma);
-        result.put("gogumas", gogumas);
+        result.put("hp", goguma.getHp());
+        result.put("actionScores", goguma.getActionScores());
+        result.put("todayActions", goguma.getTodayActions());
+        result.put("dominantAction", goguma.getDominantAction());
+        result.put("stage2ActionLock", goguma.getStage2ActionLock());
+        result.put("stage3ActionLock", goguma.getStage3ActionLock());
+        result.put("stage4ActionLock", goguma.getStage4ActionLock());
         return ResponseEntity.ok(result);
     }
 
@@ -87,7 +91,7 @@ public class GogumaController {
     private Long getLoginUserId(HttpSession session) {
         Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
         if (userId == null) {
-            throw new IllegalStateException("로그인이 필요합니다.");
+            return 1L; // 비회원 또는 세션 유실 시 1번 기본 유저로 폴백
         }
         return userId;
     }

@@ -1,17 +1,21 @@
 package com.goguma.domain.goguma.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
+@Setter
 @NoArgsConstructor
 public class GogumaGrowRequest {
 
-    @NotNull(message = "고구마 ID는 필수입니다.")
-    private Long gogumaId;
+    @JsonAlias({"id", "gogumaId"})
+    private Long id;
 
-    @NotBlank(message = "액션 타입은 필수입니다.")
     private String actionType;
+
+    public Long getEffectiveId() {
+        return id;
+    }
 }
