@@ -3,13 +3,23 @@
 > **"게이미피케이션 기반 가상 육성 서비스의 Spring Boot 3 & JPA 계층형 아키텍처 리팩토링"**
 
 <p align="left">
+  <a href="https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me" target="_blank">
+    <img src="https://img.shields.io/badge/Live_API-Online-20C997?style=flat-square&logo=cloudflare&logoColor=white"/>
+  </a>
   <img src="https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=java&logoColor=white"/>
   <img src="https://img.shields.io/badge/Spring_Boot-3.2.5-6DB33F?style=flat-square&logo=springboot&logoColor=white"/>
   <img src="https://img.shields.io/badge/Spring_Data_JPA-6DB33F?style=flat-square"/>
   <img src="https://img.shields.io/badge/MySQL-8.0-4479A1?style=flat-square&logo=mysql&logoColor=white"/>
-  <img src="https://img.shields.io/badge/H2_Database-grey?style=flat-square"/>
-  <img src="https://img.shields.io/badge/Gradle-8.x-02303A?style=flat-square&logo=gradle&logoColor=white"/>
+  <img src="https://img.shields.io/badge/AWS-EC2-232F3E?style=flat-square&logo=amazonaws&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white"/>
 </p>
+
+---
+
+## 🌐 Live API Service
+* **실시간 라이브 API 엔드포인트:** [https://gardening-insulin-blowing-jewel.trycloudflare.com](https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me)
+* **인프라:** AWS EC2 (`t2.micro`) + Docker Compose (Spring Boot + MySQL 8.0) + Cloudflare Tunnel (HTTPS)
 
 ---
 
@@ -31,6 +41,7 @@
 | **데이터베이스** | SQLite (로컬 파일) | **MySQL 8.0 & H2 듀얼 프로파일** | 대용량 트랜잭션 및 인메모리 테스트 환경 지원 |
 | **ORM/영속성** | 원시 SQL 직접 조작 | **Spring Data JPA** | 객체 지향 도메인 모델링 및 유지보수성 향상 |
 | **동시성 제어** | 미적용 | **JPA `@Version` 낙관적 락(Optimistic Lock)** | 광클/중복 요청 시 경험치(HP) 정합성 완벽 보장 |
+| **인프라/보안** | 로컬 실행 | **AWS EC2 + Docker + Cloudflare Tunnel** | 무중단 자동화 및 무료 HTTPS/DDoS 방어 하이브리드 인프라 |
 
 ---
 
@@ -151,28 +162,23 @@ erDiagram
   2. 데이터베이스 계층: `(user_id, goguma_id, action_type, action_date)` 복합 유니크 인덱스 설정
 * **결과:** 레이스 컨디션 환경에서도 데이터베이스 레벨에서 원천적으로 중복 삽입 차단.
 
-### 3) 전역 예외 처리 규격화 (`@RestControllerAdvice`)
-* 비즈니스 예외(`BusinessException`)와 입력 유효성 검증 실패(`MethodArgumentNotValidException`)를 분리하여 프론트엔드가 명확한 에러 코드와 사용자 친화적 메시지를 수신하도록 표준화.
+### 3) 인프라 비용 절감 & 보안 강화를 위한 Cloudflare Tunnel 도입
+* **배경:** AWS에서 `https://` 보안 통신을 구축하려면 ALB(Application Load Balancer) 비용(월 약 3~4만 원) 및 고정 퍼블릭 IPv4 비용이 발생.
+* **해결 방법:** EC2의 인바운드 포트를 외부에 직접 열지 않고, 아웃바운드로 Cloudflare 네트워크와 보안 터널을 맺는 **Cloudflare Tunnel (`cloudflared`)** 도입.
+* **결과:** **비용 0원으로 완벽한 무료 HTTPS(SSL) 적용 및 DDoS 방어, CDN 가속을 동시 달성.**
 
 ---
 
 ## 🚀 5. Getting Started (실행 방법)
 
-### 요구사항
-* Java 17+
-* Gradle 8+
-
-### 실행 커맨드
+### 로컬 실행 (H2 In-Memory)
 ```bash
-# 1. 저장소 클론
-git clone https://github.com/1928704-afk/gugu.git
-
-# 2. 백엔드 폴더 이동
-cd goguma-backend
-
-# 3. 로컬 프로파일(H2 In-Memory)로 실행
 ./gradlew bootRun
+# 포트: http://localhost:8080
+# H2 콘솔: http://localhost:8080/h2-console
+```
 
-# 서버 기동 포트: http://localhost:8080
-# H2 콘솔 접속: http://localhost:8080/h2-console (JDBC URL: jdbc:h2:mem:gogumadb)
+### Docker Compose 운영 실행 (MySQL 8.0)
+```bash
+docker compose up -d --build
 ```
