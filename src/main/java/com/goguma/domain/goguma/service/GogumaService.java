@@ -47,6 +47,7 @@ public class GogumaService {
         return new GogumaResponse(saved, getActionScores(saved.getId()), getTodayActions(userId, saved.getId()));
     }
 
+    @Transactional
     public List<GogumaResponse> getMyGogumas(Long userId) {
         List<Goguma> list = gogumaRepository.findByUserIdOrderByIdAsc(userId);
         if (list.isEmpty()) {

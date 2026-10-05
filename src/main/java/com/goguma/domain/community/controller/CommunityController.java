@@ -3,7 +3,9 @@ package com.goguma.domain.community.controller;
 import com.goguma.domain.community.dto.PostAddRequest;
 import com.goguma.domain.community.entity.Post;
 import com.goguma.domain.community.entity.PostComment;
+import com.goguma.domain.community.repository.PostCommentRepository;
 import com.goguma.domain.community.repository.PostRepository;
+import com.goguma.domain.goguma.repository.GogumaRepository;
 import com.goguma.domain.user.controller.UserController;
 import com.goguma.domain.user.entity.User;
 import com.goguma.domain.user.repository.UserRepository;
@@ -21,7 +23,9 @@ import java.util.*;
 public class CommunityController {
 
     private final PostRepository postRepository;
+    private final PostCommentRepository postCommentRepository;
     private final UserRepository userRepository;
+    private final GogumaRepository gogumaRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @GetMapping("/posts")
@@ -30,7 +34,6 @@ public class CommunityController {
         List<Map<String, Object>> result = new ArrayList<>();
 
         if (posts.isEmpty()) {
-            // 초기 데모 게시글 생성
             User admin = userRepository.findAll().stream().findFirst().orElse(null);
             if (admin != null) {
                 Post welcomePost = postRepository.save(Post.builder()
@@ -89,24 +92,27 @@ public class CommunityController {
             postMap.put("department", p.getUser().getDepartment().getDescription());
             postMap.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().format(formatter) : "");
             postMap.put("likesCount", p.getLikes().size());
-            postMap.put("commentsCount", p.getComments().size());
+            mapComments(p, commentsList);
+            postMap.put("commentsCount", commentsList.size());
             postMap.put("isLiked", false);
             postMap.put("imageData", p.getImageData());
-
-            for (PostComment c : p.getComments()) {
-                Map<String, Object> cm = new HashMap<>();
-                cm.put("id", c.getId());
-                cm.put("writer", c.getUser().getName());
-                cm.put("content", c.getContent());
-                cm.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().format(formatter) : "");
-                commentsList.add(cm);
-            }
         }
 
         Map<String, Object> response = new HashMap<>();
         response.put("post", postMap);
         response.put("comments", commentsList);
         return ResponseEntity.ok(response);
+    }
+
+    private void mapComments(Post p, List<Map<String, Object>> commentsList) {
+        for (PostComment c : p.getComments()) {
+            Map<String, Object> cm = new HashMap<>();
+            cm.put("id", c.getId());
+            cm.put("writer", c.getUser().getName());
+            cm.put("content", c.getContent());
+            cm.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().format(formatter) : "");
+            commentsList.add(cm);
+        }
     }
 
     @PostMapping("/posts/add")
@@ -144,6 +150,17 @@ public class CommunityController {
             @RequestBody Map<String, String> body,
             HttpSession session
     ) {
+        Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
+        User user = (userId != null) ? userRepository.findById(userId).orElse(null) : null;
+        if (user == null) user = userRepository.findAll().stream().findFirst().orElse(null);
+
+        Post post = postRepository.findById(id).orElse(null);
+        if (post != null && user != null) {
+            String content = body.getOrDefault("content", "").trim();
+            if (!content.isEmpty()) {
+                postCommentRepository.save(PostComment.builder().post(post).user(user).content(content).build());
+            }
+        }
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -157,7 +174,16 @@ public class CommunityController {
     }
 
     @PostMapping("/reward/spin")
-    public ResponseEntity<Map<String, Object>> spinRoulette() {
-        return ResponseEntity.ok(Map.of("ok", true, "reward", "영양제 (+5 HP)", "rewardHp", 5));
+    public ResponseEntity<Map<String, Object>> spinRoulette(HttpSession session) {
+        Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
+        if (userId != null) {
+            var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(userId);
+            if (!gogumas.isEmpty()) {
+                var g = gogumas.get(0);
+                g.addHp(5);
+                gogumaRepository.save(g);
+            }
+        }
+        return ResponseEntity.ok(Map.of("ok", true, "reward", "전체온도 +5도", "rewardHp", 5));
     }
 }

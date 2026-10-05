@@ -22,7 +22,7 @@ public class UserService {
 
     @Transactional
     public UserResponse getOrCreateUser(StartRequest request) {
-        String trimmedName = request.getName().trim();
+        String trimmedName = request.getEffectiveName();
         Department dept = Department.from(request.getDepartment());
 
         User user = userRepository.findByName(trimmedName)
