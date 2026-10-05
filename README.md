@@ -1,10 +1,10 @@
 # 🍠 고구마 키우기 (Goguma Web) - Backend v2
 
-> **"게이미피케이션 기반 가상 육성 서비스의 Spring Boot 3 & JPA 계층형 아키텍처 리팩토링"**
+> **"게이미피케이션 기반 가상 육성 서비스의 Spring Boot 3 & JPA 계층형 아키텍처 리팩토링 및 클라우드 배포"**
 
 <p align="left">
-  <a href="https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me" target="_blank">
-    <img src="https://img.shields.io/badge/Live_API-Online-20C997?style=flat-square&logo=cloudflare&logoColor=white"/>
+  <a href="https://gardening-insulin-blowing-jewel.trycloudflare.com" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Service-Online-20C997?style=flat-square&logo=cloudflare&logoColor=white"/>
   </a>
   <img src="https://img.shields.io/badge/Java-17-007396?style=flat-square&logo=java&logoColor=white"/>
   <img src="https://img.shields.io/badge/Spring_Boot-3.2.5-6DB33F?style=flat-square&logo=springboot&logoColor=white"/>
@@ -13,172 +13,235 @@
   <img src="https://img.shields.io/badge/AWS-EC2-232F3E?style=flat-square&logo=amazonaws&logoColor=white"/>
   <img src="https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white"/>
   <img src="https://img.shields.io/badge/Cloudflare_Tunnel-F38020?style=flat-square&logo=cloudflare&logoColor=white"/>
+  <img src="https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white"/>
 </p>
 
 ---
 
-## 🌐 Live API Service
-* **실시간 라이브 API 엔드포인트:** [https://gardening-insulin-blowing-jewel.trycloudflare.com](https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me)
-* **인프라:** AWS EC2 (`t2.micro`) + Docker Compose (Spring Boot + MySQL 8.0) + Cloudflare Tunnel (HTTPS)
+## 🌐 1. Live Deployment & Service Architecture
+
+* **🌐 라이브 서비스 데모:** [https://gardening-insulin-blowing-jewel.trycloudflare.com](https://gardening-insulin-blowing-jewel.trycloudflare.com)
+* **📊 실시간 헬스체크 API:** [https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me](https://gardening-insulin-blowing-jewel.trycloudflare.com/api/me)
+* **☁️ 인프라 환경:** AWS EC2 (`Ubuntu 22.04 LTS`, `t2.micro`) + Docker Compose (Spring Boot 3 + MySQL 8.0) + Cloudflare Tunnel (HTTPS) + GitHub Actions CI/CD
+
+```mermaid
+flowchart TD
+    Client["🌐 사용자 브라우저 / 모바일"] -->|HTTPS (Cloudflare SSL)| CF["🛡️ Cloudflare Network (DDoS / CDN / Tunnel)"]
+    CF -->|Zero-Trust Tunnel| EC2["☁️ AWS EC2 Instance (t2.micro / 2GB Swap)"]
+    subgraph Docker ["🐳 Docker Compose Private Network"]
+        EC2 -->|Port 8080| App["🌱 Spring Boot 3.2.5 API (Java 17 JRE)"]
+        App -->|Port 3306| DB[("🗄️ MySQL 8.0 Database (utf8mb4)")]
+    end
+    Dev["💻 개발자 (Git Push)"] -->|Trigger| GHA["⚙️ GitHub Actions CI/CD"]
+    GHA -->|SSH Remote Execution| EC2
+```
 
 ---
 
-## 🏛️ System Architecture & Blueprint
-
-![Goguma System Architecture & ERD](docs/images/architecture.jpg)
-
----
-
-## 📌 1. 프로젝트 개요 & 리팩토링 배경 (v1 ➔ v2)
+## 📌 2. 프로젝트 개요 & 리팩토링 배경 (v1 ➔ v2)
 
 본 프로젝트는 기존에 빠르게 프로토타입으로 제작되었던 **Node.js (Express) + SQLite 기반의 단일 파일 모놀리식(`server.js` 1,440줄) 레거시 코드**를, 서비스 확장과 동시성 문제 해결을 위해 **Spring Boot 3 + JPA + MySQL 기반의 정석적인 계층형 아키텍처로 전면 마이그레이션 및 리팩토링**한 프로젝트입니다.
 
-### 🔄 마이그레이션 비교 요약
-| 구분 | v1 (Legacy) | v2 (Refactored) | 리팩토링 효과 |
+### 🔄 마이그레이션 비교 분석표
+| 평가 항목 | v1 (Legacy) | v2 (Spring Boot 3 Architecture) | 기술적 개선 효과 |
 | :--- | :--- | :--- | :--- |
-| **Backend** | Node.js (Express) | **Java 17 / Spring Boot 3.2** | 타입 안정성 및 엔터프라이즈 환경 확장성 확보 |
-| **구조** | 단일 파일(`server.js`) | **계층형 아키텍처 (Layered)** | Controller - Service - Repository 관심사 분리 |
-| **데이터베이스** | SQLite (로컬 파일) | **MySQL 8.0 & H2 듀얼 프로파일** | 대용량 트랜잭션 및 인메모리 테스트 환경 지원 |
-| **ORM/영속성** | 원시 SQL 직접 조작 | **Spring Data JPA** | 객체 지향 도메인 모델링 및 유지보수성 향상 |
-| **동시성 제어** | 미적용 | **JPA `@Version` 낙관적 락(Optimistic Lock)** | 광클/중복 요청 시 경험치(HP) 정합성 완벽 보장 |
-| **인프라/보안** | 로컬 실행 | **AWS EC2 + Docker + Cloudflare Tunnel** | 무중단 자동화 및 무료 HTTPS/DDoS 방어 하이브리드 인프라 |
+| **언어 및 런타임** | Node.js (JavaScript ES6) | **Java 17 LTS / Spring Boot 3.2.5** | 컴파일 타임 타입 검증 및 견고한 객체 지향 도메인 설계 |
+| **소프트웨어 구조** | 1,440줄 단일 스크립트 | **계층형 아키텍처 (Controller-Service-Repository-Entity-DTO)** | 책임과 관심사 분리(SoC)로 단위 테스트 및 유지보수 용이 |
+| **데이터베이스** | SQLite (로컬 파일 단일 쓰기 락) | **MySQL 8.0 & H2 In-Memory 듀얼 프로파일** | 대용량 동시 트랜잭션 처리 및 개발-운영 격리 환경 구축 |
+| **데이터 영속성** | Raw SQL 문자열 조합 | **Spring Data JPA & Hibernate** | 객체 중심 매핑, 변경 감지(Dirty Checking), 캐싱 |
+| **동시성 제어** | 미적용 (레이스 컨디션 발생) | **JPA `@Version` 낙관적 락 (Optimistic Locking)** | 사용자의 급격한 광클/중복 요청 시 경험치(HP) 정합성 완벽 보장 |
+| **미션/보상 영속성**| 메모리/로컬스토리지 임시 보관 | **RDBMS 기반 `MissionReward` 복합 유니크 제약** | 중복 수령 방지 및 디바이스 간 미션 달성 상태 완전 동기화 |
+| **인프라 & CI/CD** | 로컬 수동 구동 | **AWS EC2 + Docker Compose + GitHub Actions** | Git Push 시 빌드-테스트-배포 무중단 완전 자동화 |
 
 ---
 
-## 🗄️ 2. 데이터베이스 ERD (Entity Relationship Diagram)
+## 🗄️ 3. 데이터베이스 ERD (Entity Relationship Diagram)
 
 ```mermaid
 erDiagram
-    USER ||--o{ GOGUMA : "1:N 육성"
-    USER ||--o{ GOGUMA_ACTION : "1:N 활동 기록"
-    USER ||--o{ MISSION_REWARD : "1:N 보상 수령"
-    USER ||--o{ POST : "1:N 작성"
-    USER ||--o{ POST_LIKE : "1:N 좋아요"
+    USER ||--o{ GOGUMA : "1:N 보유 및 육성"
+    USER ||--o{ GOGUMA_ACTION : "1:N 일일 활동 기록"
+    USER ||--o{ MISSION_REWARD : "1:N 미션 보상 수령"
+    USER ||--o{ POST : "1:N 게시글 작성"
+    USER ||--o{ POST_LIKE : "1:N 공감(좋아요)"
     USER ||--o{ POST_COMMENT : "1:N 댓글 작성"
-    GOGUMA ||--o{ GOGUMA_ACTION : "1:N 활동 이력"
-    POST ||--o{ POST_LIKE : "1:N 수집"
-    POST ||--o{ POST_COMMENT : "1:N 수집"
+    GOGUMA ||--o{ GOGUMA_ACTION : "1:N 성장 로그"
+    POST ||--o{ POST_LIKE : "1:N 공감 수집"
+    POST ||--o{ POST_COMMENT : "1:N 댓글 수집"
 
     USER {
-        bigint id PK "회원 식별자"
-        varchar name UK "유저 닉네임 (최대 20자)"
-        varchar department "소속 부서 (Enum)"
-        int total_visit_days "총 출석 일수"
-        date last_visit_date "최근 방문일"
-        datetime created_at "가입일시"
+        bigint id PK "회원 고유 식별자"
+        varchar name UK "유저명 / 닉네임"
+        varchar department "소속 부서 (언약부, 밀알부, 이레부)"
+        int total_visit_days "누적 출석 일수"
+        date last_visit_date "최근 접속일"
+        datetime created_at "가입 일시"
     }
 
     GOGUMA {
         bigint id PK "고구마 식별자"
         bigint user_id FK "소유 회원 ID"
-        varchar name "고구마 이름"
-        varchar relation "관계"
+        varchar name "고구마 이름 (전도 대상자명)"
+        varchar relation "관계 (친구, 가족, 직장동료 등)"
         int age "나이"
-        int hp "현재 경험치 / 체력"
-        bigint version "낙관적 락 버전 번호 ⭐"
-        datetime created_at "생성일시"
+        int hp "현재 경험치 / 온도 (0~100)"
+        bigint version "낙관적 락 버전 번호 (Optimistic Lock) ⭐"
+        datetime created_at "생성 일시"
     }
 
     GOGUMA_ACTION {
-        bigint id PK "액션 로그 식별자"
+        bigint id PK "활동 로그 식별자"
         bigint user_id FK "수행 회원 ID"
         bigint goguma_id FK "대상 고구마 ID"
-        varchar action_type "액션 타입 (Enum)"
+        varchar action_type "액션 타입 (bible, prayer, contact, invite 등)"
         date action_date "수행 날짜 (YYYY-MM-DD)"
-        datetime created_at "기록일시"
+        datetime created_at "기록 일시"
     }
 
     MISSION_REWARD {
-        bigint id PK "보상 식별자"
+        bigint id PK "보상 로그 식별자"
         bigint user_id FK "수령 회원 ID"
-        varchar mission_key "미션 키 식별자"
+        varchar mission_key "미션 키 (daily_core3, weekly_w1_post3)"
         varchar period_key "주간/일간 기간 키"
-        int reward_hp "보상 경험치"
-        datetime created_at "수령일시"
+        int reward_hp "지급된 보상 온도 (+2, +6)"
+        datetime created_at "수령 일시"
     }
 
     POST {
         bigint id PK "게시글 식별자"
         bigint user_id FK "작성 회원 ID"
-        varchar category "카테고리"
-        varchar title "제목"
-        text content "본문 내용"
-        text image_data "이미지 Base64/URL"
-        datetime created_at "작성일시"
+        varchar category "카테고리 (출석인사, 은혜나눔 등)"
+        varchar title "게시글 제목"
+        text content "게시글 본문 내용"
+        mediumtext image_data "첨부 이미지 Base64"
+        datetime created_at "작성 일시"
+    }
+
+    POST_LIKE {
+        bigint id PK "좋아요 식별자"
+        bigint post_id FK "게시글 ID"
+        bigint user_id FK "회원 ID"
+        datetime created_at "공감 일시"
+    }
+
+    POST_COMMENT {
+        bigint id PK "댓글 식별자"
+        bigint post_id FK "게시글 ID"
+        bigint user_id FK "작성 회원 ID"
+        varchar content "댓글 본문"
+        datetime created_at "작성 일시"
     }
 ```
 
 ---
 
-## 📡 3. REST API 명세서
+## 🛠️ 4. 기술적 의사결정 & 트러블슈팅 (Core Engineering Deep Dive)
 
-모든 API 응답은 통일된 규격(`ApiResponse<T>`)으로 반환됩니다:
-```json
-{
-  "success": true,
-  "data": { ... },
-  "message": "요청이 성공적으로 처리되었습니다."
-}
-```
+### 1) 동시성 제어: 고구마 성장(Grow) 광클에 대한 낙관적 락(Optimistic Lock) 적용
+* **문제 상황:** 사용자가 빠른 속도로 성장 버튼을 연타하거나 다중 탭에서 동시 요청을 보낼 경우, 트랜잭션 격리 수준에 따라 이전 트랜잭션의 커밋 전 데이터를 읽어 갱신 손실(Lost Update) 및 경험치 누락 문제가 발생할 수 있었습니다.
+* **의사 결정:**
+  * DB 전체 또는 레코드에 대기 락을 거는 **비관적 락(Pessimistic Lock)**은 락 획득 대기로 인한 지연 시간(Latency) 증가와 처리량(Throughput) 저하를 초래합니다.
+  * 웹 게임 특성상 충돌 빈도가 치명적인 충돌보다는 순간적인 버스트 클릭이므로, **JPA의 `@Version` 컬럼을 활용한 낙관적 락(Optimistic Lock)**을 선택했습니다.
+* **결과:**
+  * 첫 번째 요청만 정상 커밋되고, 동일 버전에 대한 중복/지연 커밋 시도는 `ObjectOptimisticLockingFailureException`으로 안전하게 격리되어 **경험치 정합성이 100% 보장**됩니다.
 
-### 👤 User & Auth API
-| HTTP Method | Endpoint | 설명 | Request Body / Param |
+### 2) 하루 1회 활동 제한: 애플리케이션 + DB 2단계 복합 제약 조건(Compound Unique Constraint)
+* **문제 상황:** 동일한 날짜에 같은 활동(예: 말씀 읽기)을 여러 번 수행하여 어뷰징하는 것을 방지해야 했습니다.
+* **해결 방법:**
+  1. **애플리케이션 계층 검증:** `gogumaActionRepository.existsByUserIdAndGogumaIdAndActionTypeAndActionDate(...)`를 통해 1차 유효성 검증.
+  2. **데이터베이스 계층 방어선:** `GogumaAction` 엔티티에 `@UniqueConstraint(name = "uk_user_goguma_action_date", columnNames = {"user_id", "goguma_id", "action_type", "action_date"})` 복합 유니크 인덱스를 지정하여 멀티스레드 레이스 컨디션 상황에서도 DB 레벨에서 중복 삽입을 원천 차단.
+
+### 3) 실시간 미션 달성 감지 & 보상 영속화 (`MissionReward`)
+* **문제 상황:** 사용자가 일일 3종 미션(말씀, 기도, 연락)을 완료하거나 게시판 작성 3회를 달성했을 때, 서버 세션 유실이나 지연으로 인해 미션이 계속 "진행 중"으로 머물거나 새로고침 시 중복 수령되는 버그 해결 필요.
+* **해결 방법:**
+  * `MissionReward` 테이블에 `(user_id, mission_key, period_key)` 복합 유니크 제약을 설정하여 1회 수령 시 영속화하고, 새로고침 후에도 `claimed: true` 상태를 유지.
+  * 보상 수령 시 사용자가 보유한 모든 고구마에 `addHp(rewardHp)`를 일괄 적용하고 최신 고구마 목록을 반환하여, 클라이언트 화면의 온도 게이지와 애니메이션(`+2 HP ✨`)이 즉각 반영되도록 최적화.
+
+### 4) 인프라 비용 절감 & 무중단 보안: Cloudflare Tunnel 도입
+* **배경:** AWS 상에서 HTTPS(SSL)와 안전한 도메인을 연결하려면 ALB(Application Load Balancer, 월 ~$20) 비용과 고정 퍼블릭 IPv4 할당 비용이 지속적으로 발생합니다.
+* **해결 방법:**
+  * EC2 인바운드 8080 포트를 외부에 직접 노출하지 않고, 아웃바운드로 Cloudflare 보안 네트워크와 연결되는 **Cloudflare Tunnel (`cloudflared`)** 아키텍처를 구축.
+  * **비용 0원**으로 글로벌 Anycast CDN 캐싱, 무료 SSL/TLS 인증서 자동 갱신, DDoS 공격 자동 방어를 완벽하게 달성했습니다.
+
+---
+
+## 📡 5. RESTful API 명세서 (API Specification)
+
+모든 API 응답은 일관된 JSON 포맷을 지원합니다.
+
+### 👤 유저 및 인증 (User & Session)
+| Method | Endpoint | 설명 | Request Body / Query |
 | :---: | :--- | :--- | :--- |
-| `POST` | `/api/start` | 닉네임 기반 로그인/회원가입 및 세션 발급 | `{"name": "진호", "department": "언약부"}` |
-| `GET` | `/api/me` | 현재 세션 로그인 유저 정보 조회 | Header (Session ID) |
-| `POST` | `/api/logout` | 세션 무효화 및 로그아웃 | Header (Session ID) |
+| `POST` | `/api/start` | 닉네임/부서 기반 로그인 및 신규 유저 생성 | `{"userName": "권진호", "department": "언약부"}` |
+| `GET` | `/api/me` | 현재 세션 유저 정보 및 보유 고구마 목록 조회 | Cookie: `JSESSIONID` |
+| `POST` | `/api/logout` | 세션 무효화 및 로그아웃 | Cookie: `JSESSIONID` |
 
-### 🍠 Goguma Domain API (핵심)
-| HTTP Method | Endpoint | 설명 | Request Body / Param |
+### 🍠 고구마 도메인 (Goguma Lifecycle & Growth)
+| Method | Endpoint | 설명 | Request Body / Param |
 | :---: | :--- | :--- | :--- |
-| `GET` | `/api/goguma` | 로그인 유저가 보유한 고구마 목록 조회 | Header (Session ID) |
-| `POST` | `/api/goguma/add` | 새로운 고구마 캐릭터 등록 | `{"name": "호박이", "relation": "친구", "age": 25}` |
-| `POST` | `/api/goguma/grow` | **성장/활동 수행 (동시성 제어 적용)** | `{"gogumaId": 1, "actionType": "contact"}` |
-| `GET` | `/api/goguma/{id}/history`| 고구마별 활동 누적 히스토리 조회 | Path: `id` (고구마 ID) |
+| `GET` | `/api/goguma` | 로그인 유저가 보유한 고구마 목록 조회 | Session / Header |
+| `POST` | `/api/goguma/add` | 새로운 전도 대상 고구마 추가 등록 | `{"name": "김친구", "relation": "직장동료", "age": 28}` |
+| `POST` | `/api/goguma/grow` | **성장 행동 수행 (낙관적 락 적용)** | `{"id": 1, "actionType": "bible"}` |
+| `GET` | `/api/goguma/{id}/history`| 특정 고구마의 날짜별 활동 이력 히스토리 | Path: `id` (고구마 ID) |
 | `POST` | `/api/goguma/remove` | 고구마 삭제 | `{"id": 1}` |
 
-#### 💡 액션 타입 및 경험치 가중치 명세
-* `postWrite` (+1 HP): 게시판 글 작성
-* `bible` (+1 HP): 말씀 읽기
-* `prayer` (+1 HP): 기도 부탁하기
-* `contact` (+2 HP): 연락 및 오프라인 만남
-* `invite` (+8 HP): 권유 및 전도하기
+> **💡 활동 타입 및 경험치 가중치:**  
+> * `bible` (+1 HP): 말씀 읽기  
+> * `prayer` (+1 HP): 기도 부탁하기  
+> * `contact` (+2 HP): 연락 및 오프라인 만남  
+> * `invite` (+8 HP): 전도 집회 권유하기  
+> * `postWrite` (+1 HP): 게시판 글 작성  
+
+### 🎯 미션 및 보상 (Missions & Rewards)
+| Method | Endpoint | 설명 | Request Body / Query |
+| :---: | :--- | :--- | :--- |
+| `GET` | `/api/missions` | 일일 3종 미션 및 주간 미션 진행 현황 조회 | `?userName=권진호` |
+| `POST` | `/api/missions/{key}/claim` | 미션 달성 보상 수령 (전체 온도 가산) | `{"userName": "권진호"}` |
+| `POST` | `/api/reward/spin` | 출석 룰렛 보상 수령 (전체 온도 +5도 가산) | Session / Header |
+
+### 💬 커뮤니티 & 랭킹 (Community & Ranking)
+| Method | Endpoint | 설명 | Request Body / Param |
+| :---: | :--- | :--- | :--- |
+| `GET` | `/api/posts` | 커뮤니티 전체 게시글 목록 및 공감/댓글 수 | - |
+| `GET` | `/api/posts/{id}` | 특정 게시글 상세 조회 및 댓글 목록 | Path: `id` |
+| `POST` | `/api/posts/add` | 새 게시글 작성 (+1 HP 보상) | `{"title": "...", "content": "...", "category": "출석인사"}` |
+| `POST` | `/api/posts/{id}/like` | 게시글 공감(좋아요) 토글 | Path: `id` |
+| `POST` | `/api/posts/{id}/comments` | 게시글 댓글 등록 | `{"content": "은혜롭습니다!", "userName": "권진호"}` |
+| `POST` | `/api/comments/{id}/update` | 댓글 수정 | `{"content": "수정 내용"}` |
+| `POST` | `/api/comments/{id}/delete` | 댓글 삭제 | Path: `id` |
+| `POST` | `/api/posts/delete` | 게시글 삭제 | `{"id": 1}` |
+| `GET` | `/api/ranking` | 부서별 평균 온도/고구마수/참여인원 랭킹 | - |
 
 ---
 
-## 🛠️ 4. 기술적 의사결정 및 트러블슈팅 (면접 핵심 포인트)
+## 🚀 6. 실행 및 배포 가이드 (Getting Started)
 
-### 1) '성장(Grow)' 요청에 대한 동시성 이슈 및 낙관적 락(Optimistic Lock) 해결
-* **문제 상황:** 사용자가 네트워크 지연 상태에서 '물주기/성장' 버튼을 빠르게 연속 클릭할 경우, 이전 트랜잭션이 커밋되기 전에 새 트랜잭션이 조회하여 고구마의 경험치(HP)가 중복 누락되거나 정합성이 깨질 위험 발생.
-* **해결 방법:**
-  * DB 전체에 락을 거는 비관적 락(Pessimistic Lock)은 처리량이 떨어지므로, 충돌 빈도가 상대적으로 낮은 웹 환경 특성을 고려하여 **JPA의 `@Version`을 이용한 낙관적 락** 도입.
-  * 동시에 커밋 시도 시 `ObjectOptimisticLockingFailureException`을 감지하여 안전하게 롤백하고 재시도 유도.
-* **결과:** 급격한 중복 트랜잭션 발생 시에도 데이터 정합성을 100% 보장.
-
-### 2) 하루 1회 액션 제한: 복합 유니크 제약(Unique Constraint)과 2단계 검증
-* **문제 상황:** 사용자가 동일한 날짜에 같은 액션(예: 기도하기)을 다중 탭에서 동시에 실행할 경우 중복 기록이 생성될 수 있음.
-* **해결 방법:**
-  1. 애플리케이션 계층: `existsByUserIdAndGogumaIdAndActionTypeAndActionDate(...)` 사전 조회 검증
-  2. 데이터베이스 계층: `(user_id, goguma_id, action_type, action_date)` 복합 유니크 인덱스 설정
-* **결과:** 레이스 컨디션 환경에서도 데이터베이스 레벨에서 원천적으로 중복 삽입 차단.
-
-### 3) 인프라 비용 절감 & 보안 강화를 위한 Cloudflare Tunnel 도입
-* **배경:** AWS에서 `https://` 보안 통신을 구축하려면 ALB(Application Load Balancer) 비용(월 약 3~4만 원) 및 고정 퍼블릭 IPv4 비용이 발생.
-* **해결 방법:** EC2의 인바운드 포트를 외부에 직접 열지 않고, 아웃바운드로 Cloudflare 네트워크와 보안 터널을 맺는 **Cloudflare Tunnel (`cloudflared`)** 도입.
-* **결과:** **비용 0원으로 완벽한 무료 HTTPS(SSL) 적용 및 DDoS 방어, CDN 가속을 동시 달성.**
-
----
-
-## 🚀 5. Getting Started (실행 방법)
-
-### 로컬 실행 (H2 In-Memory)
+### 1) 로컬 개발 환경 실행 (H2 In-Memory DB)
 ```bash
+cd goguma-backend
+# Gradle 빌드 및 로컬 구동 (기본 프로파일: local)
 ./gradlew bootRun
-# 포트: http://localhost:8080
-# H2 콘솔: http://localhost:8080/h2-console
+
+# 서비스 접속: http://localhost:8080
+# H2 웹 콘솔: http://localhost:8080/h2-console
 ```
 
-### Docker Compose 운영 실행 (MySQL 8.0)
+### 2) 프로덕션 Docker Compose 실행 (MySQL 8.0)
 ```bash
+# 컨테이너 빌드 및 백그라운드 구동
 docker compose up -d --build
+
+# 컨테이너 상태 확인
+docker compose ps
+# 로그 모니터링
+docker compose logs -f backend
 ```
+
+### 3) GitHub Actions 자동 배포 (CI/CD)
+`.github/workflows/deploy.yml`이 구성되어 있어, `main` 브랜치에 코드를 푸시하면 AWS EC2 서버에 SSH로 접속하여 자동으로 컨테이너를 빌드하고 무중단 배포를 완료합니다.
+
+---
+
+## 👨‍💻 Author & Contact
+* **GitHub:** [@1928704-afk](https://github.com/1928704-afk)
+* **Email:** `109893466+kwonjjinho@users.noreply.github.com`
