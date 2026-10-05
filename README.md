@@ -26,14 +26,14 @@
 
 ```mermaid
 flowchart TD
-    Client["🌐 사용자 브라우저 / 모바일"] -->|HTTPS (Cloudflare SSL)| CF["🛡️ Cloudflare Network (DDoS / CDN / Tunnel)"]
-    CF -->|Zero-Trust Tunnel| EC2["☁️ AWS EC2 Instance (t2.micro / 2GB Swap)"]
-    subgraph Docker ["🐳 Docker Compose Private Network"]
-        EC2 -->|Port 8080| App["🌱 Spring Boot 3.2.5 API (Java 17 JRE)"]
-        App -->|Port 3306| DB[("🗄️ MySQL 8.0 Database (utf8mb4)")]
+    Client["사용자 브라우저 / 모바일"] -->|"HTTPS (Cloudflare SSL)"| CF["Cloudflare Network (DDoS / CDN / Tunnel)"]
+    CF -->|"Zero-Trust Tunnel"| EC2["AWS EC2 Instance (t2.micro / 2GB Swap)"]
+    subgraph Docker ["Docker Compose Private Network"]
+        EC2 -->|"Port 8080"| App["Spring Boot 3.2.5 API (Java 17 JRE)"]
+        App -->|"Port 3306"| DB[("MySQL 8.0 Database (utf8mb4)")]
     end
-    Dev["💻 개발자 (Git Push)"] -->|Trigger| GHA["⚙️ GitHub Actions CI/CD"]
-    GHA -->|SSH Remote Execution| EC2
+    Dev["개발자 (Git Push)"] -->|"Trigger"| GHA["GitHub Actions CI/CD"]
+    GHA -->|"SSH Remote Execution"| EC2
 ```
 
 ---
@@ -59,77 +59,77 @@ flowchart TD
 
 ```mermaid
 erDiagram
-    USER ||--o{ GOGUMA : "1:N 보유 및 육성"
-    USER ||--o{ GOGUMA_ACTION : "1:N 일일 활동 기록"
-    USER ||--o{ MISSION_REWARD : "1:N 미션 보상 수령"
+    USER ||--o{ GOGUMA : "1:N 보유"
+    USER ||--o{ GOGUMA_ACTION : "1:N 활동 기록"
+    USER ||--o{ MISSION_REWARD : "1:N 미션 수령"
     USER ||--o{ POST : "1:N 게시글 작성"
-    USER ||--o{ POST_LIKE : "1:N 공감(좋아요)"
+    USER ||--o{ POST_LIKE : "1:N 공감"
     USER ||--o{ POST_COMMENT : "1:N 댓글 작성"
     GOGUMA ||--o{ GOGUMA_ACTION : "1:N 성장 로그"
     POST ||--o{ POST_LIKE : "1:N 공감 수집"
     POST ||--o{ POST_COMMENT : "1:N 댓글 수집"
 
     USER {
-        bigint id PK "회원 고유 식별자"
-        varchar name UK "유저명 / 닉네임"
-        varchar department "소속 부서 (언약부, 밀알부, 이레부)"
-        int total_visit_days "누적 출석 일수"
-        date last_visit_date "최근 접속일"
-        datetime created_at "가입 일시"
+        bigint id PK
+        varchar name UK
+        varchar department
+        int total_visit_days
+        date last_visit_date
+        datetime created_at
     }
 
     GOGUMA {
-        bigint id PK "고구마 식별자"
-        bigint user_id FK "소유 회원 ID"
-        varchar name "고구마 이름 (전도 대상자명)"
-        varchar relation "관계 (친구, 가족, 직장동료 등)"
-        int age "나이"
-        int hp "현재 경험치 / 온도 (0~100)"
-        bigint version "낙관적 락 버전 번호 (Optimistic Lock) ⭐"
-        datetime created_at "생성 일시"
+        bigint id PK
+        bigint user_id FK
+        varchar name
+        varchar relation
+        int age
+        int hp
+        bigint version
+        datetime created_at
     }
 
     GOGUMA_ACTION {
-        bigint id PK "활동 로그 식별자"
-        bigint user_id FK "수행 회원 ID"
-        bigint goguma_id FK "대상 고구마 ID"
-        varchar action_type "액션 타입 (bible, prayer, contact, invite 등)"
-        date action_date "수행 날짜 (YYYY-MM-DD)"
-        datetime created_at "기록 일시"
+        bigint id PK
+        bigint user_id FK
+        bigint goguma_id FK
+        varchar action_type
+        date action_date
+        datetime created_at
     }
 
     MISSION_REWARD {
-        bigint id PK "보상 로그 식별자"
-        bigint user_id FK "수령 회원 ID"
-        varchar mission_key "미션 키 (daily_core3, weekly_w1_post3)"
-        varchar period_key "주간/일간 기간 키"
-        int reward_hp "지급된 보상 온도 (+2, +6)"
-        datetime created_at "수령 일시"
+        bigint id PK
+        bigint user_id FK
+        varchar mission_key
+        varchar period_key
+        int reward_hp
+        datetime created_at
     }
 
     POST {
-        bigint id PK "게시글 식별자"
-        bigint user_id FK "작성 회원 ID"
-        varchar category "카테고리 (출석인사, 은혜나눔 등)"
-        varchar title "게시글 제목"
-        text content "게시글 본문 내용"
-        mediumtext image_data "첨부 이미지 Base64"
-        datetime created_at "작성 일시"
+        bigint id PK
+        bigint user_id FK
+        varchar category
+        varchar title
+        text content
+        mediumtext image_data
+        datetime created_at
     }
 
     POST_LIKE {
-        bigint id PK "좋아요 식별자"
-        bigint post_id FK "게시글 ID"
-        bigint user_id FK "회원 ID"
-        datetime created_at "공감 일시"
+        bigint id PK
+        bigint post_id FK
+        bigint user_id FK
+        datetime created_at
     }
 
     POST_COMMENT {
-        bigint id PK "댓글 식별자"
-        bigint post_id FK "게시글 ID"
-        bigint user_id FK "작성 회원 ID"
-        varchar content "댓글 본문"
-        datetime created_at "작성 일시"
+        bigint id PK
+        bigint post_id FK
+        bigint user_id FK
+        varchar content
+        datetime created_at
     }
 ```
 
