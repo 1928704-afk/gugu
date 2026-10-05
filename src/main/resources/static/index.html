@@ -2548,6 +2548,64 @@
       background: #ffecb3;
       box-shadow: inset 0 -2px 0 #c49a00;
     }
+  
+    /* === UI/UX 최적화 추가 스타일 === */
+    button, .btn {
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    .portfolio-badge {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 99999;
+      background: #1e1e2e;
+      color: #a6e3a1;
+      padding: 6px 12px;
+      border: 2px solid #a6e3a1;
+      border-radius: 4px;
+      font-size: 11px;
+      text-decoration: none;
+      box-shadow: 2px 2px 0 #000;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease;
+      font-family: inherit;
+    }
+    .portfolio-badge:hover {
+      transform: scale(1.05);
+      background: #252538;
+      color: #a6e3a1;
+    }
+    .portfolio-badge .badge-dot {
+      width: 7px;
+      height: 7px;
+      background: #20C997;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 6px #20C997;
+    }
+
+    /* 플로팅 +HP 텍스트 애니메이션 */
+    .hp-float-text {
+      position: absolute;
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffe066;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+      pointer-events: none;
+      z-index: 10000;
+      animation: hpFloatAnim 0.9s ease-out forwards;
+    }
+    @keyframes hpFloatAnim {
+      0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+      50% { transform: translate(-50%, -25px) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
+    }
+
   </style>
 </head>
 <body data-stage="2">
@@ -3006,8 +3064,7 @@
       'game_images/Backgrounds/backgroundColorFall.png',
       'game_images/Backgrounds/backgroundDesert.png',
       'game_images/Backgrounds/backgroundColorDesert.png',
-      'game_images/Backgrounds/backgroundCastles.png',
-      'game_images/Backgrounds/backgroundEmpty.png'
+      
     ];
     var CARD_BG_STORAGE_KEY = 'goguma.cardBgPrefs.v1';
     var gogumaCardBgPrefById = {};
@@ -3136,6 +3193,19 @@
           rouletteBtn.textContent = remain > 0 ? ("룰렛 D-" + remain) : "7일 룰렛";
         }
       }
+    }
+
+    
+    function showHpFloatingText(text, x, y) {
+      var el = document.createElement('div');
+      el.className = 'hp-float-text';
+      el.textContent = text;
+      el.style.left = (x || (window.innerWidth / 2)) + 'px';
+      el.style.top = (y || (window.innerHeight / 2)) + 'px';
+      document.body.appendChild(el);
+      setTimeout(function() {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 900);
     }
 
     function setInlineNotice(message, tone) {
@@ -4915,7 +4985,11 @@
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
-        if (result.hp != null) g.hp = result.hp;
+        if (result.hp != null) {
+          var gain = result.hp - (g.hp || 0);
+          g.hp = result.hp;
+          showHpFloatingText('+' + (gain > 0 ? gain : 1) + ' HP ✨', window.innerWidth / 2, window.innerHeight * 0.45);
+        }
         if (result && result.actionScores && typeof result.actionScores === 'object') {
           g.actionScores = result.actionScores;
           updateDominantActionFromScores(g);
