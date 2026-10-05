@@ -1,28 +1,19 @@
-# Node / Legacy
 node_modules/
-*.log
+.DS_Store
 .env
+.env.local
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Runtime data
 goguma.db
+goguma.db-*
 sessions/
 
-# Spring Boot / Gradle
-.gradle/
-build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-
-### IDE ###
-.idea/
-*.iml
-*.ipr
-*.iws
-out/
-.vscode/
-.classpath
-.project
-.settings/
-
-### OS ###
-.DS_Store
-Thumbs.db
+# macOS Unicode-normalized duplicate asset names
+game_images/sprout_charactors2/01_성경2.png
+game_images/sprout_charactors2/02_기도2.png
+game_images/sprout_charactors2/03_연락2.png
+game_images/sprout_charactors2/04_만남2.png
+game_images/sprout_charactors2/05_초대2.png
