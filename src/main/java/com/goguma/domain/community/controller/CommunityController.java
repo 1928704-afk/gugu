@@ -114,7 +114,10 @@ public class CommunityController {
         for (PostComment c : comments) {
             Map<String, Object> cm = new HashMap<>();
             cm.put("id", c.getId());
+            cm.put("userId", c.getUser().getId());
+            cm.put("userName", c.getUser().getName());
             cm.put("writer", c.getUser().getName());
+            cm.put("department", c.getUser().getDepartment().getDescription());
             cm.put("content", c.getContent());
             cm.put("createdAt", c.getCreatedAt() != null ? c.getCreatedAt().format(formatter) : "");
             commentsList.add(cm);
@@ -185,6 +188,18 @@ public class CommunityController {
     ) {
         Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
         User user = (userId != null) ? userRepository.findById(userId).orElse(null) : null;
+        if (user == null && body.containsKey("userName")) {
+            String userName = body.get("userName");
+            if (userName != null && !userName.trim().isEmpty()) {
+                user = userRepository.findByName(userName.trim()).orElse(null);
+            }
+        }
+        if (user == null && body.containsKey("userId")) {
+            try {
+                Long uid = Long.parseLong(body.get("userId"));
+                user = userRepository.findById(uid).orElse(null);
+            } catch (Exception ignored) {}
+        }
         if (user == null) user = userRepository.findAll().stream().findFirst().orElse(null);
 
         Post post = postRepository.findById(id).orElse(null);

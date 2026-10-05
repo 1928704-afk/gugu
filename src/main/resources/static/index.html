@@ -3226,7 +3226,8 @@
         setMissionState(null);
         return;
       }
-      fetchJson(API + '/api/missions', { credentials: 'include', cache: 'no-store' })
+      var query = '?userName=' + encodeURIComponent(currentUser.name || '') + '&userId=' + (currentUser.id || '');
+      fetchJson(API + '/api/missions' + query, { credentials: 'include', cache: 'no-store' })
         .then(function(res) {
           if (!res.ok || !res.data || res.data.error) return;
           setMissionState(res.data);
@@ -3288,6 +3289,23 @@
 
       var daily = missionState.daily;
       var weekly = missionState.weekly;
+
+      // 현재 고구마의 오늘 행동(todayActions)을 즉시 반영하여 완료 상태 보정
+      var currentGoguma = (selectedIndex >= 0 && data[selectedIndex]) ? data[selectedIndex] : null;
+      if (currentGoguma && currentGoguma.todayActions) {
+        var localCompleted = [];
+        ['bible', 'prayer', 'contact'].forEach(function(k) {
+          if (currentGoguma.todayActions[k]) localCompleted.push(k);
+        });
+        if (localCompleted.length > (daily.completedActions ? daily.completedActions.length : 0)) {
+          daily.completedActions = localCompleted;
+          daily.progress = { current: localCompleted.length, total: 3 };
+        }
+        if (daily.completedActions && daily.completedActions.length >= 3) {
+          daily.completed = true;
+        }
+      }
+
       var dailyChecklist = renderDailyMissionChecklist(daily);
       var weeklySub = (weekly.weekStart && weekly.weekEnd) ? (weekly.weekStart + ' ~ ' + weekly.weekEnd) : '이번 주';
 
@@ -3305,12 +3323,20 @@
       fetchJson(API + '/api/missions/' + missionKey + '/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          userName: (currentUser && currentUser.name) ? currentUser.name : '',
+          userId: (currentUser && currentUser.id) ? currentUser.id : null
+        })
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || !result || result.error) {
           setInlineNotice((result && result.error) || '미션 보상 수령 중 오류가 발생했습니다.', 'error');
           return;
+        }
+
+        if (missionState && missionState[missionKey === 'daily_core3' ? 'daily' : 'weekly']) {
+          missionState[missionKey === 'daily_core3' ? 'daily' : 'weekly'].claimed = true;
         }
 
         if (result.user) {
@@ -4297,7 +4323,7 @@
             return (
               '<div class="community-comment-item">' +
                 '<div class="community-comment-head">' +
-                  '<span class="community-comment-author">' + escapeHtml(comment.userName || '익명') + '</span>' +
+                  '<span class="community-comment-author">' + escapeHtml(comment.userName || comment.writer || '익명') + '</span>' +
                   commentActions +
                   '<span>' + escapeHtml(formatCommunityDate(comment.created_at || comment.createdAt)) + '</span>' +
                 '</div>' +
@@ -4414,7 +4440,11 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content: content })
+        body: JSON.stringify({
+          content: content,
+          userName: (currentUser && currentUser.name) ? currentUser.name : '',
+          userId: (currentUser && currentUser.id) ? currentUser.id : null
+        })
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) {
@@ -4893,7 +4923,11 @@
         data = (result.gogumas || []).map(function(g) {
           return normalizeGoguma(g);
         });
-        setMissionState(result.missions || null);
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
         currentViewMode = 'field';
         selectedIndex = data.length > 0 ? 0 : -1;
         document.getElementById("nameInputStep").classList.add("hidden");

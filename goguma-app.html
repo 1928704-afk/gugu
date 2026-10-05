@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico">
   <title>고구마 전도</title>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
   <style>
@@ -2548,6 +2549,64 @@
       background: #ffecb3;
       box-shadow: inset 0 -2px 0 #c49a00;
     }
+  
+    /* === UI/UX 최적화 추가 스타일 === */
+    button, .btn {
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    
+    .portfolio-badge {
+      position: fixed;
+      top: 10px;
+      right: 12px;
+      z-index: 99999;
+      background: #1e1e2e;
+      color: #a6e3a1;
+      padding: 6px 12px;
+      border: 2px solid #a6e3a1;
+      border-radius: 4px;
+      font-size: 11px;
+      text-decoration: none;
+      box-shadow: 2px 2px 0 #000;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s ease;
+      font-family: inherit;
+    }
+    .portfolio-badge:hover {
+      transform: scale(1.05);
+      background: #252538;
+      color: #a6e3a1;
+    }
+    .portfolio-badge .badge-dot {
+      width: 7px;
+      height: 7px;
+      background: #20C997;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 0 6px #20C997;
+    }
+
+    /* 플로팅 +HP 텍스트 애니메이션 */
+    .hp-float-text {
+      position: absolute;
+      font-size: 24px;
+      font-weight: bold;
+      color: #ffe066;
+      text-shadow: 2px 2px 0 #000, -1px -1px 0 #000;
+      pointer-events: none;
+      z-index: 10000;
+      animation: hpFloatAnim 0.9s ease-out forwards;
+    }
+    @keyframes hpFloatAnim {
+      0% { opacity: 1; transform: translate(-50%, 0) scale(0.8); }
+      50% { transform: translate(-50%, -25px) scale(1.2); }
+      100% { opacity: 0; transform: translate(-50%, -50px) scale(1); }
+    }
+
   </style>
 </head>
 <body data-stage="2">
@@ -3006,8 +3065,7 @@
       'game_images/Backgrounds/backgroundColorFall.png',
       'game_images/Backgrounds/backgroundDesert.png',
       'game_images/Backgrounds/backgroundColorDesert.png',
-      'game_images/Backgrounds/backgroundCastles.png',
-      'game_images/Backgrounds/backgroundEmpty.png'
+      
     ];
     var CARD_BG_STORAGE_KEY = 'goguma.cardBgPrefs.v1';
     var gogumaCardBgPrefById = {};
@@ -3138,6 +3196,19 @@
       }
     }
 
+    
+    function showHpFloatingText(text, x, y) {
+      var el = document.createElement('div');
+      el.className = 'hp-float-text';
+      el.textContent = text;
+      el.style.left = (x || (window.innerWidth / 2)) + 'px';
+      el.style.top = (y || (window.innerHeight / 2)) + 'px';
+      document.body.appendChild(el);
+      setTimeout(function() {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 900);
+    }
+
     function setInlineNotice(message, tone) {
       var notice = document.getElementById('inlineNotice');
       if (!notice) return;
@@ -3155,7 +3226,8 @@
         setMissionState(null);
         return;
       }
-      fetchJson(API + '/api/missions', { credentials: 'include', cache: 'no-store' })
+      var query = '?userName=' + encodeURIComponent(currentUser.name || '') + '&userId=' + (currentUser.id || '');
+      fetchJson(API + '/api/missions' + query, { credentials: 'include', cache: 'no-store' })
         .then(function(res) {
           if (!res.ok || !res.data || res.data.error) return;
           setMissionState(res.data);
@@ -3217,6 +3289,23 @@
 
       var daily = missionState.daily;
       var weekly = missionState.weekly;
+
+      // 현재 고구마의 오늘 행동(todayActions)을 즉시 반영하여 완료 상태 보정
+      var currentGoguma = (selectedIndex >= 0 && data[selectedIndex]) ? data[selectedIndex] : null;
+      if (currentGoguma && currentGoguma.todayActions) {
+        var localCompleted = [];
+        ['bible', 'prayer', 'contact'].forEach(function(k) {
+          if (currentGoguma.todayActions[k]) localCompleted.push(k);
+        });
+        if (localCompleted.length > (daily.completedActions ? daily.completedActions.length : 0)) {
+          daily.completedActions = localCompleted;
+          daily.progress = { current: localCompleted.length, total: 3 };
+        }
+        if (daily.completedActions && daily.completedActions.length >= 3) {
+          daily.completed = true;
+        }
+      }
+
       var dailyChecklist = renderDailyMissionChecklist(daily);
       var weeklySub = (weekly.weekStart && weekly.weekEnd) ? (weekly.weekStart + ' ~ ' + weekly.weekEnd) : '이번 주';
 
@@ -3234,12 +3323,20 @@
       fetchJson(API + '/api/missions/' + missionKey + '/claim', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({
+          userName: (currentUser && currentUser.name) ? currentUser.name : '',
+          userId: (currentUser && currentUser.id) ? currentUser.id : null
+        })
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || !result || result.error) {
           setInlineNotice((result && result.error) || '미션 보상 수령 중 오류가 발생했습니다.', 'error');
           return;
+        }
+
+        if (missionState && missionState[missionKey === 'daily_core3' ? 'daily' : 'weekly']) {
+          missionState[missionKey === 'daily_core3' ? 'daily' : 'weekly'].claimed = true;
         }
 
         if (result.user) {
@@ -4226,7 +4323,7 @@
             return (
               '<div class="community-comment-item">' +
                 '<div class="community-comment-head">' +
-                  '<span class="community-comment-author">' + escapeHtml(comment.userName || '익명') + '</span>' +
+                  '<span class="community-comment-author">' + escapeHtml(comment.userName || comment.writer || '익명') + '</span>' +
                   commentActions +
                   '<span>' + escapeHtml(formatCommunityDate(comment.created_at || comment.createdAt)) + '</span>' +
                 '</div>' +
@@ -4343,7 +4440,11 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ content: content })
+        body: JSON.stringify({
+          content: content,
+          userName: (currentUser && currentUser.name) ? currentUser.name : '',
+          userId: (currentUser && currentUser.id) ? currentUser.id : null
+        })
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) {
@@ -4822,7 +4923,11 @@
         data = (result.gogumas || []).map(function(g) {
           return normalizeGoguma(g);
         });
-        setMissionState(result.missions || null);
+        if (result.missions) {
+          setMissionState(result.missions);
+        } else {
+          fetchMissions();
+        }
         currentViewMode = 'field';
         selectedIndex = data.length > 0 ? 0 : -1;
         document.getElementById("nameInputStep").classList.add("hidden");
@@ -4915,7 +5020,11 @@
       }).then(function(res) {
         var result = res.data;
         if (!res.ok || result.error) { setInlineNotice(result.error || '오류가 발생했습니다.', "error"); return; }
-        if (result.hp != null) g.hp = result.hp;
+        if (result.hp != null) {
+          var gain = result.hp - (g.hp || 0);
+          g.hp = result.hp;
+          showHpFloatingText('+' + (gain > 0 ? gain : 1) + ' HP ✨', window.innerWidth / 2, window.innerHeight * 0.45);
+        }
         if (result && result.actionScores && typeof result.actionScores === 'object') {
           g.actionScores = result.actionScores;
           updateDominantActionFromScores(g);
