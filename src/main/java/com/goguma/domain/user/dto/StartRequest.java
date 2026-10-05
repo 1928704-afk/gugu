@@ -24,6 +24,6 @@ public class StartRequest {
         if (name != null && !name.trim().isEmpty()) {
             return name.trim();
         }
-        return "사용자";
+        return "";
     }
 }

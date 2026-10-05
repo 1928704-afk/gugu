@@ -24,12 +24,14 @@ public class CommunityController {
 
     private final PostRepository postRepository;
     private final PostCommentRepository postCommentRepository;
+    private final com.goguma.domain.community.repository.PostLikeRepository postLikeRepository;
     private final UserRepository userRepository;
     private final GogumaRepository gogumaRepository;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     @GetMapping("/posts")
-    public ResponseEntity<List<Map<String, Object>>> getPosts() {
+    public ResponseEntity<List<Map<String, Object>>> getPosts(HttpSession session) {
+        Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
         List<Post> posts = postRepository.findAllByOrderByIdDesc();
         List<Map<String, Object>> result = new ArrayList<>();
 
@@ -57,7 +59,8 @@ public class CommunityController {
             map.put("createdAt", p.getCreatedAt() != null ? p.getCreatedAt().format(formatter) : "");
             map.put("likesCount", p.getLikes().size());
             map.put("commentsCount", p.getComments().size());
-            map.put("isLiked", false);
+            boolean isLiked = (userId != null) && postLikeRepository.existsByPostIdAndUserId(p.getId(), userId);
+            map.put("isLiked", isLiked);
             map.put("hasImage", p.getImageData() != null && !p.getImageData().isEmpty());
             result.add(map);
         }
@@ -65,7 +68,8 @@ public class CommunityController {
     }
 
     @GetMapping("/posts/{id}")
-    public ResponseEntity<Map<String, Object>> getPostDetail(@PathVariable("id") Long id) {
+    public ResponseEntity<Map<String, Object>> getPostDetail(@PathVariable("id") Long id, HttpSession session) {
+        Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
         Post p = postRepository.findById(id).orElse(null);
 
         Map<String, Object> postMap = new HashMap<>();
@@ -94,7 +98,8 @@ public class CommunityController {
             postMap.put("likesCount", p.getLikes().size());
             mapComments(p, commentsList);
             postMap.put("commentsCount", commentsList.size());
-            postMap.put("isLiked", false);
+            boolean isLiked = (userId != null) && postLikeRepository.existsByPostIdAndUserId(p.getId(), userId);
+            postMap.put("isLiked", isLiked);
             postMap.put("imageData", p.getImageData());
         }
 
@@ -105,7 +110,8 @@ public class CommunityController {
     }
 
     private void mapComments(Post p, List<Map<String, Object>> commentsList) {
-        for (PostComment c : p.getComments()) {
+        List<PostComment> comments = postCommentRepository.findByPostIdOrderByCreatedAtAsc(p.getId());
+        for (PostComment c : comments) {
             Map<String, Object> cm = new HashMap<>();
             cm.put("id", c.getId());
             cm.put("writer", c.getUser().getName());
@@ -136,12 +142,39 @@ public class CommunityController {
                 .build();
 
         postRepository.save(post);
+
+        // 글 작성 보상으로 고구마 성장치 +1
+        var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(user.getId());
+        if (!gogumas.isEmpty()) {
+            var g = gogumas.get(0);
+            g.addHp(1);
+            gogumaRepository.save(g);
+        }
+
         return ResponseEntity.ok(Map.of("ok", true, "id", post.getId()));
     }
 
     @PostMapping("/posts/{id}/like")
-    public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable("id") Long id) {
-        return ResponseEntity.ok(Map.of("ok", true, "isLiked", true, "likesCount", 1));
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> toggleLike(@PathVariable("id") Long id, HttpSession session) {
+        Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
+        if (userId == null) userId = 1L;
+        User user = userRepository.findById(userId).orElse(null);
+        Post post = postRepository.findById(id).orElse(null);
+
+        if (post == null || user == null) {
+            return ResponseEntity.ok(Map.of("ok", true, "isLiked", true, "likesCount", 1));
+        }
+
+        boolean exists = postLikeRepository.existsByPostIdAndUserId(id, userId);
+        if (exists) {
+            postLikeRepository.deleteByPostIdAndUserId(id, userId);
+        } else {
+            postLikeRepository.save(new com.goguma.domain.community.entity.PostLike(post, user));
+        }
+
+        long likesCount = postRepository.findById(id).map(p -> (long) p.getLikes().size()).orElse(0L);
+        return ResponseEntity.ok(Map.of("ok", true, "isLiked", !exists, "likesCount", likesCount));
     }
 
     @PostMapping("/posts/{id}/comments")
@@ -164,6 +197,33 @@ public class CommunityController {
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
+    @PostMapping("/comments/{id}/update")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> updateComment(
+            @PathVariable("id") Long commentId,
+            @RequestBody Map<String, String> body,
+            HttpSession session
+    ) {
+        String content = body.getOrDefault("content", "").trim();
+        if (!content.isEmpty()) {
+            postCommentRepository.findById(commentId).ifPresent(c -> {
+                c.updateContent(content);
+                postCommentRepository.save(c);
+            });
+        }
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    @PostMapping("/comments/{id}/delete")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<Map<String, Object>> deleteComment(
+            @PathVariable("id") Long commentId,
+            HttpSession session
+    ) {
+        postCommentRepository.findById(commentId).ifPresent(postCommentRepository::delete);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
     @PostMapping("/posts/delete")
     public ResponseEntity<Map<String, Object>> deletePost(@RequestBody Map<String, Long> body) {
         Long postId = body.get("id");
@@ -176,13 +236,13 @@ public class CommunityController {
     @PostMapping("/reward/spin")
     public ResponseEntity<Map<String, Object>> spinRoulette(HttpSession session) {
         Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
-        if (userId != null) {
-            var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(userId);
-            if (!gogumas.isEmpty()) {
-                var g = gogumas.get(0);
-                g.addHp(5);
-                gogumaRepository.save(g);
-            }
+        if (userId == null) userId = 1L;
+
+        var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(userId);
+        if (!gogumas.isEmpty()) {
+            var g = gogumas.get(0);
+            g.addHp(5);
+            gogumaRepository.save(g);
         }
         return ResponseEntity.ok(Map.of("ok", true, "reward", "전체온도 +5도", "rewardHp", 5));
     }

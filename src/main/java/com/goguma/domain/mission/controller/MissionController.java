@@ -85,13 +85,12 @@ public class MissionController {
             HttpSession session
     ) {
         Long userId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
-        if (userId != null) {
-            var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(userId);
-            if (!gogumas.isEmpty()) {
-                var g = gogumas.get(0);
-                g.addHp(2);
-                gogumaRepository.save(g);
-            }
+        if (userId == null) userId = 1L;
+        var gogumas = gogumaRepository.findByUserIdOrderByIdAsc(userId);
+        if (!gogumas.isEmpty()) {
+            var g = gogumas.get(0);
+            g.addHp(2);
+            gogumaRepository.save(g);
         }
         return ResponseEntity.ok(Map.of("ok", true, "rewardHp", 2));
     }

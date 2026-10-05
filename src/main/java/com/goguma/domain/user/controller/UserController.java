@@ -26,7 +26,8 @@ public class UserController {
 
     @PostMapping("/start")
     public ResponseEntity<Map<String, Object>> start(@RequestBody StartRequest request, HttpSession session) {
-        if (request.getName() == null || request.getName().trim().isEmpty()) {
+        String name = request.getEffectiveName();
+        if (name == null || name.isEmpty()) {
             return ResponseEntity.badRequest().body(Map.of("error", "이름을 입력해 주세요."));
         }
 
